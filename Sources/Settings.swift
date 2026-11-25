@@ -20,6 +20,7 @@ final class Settings: ObservableObject {
     @Published var spacing = 2 { didSet { save() } }
     @Published var lightsLayer = DisplayLayer.above { didSet { save() } }
     @Published var dockLights = true { didSet { save() } }
+    @Published var dockStyle = DockStyle.sameAsBar { didSet { save() } }
 
     @Published var snowEnabled = true { didSet { save() } }
     @Published var snowAmount = 2 { didSet { save() } }
@@ -43,7 +44,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "alwaysSaveEnergy", "paused", "welcomeShown", "permissionPromptShown"]
 
@@ -68,6 +69,7 @@ final class Settings: ObservableObject {
         set(\.spacing, level("spacing", 2))
         set(\.lightsLayer, raw("lightsLayer", .above))
         set(\.dockLights, bool("dockLights", true))
+        set(\.dockStyle, raw("dockStyle", .sameAsBar))
         set(\.snowEnabled, bool("snowEnabled", true))
         set(\.snowAmount, level("snowAmount", 2))
         set(\.flakeSize, level("flakeSize", 2))
@@ -96,6 +98,7 @@ final class Settings: ObservableObject {
         d.set(spacing, forKey: "spacing")
         d.set(lightsLayer.rawValue, forKey: "lightsLayer")
         d.set(dockLights, forKey: "dockLights")
+        d.set(dockStyle.rawValue, forKey: "dockStyle")
         d.set(snowEnabled, forKey: "snowEnabled")
         d.set(snowAmount, forKey: "snowAmount")
         d.set(flakeSize, forKey: "flakeSize")

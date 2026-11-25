@@ -127,3 +127,6 @@ Die Schneeschicht reagierte erst nach 1,5 s (2 Abfragen pro Sekunde, drei fehlen
 Das Ausschalten der Menüleisten-Lichter blendete auch die Dock-Lichter aus, weil die Dock-Kette an `lightsOn` hing. Sie hängt jetzt nur noch an ihrem eigenen Schalter, der Pause, der Berechtigung und einem sichtbaren Dock.
 
 Mini-Birnen: Die Glasröhre wird nicht mehr aus minibulb-glass.pdf und minibulb-outline.pdf gerendert (spitze Unterseite), sondern als Pfad mit gleichen Maßen (1,4 bis 6,55 pt breit, 8,5 bis 27 pt lang) und halbrundem Boden. Der Glühfaden-Verlauf (`minibulb-shine.pdf`) wird auf die runde Form beschnitten, die Fassung bleibt aus der PDF (Praxistest: Kerzen zu spitz).
+
+## Eigener Stil für die Dock-Kette (SPEC Commit c765e84)
+Einstellung `dockStyle` (wie Menüleiste, klassisch, Tanne bunt, Tanne warmgold), Standard "wie Menüleiste". `DockStyle.resolve(bar:)` liefert den Stil der Dock-Kette (getestet). Die Auswahl steht in den Lichter-Einstellungen unter dem Dock-Schalter und ist ohne Berechtigung oder bei ausgeschalteten Dock-Lichtern gesperrt. Der Farbmodus erscheint, sobald eine der beiden Ketten klassisch ist. Am Dock gelten die schmalen Tannen-Regeln unabhängig vom Stil der Menüleiste.

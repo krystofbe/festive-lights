@@ -860,3 +860,22 @@ final class BaubleTests: XCTestCase {
 
     func testStablePlacement() { XCTAssertEqual(plan().baubles, plan().baubles) }
 }
+
+final class DockStyleTests: XCTestCase {
+    func testLikeMenuBarFollowsTheBarStyle() {
+        for k in ChainStyleKind.allCases { XCTAssertEqual(DockStyle.sameAsBar.resolve(bar: k), k) }
+    }
+
+    func testExplicitDockStyleIgnoresTheBarStyle() {
+        for k in ChainStyleKind.allCases {
+            XCTAssertEqual(DockStyle.classic.resolve(bar: k), .classic)
+            XCTAssertEqual(DockStyle.firColor.resolve(bar: k), .firColor)
+            XCTAssertEqual(DockStyle.firGold.resolve(bar: k), .firGold)
+        }
+    }
+
+    func testDefaultIsLikeMenuBar() {
+        XCTAssertEqual(DockStyle.allCases.first, .sameAsBar)
+        XCTAssertEqual(DockStyle(rawValue: "sameAsBar"), .sameAsBar)
+    }
+}

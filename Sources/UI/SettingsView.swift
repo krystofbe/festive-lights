@@ -59,7 +59,7 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
-        .frame(width: 470, height: 370)
+        .frame(width: 470, height: 400)
         .onAppear { perm.start() }
         .onDisappear { perm.stop() }
     }
@@ -71,7 +71,7 @@ struct SettingsView: View {
                 Text("Fir, colorful").tag(ChainStyleKind.firColor)
                 Text("Fir, warm gold").tag(ChainStyleKind.firGold)
             }.pickerStyle(.segmented)
-            if s.chainStyle == .classic {
+            if s.chainStyle == .classic || (s.dockLights && s.dockStyle.resolve(bar: s.chainStyle) == .classic) {
                 Picker("Colors", selection: $s.colorMode) {
                     Text("Multicolor").tag(ColorMode.multicolor)
                     Text("Warm white").tag(ColorMode.warm)
@@ -91,6 +91,13 @@ struct SettingsView: View {
             }
             Toggle("Lights on the Dock", isOn: $s.dockLights)
                 .disabled(!perm.granted)
+            Picker("Dock style", selection: $s.dockStyle) {
+                Text("Like menu bar").tag(DockStyle.sameAsBar)
+                Text("Classic").tag(DockStyle.classic)
+                Text("Fir, colorful").tag(DockStyle.firColor)
+                Text("Fir, warm gold").tag(DockStyle.firGold)
+            }
+            .disabled(!perm.granted || !s.dockLights)
             if !perm.granted {
                 Text("Permission needed, see General.").font(.caption).foregroundStyle(.secondary)
             }

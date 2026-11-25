@@ -5,6 +5,20 @@ enum ChainStyleKind: String, CaseIterable {
     var isFir: Bool { self != .classic }
 }
 
+/// Stil der Dock-Kette: "wie Menüleiste" übernimmt den Stil der Menüleisten-Kette.
+enum DockStyle: String, CaseIterable {
+    case sameAsBar, classic, firColor, firGold
+
+    func resolve(bar: ChainStyleKind) -> ChainStyleKind {
+        switch self {
+        case .sameAsBar: return bar
+        case .classic: return .classic
+        case .firColor: return .firColor
+        case .firGold: return .firGold
+        }
+    }
+}
+
 enum BranchLayer: String { case back, mid, hang, front }
 
 struct GarlandBranch: Equatable {
