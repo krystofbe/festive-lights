@@ -1281,3 +1281,15 @@ final class DockProbeCoreTests: XCTestCase {
         XCTAssertTrue(gate.isCurrent(new))
     }
 }
+
+
+final class OverlayLevelTests: XCTestCase {
+    func testChainIsAlwaysInFrontOfSnowOnTheSameLayer() {
+        for l in DisplayLayer.allCases {
+            let chain = OverlayLevel.raw(l, aboveSnow: true, mainMenu: 24, desktop: -2147483623)
+            let snow = OverlayLevel.raw(l, aboveSnow: false, mainMenu: 24, desktop: -2147483623)
+            XCTAssertGreaterThan(chain, snow)
+        }
+        XCTAssertLessThan(OverlayLevel.raw(.above, aboveSnow: true, mainMenu: 24, desktop: 0), 24, "unter der Menüleiste")
+    }
+}

@@ -4,7 +4,11 @@ import AppKit
 final class OverlayWindow: NSWindow {
     let rootLayer = CALayer()
 
-    init(frame: NSRect) {
+    /// Ketten liegen auf der gleichen Ebene eine Stufe über dem Schnee, damit sie nie hinter den Flocken liegen.
+    private let aboveSnow: Bool
+
+    init(frame: NSRect, aboveSnow: Bool = false) {
+        self.aboveSnow = aboveSnow
         super.init(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         isReleasedWhenClosed = false
         backgroundColor = .clear
@@ -36,10 +40,7 @@ final class OverlayWindow: NSWindow {
     func setLayer(_ layer: DisplayLayer) {
         guard layer != currentLayer else { return }
         currentLayer = layer
-        switch layer {
-        case .above: level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) - 1)
-        case .desktop: level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)) + 1)
-        }
+        level = NSWindow.Level(rawValue: OverlayLevel.raw(layer, aboveSnow: aboveSnow, mainMenu: Int(CGWindowLevelForKey(.mainMenuWindow)), desktop: Int(CGWindowLevelForKey(.desktopWindow))))
     }
 
     func place(_ frame: NSRect) {

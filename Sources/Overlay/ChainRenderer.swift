@@ -41,7 +41,7 @@ struct ChainStyle: Equatable {
 }
 
 final class ChainRenderer {
-    let window = OverlayWindow(frame: NSRect(x: 0, y: 0, width: 10, height: 10))
+    let window = OverlayWindow(frame: NSRect(x: 0, y: 0, width: 10, height: 10), aboveSnow: true)
     private let cable = CAShapeLayer()
     private let strand = CAShapeLayer()
     private let content = CALayer()
