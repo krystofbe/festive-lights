@@ -153,6 +153,12 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
   - Schneesturm: unter 10 % CPU.
   - Speicher unter 150 MB.
   - Für Intel gibt es keinen Zielwert, die App muss dort aber flüssig laufen.
+- Gesamtkosten zählen, nicht nur der eigene Prozess: Die Mehrlast des System-Prozesses WindowServer durch FestiveLights darf mit Lichtern, Funkeln und Schnee höchstens 5 Prozentpunkte betragen, im Ruhezustand höchstens 1. Gemessen als Differenz mit und ohne laufende App.
+- Andere Apps bleiben flüssig: Scrollen und Animationen in Safari und Finder laufen mit laufender App sichtbar genauso flüssig wie ohne, auch auf 120-Hz-Displays. Eingaben (Tippen, Klicken, Ziehen) bekommen keine spürbare Verzögerung.
+- Energiebedarf in der Aktivitätsanzeige (Spalte "Energie") im Bereich typischer Hintergrund-Apps: im Ruhezustand nahe 0, mit Schnee niedrig.
+- Nur zeichnen, was sich bewegt: Steht alles still (Dauerleuchten, kein Schnee, Zeiger weit weg), wird nichts neu gezeichnet. Bildschirme ohne sichtbare Bewegung und verdeckte Bereiche verursachen keine Arbeit.
+- Fensterpositionen für F6 nur so oft ermitteln wie nötig: im Ruhezustand selten, beim Ziehen eines Fensters häufig genug für flüssiges Abschütteln.
+- Mit vielen Fenstern (30 offene Fenster) und zwei Bildschirmen gelten dieselben Grenzen.
 - Energiesparen: Im Akkubetrieb unter 20 % Ladung, im Stromsparmodus oder mit "Immer Energie sparen" halbe Flockenzahl und ruhigere Animation. Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
 - Keine sichtbar ausgelassenen Bilder bei 60 Hz und 120 Hz.
 - "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen, kein Aufstöbern und kein Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
@@ -170,5 +176,5 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 8. Berechtigung erteilen und entziehen ohne Neustart, Verhalten wie in Abschnitt 5.
 9. "Bewegung reduzieren" wie in Abschnitt 10.
 10. Einstellungen überleben einen Neustart.
-11. CPU und Speicher wie in Abschnitt 10.
+11. CPU, Speicher, WindowServer-Mehrlast, Energiebedarf und Flüssigkeit anderer Apps wie in Abschnitt 10, auch mit 30 offenen Fenstern.
 12. 8 Stunden Dauerlauf ohne nennenswerten Speicherzuwachs.
