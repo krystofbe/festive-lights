@@ -169,9 +169,6 @@ final class ScreenOverlay {
                 return
             }
             dockContinuous = d.continuous
-            // durchgehend: Dicke des Docks (ausgeblendet: Standardmaß), genau am Dock: Höhe der Symbolleiste
-            let thickness = Double(d.edge == .bottom ? d.rect.height : d.rect.width)
-            let icon = d.continuous && thickness < 20 ? 90 : thickness
             // Dock-Kette nach der Symbolgröße: Mittelstellung = ein Viertel der Symbolhöhe, der Regler wirkt relativ dazu
             let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
             let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel)

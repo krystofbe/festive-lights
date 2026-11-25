@@ -1,7 +1,7 @@
 import SwiftUI
 import ServiceManagement
 
-#if !APPSTORE
+#if DIRECT
 final class PermissionModel: ObservableObject {
     @Published var granted = Permission.granted
 
@@ -88,7 +88,7 @@ struct PowerModeRows: View {
 
 struct SettingsView: View {
     @ObservedObject var s: Settings
-    #if !APPSTORE
+    #if DIRECT
     @ObservedObject var perm: PermissionModel
     #endif
     @ObservedObject var login: LoginModel
@@ -108,7 +108,7 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }.tag(SettingsTab.snow)
         }
         .frame(width: 470, height: 480)
-        #if !APPSTORE
+        #if DIRECT
         .onAppear { perm.refresh() }
         #endif
         .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name("com.apple.dock.prefchanged"))) { _ in dockOnSide = Self.dockIsOnSide() }
@@ -181,7 +181,7 @@ struct SettingsView: View {
             LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
             layerPicker($s.snowLayer)
             Toggle("Snow stays on windows", isOn: $s.settleSnow)
-                #if !APPSTORE
+                #if DIRECT
                 .disabled(!perm.granted)
                 .accessibilityHint(Text(perm.granted ? "" : "settle.hint"))
                 #endif
@@ -192,7 +192,7 @@ struct SettingsView: View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
             PowerModeRows(s: s, status: PowerStatus.shared)
-            #if !APPSTORE
+            #if DIRECT
             Section("Permission") {
                 HStack(spacing: 6) {
                     Image(systemName: perm.granted ? "checkmark.circle.fill" : "exclamationmark.circle")
@@ -228,7 +228,7 @@ struct WelcomeView: View {
     }
 }
 
-#if !APPSTORE
+#if DIRECT
 struct PermissionPromptView: View {
     let open: () -> Void
     var body: some View {

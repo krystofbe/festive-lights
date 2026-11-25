@@ -1,4 +1,4 @@
-#if !APPSTORE
+#if DIRECT
 import AppKit
 import ApplicationServices
 

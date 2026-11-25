@@ -131,7 +131,7 @@ final class StatusController: NSObject, NSMenuDelegate {
         showPopover(WelcomeView { [weak self] in self?.closePopover(); self?.app.startStorm() }, seconds: 20)
     }
 
-    #if !APPSTORE
+    #if DIRECT
     @discardableResult
     func showPermissionPrompt() -> Bool {
         showPopover(PermissionPromptView { [weak self] in

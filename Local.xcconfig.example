@@ -1,0 +1,5 @@
+// Kopieren nach Local.xcconfig (wird nicht eingecheckt) und anpassen.
+DEVELOPMENT_TEAM = XXXXXXXXXX
+CODE_SIGN_STYLE = Automatic
+// Direct: "Developer ID Application", App Store: "Apple Distribution"
+CODE_SIGN_IDENTITY = Apple Development

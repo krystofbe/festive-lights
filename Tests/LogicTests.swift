@@ -1415,3 +1415,13 @@ final class SettingsViewStateTests: XCTestCase {
         c1.cancel(); c2.cancel()
     }
 }
+
+final class AppVariantTests: XCTestCase {
+    func testStoreVariantSettlesSnowWithoutAccessibilityDirectNeedsIt() {
+        XCTAssertTrue(AppVariant.settleAllowed(accessibilityGranted: false, isStore: true))
+        XCTAssertFalse(AppVariant.settleAllowed(accessibilityGranted: false, isStore: false))
+        XCTAssertTrue(AppVariant.settleAllowed(accessibilityGranted: true, isStore: false))
+    }
+
+    func testDefaultBuildIsTheStoreVariant() { XCTAssertTrue(AppVariant.isStore) }
+}

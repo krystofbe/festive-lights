@@ -1,0 +1,2 @@
+// Gemeinsame Einstellungen. Die Signatur steht in der lokalen, nicht versionierten Local.xcconfig (Vorlage: Local.xcconfig.example).
+#include? "../Local.xcconfig"

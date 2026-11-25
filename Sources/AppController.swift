@@ -6,7 +6,7 @@ final class AppController: NSObject {
     let settings = Settings.shared
     private var overlays: [CGDirectDisplayID: ScreenOverlay] = [:]
     private var status: StatusController!
-    #if !APPSTORE
+    #if DIRECT
     private let dockTracker = DockTracker()
     private var accessibilityRunner: DockSourceRunner { dockTracker }
     #else
@@ -22,7 +22,7 @@ final class AppController: NSObject {
     private var suspended = false
     private var screensAsleep = false
     private var locked = false
-    #if !APPSTORE
+    #if DIRECT
     private var permission = Permission.granted
     private let permissionModel = PermissionModel()
     #else
@@ -70,7 +70,7 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
         dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.hit"), object: nil)
         dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.welcome"), object: nil)
-        #if !APPSTORE
+        #if DIRECT
         dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
@@ -82,7 +82,7 @@ final class AppController: NSObject {
             let p = NSEvent.mouseLocation
             Engine.shared.pointerEvent(p, time: ProcessInfo.processInfo.systemUptime)
             self?.overlays.values.forEach { $0.pointerMoved(p) }
-            #if !APPSTORE
+            #if DIRECT
             self?.dockTracker.pointerMoved()
             #endif
             self?.dockProbe.pointerMoved()
@@ -92,7 +92,7 @@ final class AppController: NSObject {
         for n in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.didHideApplicationNotification, NSWorkspace.didTerminateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
             ws.addObserver(forName: n, object: nil, queue: .main) { _ in Engine.shared.requestBurst() }
         }
-        #if !APPSTORE
+        #if DIRECT
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         #endif
         dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
@@ -104,7 +104,7 @@ final class AppController: NSObject {
             #endif
             self?.exactResult = r; self?.scheduleApply()
         }
-        #if !APPSTORE
+        #if DIRECT
         dockTracker.onChange = { [weak self] g in
             #if DEBUG
             let l = "\(Date().timeIntervalSince1970) \(String(describing: g?.rect)) edge=\(String(describing: g?.edge))\n"
@@ -134,7 +134,7 @@ final class AppController: NSObject {
             self.apply()
             if !self.settings.welcomeShown, self.status.showWelcome() { self.settings.welcomeShown = true }
         }
-        #if !APPSTORE
+        #if DIRECT
         // Einmalig und frühestens 60 s später: Hinweis auf die Berechtigung, unabhängig davon, ob das Willkommens-Popover noch kam
         after(65) { [weak self] in
             guard let self, !self.settings.permissionPromptShown, !Permission.granted else { return }
@@ -153,7 +153,7 @@ final class AppController: NSObject {
         let line = "probe[\(dockProbe.statsLine)] mag[\(debugAX)] flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(permission) dock=\(String(describing: dockGeometry))  suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
-        #if !APPSTORE
+        #if DIRECT
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
@@ -168,7 +168,7 @@ final class AppController: NSObject {
 
     #if DEBUG
     private var debugAX: String {
-        #if !APPSTORE
+        #if DIRECT
         return dockTracker.debugItems
         #else
         return "n/a"
@@ -348,7 +348,7 @@ final class AppController: NSObject {
 
     #if DEBUG
     @objc private func debugStorm() { toggleStorm() }
-    #if !APPSTORE
+    #if DIRECT
     @objc private func debugPrompt() { status.showPermissionPrompt() }
     #endif
     @objc private func debugWelcome() { status.showWelcome() }
@@ -411,7 +411,7 @@ final class AppController: NSObject {
 
     func showSettings() {
         if settingsWindow == nil {
-            #if !APPSTORE
+            #if DIRECT
             let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, login: loginModel, nav: settingsNav))
             #else
             let host = NSHostingController(rootView: SettingsView(s: settings, login: loginModel, nav: settingsNav))
@@ -424,7 +424,7 @@ final class AppController: NSObject {
             settingsWindow = w
         }
         if settingsWindow?.isVisible != true { settingsNav.tab = .general }
-        #if !APPSTORE
+        #if DIRECT
         permissionModel.refresh()
         #endif
         loginModel.refresh()
