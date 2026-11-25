@@ -86,7 +86,7 @@ struct SettingsView: View {
                 Text("Chase").tag(LightPattern.chase)
             }.pickerStyle(.segmented)
             LevelSlider(title: "Speed", value: $s.lightsTempo, low: "Slow", high: "Fast")
-            LevelSlider(title: "Bulb size", value: $s.bulbSize, low: "Small", high: "Large")
+            LevelSlider(title: "Size", value: $s.bulbSize, low: "Small", high: "Large")
             LevelSlider(title: "Spacing", value: $s.spacing, low: "Tight", high: "Wide")
             Picker("Layer", selection: $s.lightsLayer) {
                 Text("Above all windows").tag(DisplayLayer.above)

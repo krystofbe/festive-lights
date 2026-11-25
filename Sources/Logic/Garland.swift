@@ -63,7 +63,7 @@ enum Garland {
     static let dockSag = 0.3
     static let dockClassicSag = 0.45
     /// Zweiggröße und Ansatzpunkt-Skalierung der schmalen Girlande am Dock.
-    static let dockBranchScale = 0.3
+    static let dockBranchScale = 0.45
     static let dockAnchorScale = 0.73
     /// Tiefe der Girlande unter dem Kabel für die Fenstergröße: Menüleiste je 24 pt Birnenhöhe, Dock fest.
     static let depthPer24 = 60.0
@@ -82,7 +82,7 @@ enum Garland {
     static let tbAnchorUnits = 70.0
     static let tbBaubleUnits = 170.0
     /// Büschelgröße am Dock in pt je Einheit (Birnen sind am Dock so groß wie bei der klassischen Dock-Kette, das Grün gut sichtbar).
-    static let tbDockScale = 0.3
+    static let tbDockScale = 0.45
     static let tbRotation = 22.0
     static let tbBaubleSizes: [(w: Double, h: Double, hangX: Double, hangY: Double)] = [(80, 89, 40, 0), (88, 111, 44, 14), (76, 85, 38, 0), (88, 111, 44, 14), (80, 89, 40, 0)]
 
