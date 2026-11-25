@@ -115,9 +115,9 @@ final class ScreenOverlay {
             barDynamic = bar.dynamic
             let h = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: st.bulbLevel)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(screen.frame.width), bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: true, liftMax: 0,
+                                 length: Double(screen.frame.width), bulbH: h, sag: fir ? h * 0.2 : h, liftSign: -1, liftToTop: true, liftMax: 0,
                                  spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel),
-                                 garlandDepth: fir ? 150 * (h / 24) * Garland.hangLength : 0)
+                                 garlandDepth: fir ? 60 * (h / 24) * Garland.hangLength : 0)
             menubar.configure(spec: spec, style: style(), scale: scale, levelsKey: 0)
             menubar.setVisible(st.lightsOn, layer: st.lightsLayer, intro: CACurrentMediaTime())
         } else {

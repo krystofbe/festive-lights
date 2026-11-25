@@ -534,7 +534,7 @@ final class GarlandTests: XCTestCase {
     func testBackBranchesAlongWholeGarlandAlternatingAndInRange() {
         let p = plan(.firColor)
         let back = p.branches.filter { $0.layer == .back }
-        XCTAssertGreaterThan(back.count, 60)
+        XCTAssertGreaterThan(back.count, 25)
         for (i, b) in back.enumerated() {
             XCTAssertEqual(b.mirrored, i % 2 == 1)
             XCTAssertTrue((1...4).contains(b.sprite))

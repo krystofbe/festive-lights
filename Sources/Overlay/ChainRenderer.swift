@@ -203,18 +203,18 @@ final class ChainRenderer {
         }
         if !frontStart { content.addSublayer(cable) }
         bulbs.forEach { content.addSublayer($0.container) }
-        let px = max(8, Int((FirSprites.coneSize.height * fs * scale).rounded()))
+        let px = max(8, Int((FirSprites.coneSize.height * fs * Garland.coneScale * scale).rounded()))
         for u in plan.cones {
             let p = piece(FirSprites.pdfImage("pinecone", size: FirSprites.coneSize, pixelHeight: px), size: FirSprites.coneSize, anchor: FirSprites.coneAnchor,
-                          z: 5, u: u, rotationDeg: ChainLayout.tilt(index: Int(u)) * 0.5, mirrored: false, scale: fs)
+                          z: 5, u: u, rotationDeg: ChainLayout.tilt(index: Int(u)) * 0.5, mirrored: false, scale: fs * Garland.coneScale)
             p.container.contentsScale = scale
             p.swings = true
             cones.append(p)
         }
-        let bpx = max(8, Int((FirSprites.bowSize.height * fs * scale).rounded()))
+        let bpx = max(8, Int((FirSprites.bowSize.height * fs * Garland.bowScale * scale).rounded()))
         for u in plan.bows {
             let p = piece(FirSprites.pdfImage("bow", size: FirSprites.bowSize, pixelHeight: bpx), size: FirSprites.bowSize, anchor: FirSprites.bowAnchor,
-                          z: 6, u: u, rotationDeg: 0, mirrored: false, scale: fs)
+                          z: 6, u: u, rotationDeg: 0, mirrored: false, scale: fs * Garland.bowScale)
             p.container.contentsScale = scale
             bows.append(p)
         }

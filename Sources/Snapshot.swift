@@ -43,7 +43,7 @@ enum Snapshot {
                 let fh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2)
                 let fspec = ChainSpec(p0: CGPoint(x: f.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: Double(f.width),
                                       bulbH: fh, sag: fh * 0.3, liftSign: -1, liftToTop: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2),
-                                      garlandDepth: 150 * (fh / 24))
+                                      garlandDepth: 60 * (fh / 24))
                 let fr = ChainRenderer()
                 fr.configure(spec: fspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false, kind: kind), scale: 2, levelsKey: 0)
                 fr.setVisible(true, layer: .above, intro: nil); fr.window.rootLayer.opacity = 1
