@@ -93,10 +93,13 @@ struct SettingsView: View {
                 Text("Desktop only").tag(DisplayLayer.desktop)
             }
             Toggle("Lights on the Dock", isOn: $s.dockLights)
-            Picker("Dock shape", selection: $s.dockShape) {
-                Text("Continuous").tag(DockShape.continuous)
-                Text("Exactly at the Dock").tag(DockShape.exact)
+            let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
+            Picker("Length", selection: $s.dockShape) {
+                Text(side ? "Dock height" : "Dock width").tag(DockShape.exact)
+                Text(side ? "Full height" : "Full width").tag(DockShape.continuous)
             }
+            .pickerStyle(.segmented)
+            .padding(.leading, 16)
             .disabled(!s.dockLights)
             Picker("Dock style", selection: $s.dockStyle) {
                 Text("Like menu bar").tag(DockStyle.sameAsBar)
@@ -104,6 +107,7 @@ struct SettingsView: View {
                 Text("Fir, colorful").tag(DockStyle.firColor)
                 Text("Fir, warm gold").tag(DockStyle.firGold)
             }
+            .padding(.leading, 16)
             .disabled(!s.dockLights)
         }
         .formStyle(.grouped)

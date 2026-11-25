@@ -58,9 +58,11 @@
 "Fir, warm gold" = "Tanne warmgold";
 "Dock style" = "Dock-Stil";
 "Like menu bar" = "Wie Menüleiste";
-"Dock shape" = "Form am Dock";
-"Continuous" = "Durchgehend";
-"Exactly at the Dock" = "Genau am Dock";
+"Length" = "Länge";
+"Dock width" = "Dock-Breite";
+"Full width" = "Bildschirmbreite";
+"Dock height" = "Dock-Höhe";
+"Full height" = "Bildschirmhöhe";
 "Reset to defaults" = "Auf Standard zurücksetzen";
 "Reset all settings to their defaults?" = "Alle Einstellungen auf Standard zurücksetzen?";
 "Reset" = "Zurücksetzen";

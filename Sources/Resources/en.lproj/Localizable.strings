@@ -58,9 +58,11 @@
 "Fir, warm gold" = "Fir, warm gold";
 "Dock style" = "Dock style";
 "Like menu bar" = "Like menu bar";
-"Dock shape" = "Dock shape";
-"Continuous" = "Continuous";
-"Exactly at the Dock" = "Exactly at the Dock";
+"Length" = "Length";
+"Dock width" = "Dock width";
+"Full width" = "Full width";
+"Dock height" = "Dock height";
+"Full height" = "Full height";
 "Reset to defaults" = "Reset to defaults";
 "Reset all settings to their defaults?" = "Reset all settings to their defaults?";
 "Reset" = "Reset";
