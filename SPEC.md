@@ -134,7 +134,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 
 Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hinter der Kamera-Aussparung verschwindet).
 
-**Einstellungsfenster**, kompakt, vier Bereiche. Menüleisten-Kette und Dock-Kette sind vollständig getrennt einstellbar, jede in ihrem eigenen Bereich mit identischem Aufbau, damit immer klar ist, welche Einstellung welche Kette betrifft:
+**Einstellungsfenster**, kompakt, vier Bereiche in dieser Reihenfolge: Allgemein, Menüleiste, Dock, Schnee. Beim Öffnen ist "Allgemein" ausgewählt. Menüleisten-Kette und Dock-Kette sind vollständig getrennt einstellbar, jede in ihrem eigenen Bereich mit identischem Aufbau, damit immer klar ist, welche Einstellung welche Kette betrifft:
 - **Menüleiste:** oben Schalter "Lichter an der Menüleiste", darunter (ausgegraut, wenn aus) Stil, Farben (nur sichtbar bei "klassisch"), Muster, Tempo, Größe (der ganzen Kette samt Girlande, Englisch "Size"), Abstand (der Birnen, Englisch "Spacing"), Ebene.
 - **Dock:** oben Schalter "Lichter am Dock", darunter dieselben Einstellungen wie bei der Menüleiste, eigene Werte, zusätzlich "Länge" (siehe F5). Standardwerte wie bei der Menüleiste.
 
