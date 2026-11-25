@@ -38,9 +38,11 @@ final class Settings: ObservableObject {
     @Published var permissionPromptShown = false { didSet { write("permissionPromptShown", permissionPromptShown) } }
 
     private init() {
-        #if !DEBUG
-        // Im Release wirken Startargumente (zum Beispiel -chainStyle) nicht, nur gespeicherte Einstellungen
+        // Startargumente (zum Beispiel -chainStyle) gelten höchstens einmal beim Start, danach ist die Argument-Domain leer
+        let args = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
         UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
+        #if DEBUG
+        adopt(args)
         #endif
         load()
         observer = DefaultsObserver(keys: Settings.keys) { [weak self] in
@@ -62,7 +64,12 @@ final class Settings: ObservableObject {
     }
     private func set<T: Equatable>(_ p: ReferenceWritableKeyPath<Settings, T>, _ v: T) { if self[keyPath: p] != v { self[keyPath: p] = v } }
 
-    private func load() {
+    /// Übernimmt Startargumente einmalig als gespeicherte Werte. Später hat die Oberfläche immer Vorrang.
+    func adopt(_ args: [String: Any]) {
+        for k in Settings.keys { if let v = args[k] { d.set(v, forKey: k) } }
+    }
+
+    func load() {
         loading = true
         defer { loading = false }
         set(\.lightsEnabled, bool("lightsEnabled", true))
@@ -103,10 +110,6 @@ final class Settings: ObservableObject {
     /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.
     private func write(_ key: String, _ value: Any) {
         guard !loading else { return }
-        #if DEBUG
-        // Ein Startargument (-chainStyle ...) soll die gespeicherte Einstellung nicht überschreiben
-        if key == "chainStyle", CommandLine.arguments.contains("-chainStyle") { return }
-        #endif
         d.set(value, forKey: key)
     }
 }

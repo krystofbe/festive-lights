@@ -1074,6 +1074,20 @@ final class DockPointerLogicTests: XCTestCase {
     }
 }
 
+final class StartupArgumentTests: XCTestCase {
+    func testUiChoiceBeatsStartupArgumentAfterOtherSettingChanges() {
+        let s = Settings.shared
+        s.adopt(["chainStyle": "firColor"]); s.load()
+        XCTAssertEqual(s.chainStyle, .firColor)
+        s.chainStyle = .classic          // Auswahl in der Oberfläche
+        s.colorMode = .warm              // andere Einstellung, danach lädt der Beobachter neu
+        s.load()
+        XCTAssertEqual(s.chainStyle, .classic)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "chainStyle"), "classic")
+        s.resetToDefaults()
+    }
+}
+
 final class ResetTests: XCTestCase {
     func testResetRestoresTheTableFromSection3AndKeepsTheExceptions() {
         let s = Settings.shared
