@@ -194,3 +194,11 @@ Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (
 - **Dock-Größe nach Symbolgröße:** `Garland.dockBulbHeight(tile:bulbLevel:)`, Wachstum je Position `Garland.dockMagnification(lift:tile:)` aus dem Vergrößerungsprofil.
 - **Ebenen:** `OverlayLevel`: Auf gleicher Ebene liegt die Kette eine Stufe über dem Schnee (Menüleisten-Ebene minus 1 gegenüber minus 2, Schreibtisch plus 2 gegenüber plus 1).
 - **Tanne bunt nach Vorlage:** Maße des Zielbilds (0,3 pt je Einheit bei Birnenhöhe 30 pt, `Garland.tbRefBulbH`), Bögen von 150 pt mit fünf Birnen im Abstand von 30 pt, Büschel als vorgerenderte Bitmaps, Kugeln an Goldfäden aus den Büscheln (`Garland.planBunt`), Kabel in eigenen Wellen, dunkler Grundstrang.
+
+## Mac App Store als Standard-Build
+- Der Standard-Build ist die App-Store-Fassung: App Sandbox (`FestiveLights.entitlements`, nur `com.apple.security.app-sandbox`), Hardened Runtime, keine Bedienungshilfen. Der AX-Code (`DockTracker`, `Permission`, `PermissionModel`, Berechtigungsbereich, zweites Popover, `debug.prompt`) steht hinter dem Compile-Schalter `DIRECT` im Repo und wird nicht gebaut (Prüfung: das Release-Binary enthält kein `AXIsProcessTrusted`). Mit `DIRECT` baut es weiterhin (geprüft).
+- F6 "Schnee bleibt auf Fenstern liegen" läuft in der Store-Fassung über die Fensterliste ohne Berechtigung (`AppVariant.settleAllowed`). Der Dock-Weg ist der Treffer-Test.
+- `PrivacyInfo.xcprivacy` (UserDefaults CA92.1, Systemlaufzeit 35F9.1, kein Tracking, keine Daten), `LSApplicationCategoryType` Unterhaltung, `ITSAppUsesNonExemptEncryption` false, Versionen aus `MARKETING_VERSION` und `CURRENT_PROJECT_VERSION`.
+- Signatur nur über die lokale `Local.xcconfig` (Vorlage `Local.xcconfig.example`, in `.gitignore`), über `Config/Base.xcconfig` mit `#include?`. Kein Update-Mechanismus, kein Sparkle.
+- Die Dock-Kette funkelt mit halber Rate (Musterdrossel 60 ms statt 30 ms).
+- Offen: Sandbox-Laufzeittest auf dem Mini (Ausweichen, Schütteln, Anmeldeobjekt, Dock-Größe) nach dem 8-Stunden-Lauf, Skript `sandbox-test.sh` liegt vor. Am Laptop läuft die signierte Sandbox-Fassung.
