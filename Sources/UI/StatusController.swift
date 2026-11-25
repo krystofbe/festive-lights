@@ -28,7 +28,7 @@ final class StatusController: NSObject, NSMenuDelegate {
         timer?.invalidate(); timer = nil
         shown = nil
         if on {
-            let t = Timer(timeInterval: 1.0 / 4, repeats: true) { [weak self] _ in
+            let t = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
                 guard let self else { return }
                 self.frame = (self.frame + 1) % MenubarIcon.frameCount
                 self.updateIcon()
@@ -49,9 +49,8 @@ final class StatusController: NSObject, NSMenuDelegate {
         let dark = button.effectiveAppearance.name.rawValue.contains("Dark")
         let animated = timer != nil
         let f = animated ? frame : 0
-        if let s = shown, s.0 == f, s.1 == dark { return }
-        shown = (f, dark)
-        button.image = MenubarIcon.image(frame: f, dark: dark, animated: animated)
+        let img = MenubarIcon.image(frame: f, dark: dark, animated: animated)
+        if button.image !== img { button.image = img }
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) { rebuild(menu) }

@@ -154,26 +154,30 @@ enum SnowSprites {
 }
 
 enum MenubarIcon {
-    static let frameCount = 24
+    static let frameCount = 36
     private static var cache: [Int: NSImage] = [:]
 
     /// Eine Animationsphase 0...1. Die drei Birnen glimmen nacheinander heller und dunkler.
     static func image(frame: Int, dark: Bool, animated: Bool) -> NSImage {
         let f = animated ? frame % frameCount : -1
-        let key = (f + 1) * 2 + (dark ? 1 : 0)
+        // Helligkeit je Birne in drei Stufen. Gleiche Stufen ergeben dasselbe Bild, dann wird nichts neu gezeichnet.
+        var levels: [CGFloat] = [1, 1, 1]
+        if f >= 0 {
+            for b in 0..<3 {
+                let phase = Double(f) / Double(frameCount) - Double(b) / 3.0
+                let p = phase - floor(phase)
+                let pulse = p < 0.5 ? sin(p * 2 * .pi) : 0
+                levels[b] = pulse > 0.8 ? 1.0 : (pulse > 0.3 ? 0.8 : 0.62)
+            }
+        }
+        let key = (levels.map { Int($0 * 100) }.reduce(0) { $0 * 1000 + $1 }) * 2 + (dark ? 1 : 0)
         if let i = cache[key] { return i }
         let suffix = dark ? "dark" : "light"
         let ctx = Art.context(36, 36)
         ctx.scaleBy(x: 2, y: 2)
         Art.draw("menubar-cable-\(suffix)", in: ctx, width: 18, height: 18)
         for b in 0..<3 {
-            var alpha: CGFloat = 1
-            if f >= 0 {
-                let phase = Double(f) / Double(frameCount) - Double(b) / 3.0
-                let p = phase - floor(phase)
-                let pulse = p < 0.5 ? sin(p * 2 * .pi) : 0
-                alpha = 0.6 + 0.4 * CGFloat(pulse)
-            }
+            let alpha = levels[b]
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
             ctx.setAlpha(alpha)
             Art.draw("menubar-bulb\(b + 1)-\(suffix)", in: ctx, width: 18, height: 18)

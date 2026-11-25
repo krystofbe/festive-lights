@@ -42,7 +42,7 @@ final class Engine {
         lastSweepPos = pos
         store.advanceMelt(time: now)
         let down = NSEvent.pressedMouseButtons & 1 != 0
-        if settleActive, now - lastPoll >= (down ? 1.0 / 60 : 0.12) {
+        if settleActive, now - lastPoll >= (down ? 1.0 / 60 : 0.5) {
             lastPoll = now
             let bar = Double(NSStatusBar.system.thickness) + 2
             store.update(windows: WindowTracker.poll(menuBarBottom: { _ in bar }), mouseDown: down, time: now)

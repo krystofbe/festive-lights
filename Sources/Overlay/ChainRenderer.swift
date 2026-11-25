@@ -58,6 +58,8 @@ final class ChainRenderer {
     private var bulbs: [Bulb] = []
     private var lifts: [Spring] = []
     private var cableDirty = true
+    private var lastMotion = true
+    private var lastPatternTime = 0.0
     private var builtKey = ""
     private var introStart: Double?
     private var wantVisible = false
@@ -160,6 +162,27 @@ final class ChainRenderer {
         var active = false
         let reduce = style.reduceMotion
 
+        // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
+        let patternOn = style.pattern != .steady && !reduce
+        let introRunning = introStart.map { time - $0 < 1.8 } ?? false
+        let pointerNear = pointer.map { window.frame.insetBy(dx: -80, dy: -80).contains($0) } ?? false
+        if !lastMotion && !cableDirty && !introRunning && !pointerNear {
+            guard patternOn else { return 0 }
+            if time - lastPatternTime < 0.045 { return 1 }
+            lastPatternTime = time
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            let n = bulbs.count
+            for (i, b) in bulbs.enumerated() {
+                let bright = PatternSchedule.brightness(index: i, count: n, time: time, pattern: style.pattern, tempo: style.tempo)
+                b.lit.opacity = Float(bright)
+                b.glow.opacity = Float(bright * 0.9)
+            }
+            CATransaction.commit()
+            return 1
+        }
+        lastPatternTime = time
+
         // Zeigerabstand und Federn
         var target = [Double](repeating: 0, count: lifts.count)
         var anyTarget = false
@@ -246,7 +269,8 @@ final class ChainRenderer {
         }
         CATransaction.commit()
         if style.pattern != .steady && !reduce { active = true }
-        if springsActive || swayActive || active && intro < 1.8 { return 2 }
+        lastMotion = springsActive || swayActive || intro < 1.8
+        if lastMotion { return 2 }
         return active ? 1 : 0
     }
 }

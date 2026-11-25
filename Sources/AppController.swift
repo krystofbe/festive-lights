@@ -148,7 +148,10 @@ final class AppController: NSObject {
         if UserDefaults.standard.bool(forKey: "debugIgnoreLock") { locked = false }
         #endif
         suspended = screensAsleep || locked
-        let anim = !reduceMotion && !suspended
+        var anim = !reduceMotion && !suspended
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugNoIcon") { anim = false }
+        #endif
         if anim != animating { animating = anim; status?.setAnimating(anim) }
     }
 
