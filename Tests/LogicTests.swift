@@ -999,3 +999,27 @@ final class DockProbeTests: XCTestCase {
         XCTAssertTrue(DockProbeLogic.isPlausible(good, tile: 64, screenLength: 1920, expectedThickness: nil), "ausgeblendet: keine Dicke zum Vergleichen")
     }
 }
+
+final class PowerPolicyTests: XCTestCase {
+    func testAlwaysSaveEnergySwitchesOnImmediately() {
+        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: true, lowPowerMode: false, onBattery: false, batteryFraction: nil))
+        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: false, batteryFraction: nil))
+    }
+
+    func testLowPowerModeAndLowBattery() {
+        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: true, onBattery: false, batteryFraction: nil))
+        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: true, batteryFraction: 0.19))
+        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: true, batteryFraction: 0.2))
+        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: false, batteryFraction: 0.05), "am Netzteil nie wegen des Akkustands")
+    }
+}
+
+final class RuntimeStateTests: XCTestCase {
+    func testEveryRelevantChangeIsDetected() {
+        let base = RuntimeState()
+        XCTAssertNotEqual(base, RuntimeState(suspended: true))
+        XCTAssertNotEqual(base, RuntimeState(reduceMotion: true))
+        XCTAssertNotEqual(base, RuntimeState(energySaving: true), "Energiesparen löst ein Neuzeichnen aus (Befund 1)")
+        XCTAssertEqual(base, RuntimeState())
+    }
+}

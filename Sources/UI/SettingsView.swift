@@ -20,6 +20,8 @@ final class PermissionModel: ObservableObject {
 final class LoginModel: ObservableObject {
     @Published var enabled = SMAppService.mainApp.status == .enabled
 
+    func refresh() { enabled = SMAppService.mainApp.status == .enabled }
+
     func set(_ on: Bool) {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }

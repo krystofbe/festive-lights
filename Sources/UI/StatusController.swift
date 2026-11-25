@@ -84,9 +84,10 @@ final class StatusController: NSObject, NSMenuDelegate {
 
     /// Zeigt ein Popover unter dem Symbol, ohne den Fokus zu nehmen. Schließt nach `seconds` oder bei Klick daneben.
     /// Eigenes Panel statt NSPopover: NSPopover saß auf macOS 26 etwa 230 pt zu tief.
-    func showPopover(_ content: some View, seconds: Double) {
+    @discardableResult
+    func showPopover(_ content: some View, seconds: Double) -> Bool {
         guard let button = item.button, let win = button.window, win.isVisible,
-              let screen = NSScreen.screens.first(where: { $0.frame.intersects(win.frame) }) else { return }
+              let screen = NSScreen.screens.first(where: { $0.frame.intersects(win.frame) }) else { return false }
         closePopover()
         let host = NSHostingView(rootView: content)
         let size = host.fittingSize
@@ -114,6 +115,7 @@ final class StatusController: NSObject, NSMenuDelegate {
         popover = panel
         closeTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in self?.closePopover() }
         outsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in self?.closePopover() }
+        return true
     }
 
     func closePopover() {
@@ -122,11 +124,13 @@ final class StatusController: NSObject, NSMenuDelegate {
         popover?.orderOut(nil); popover = nil
     }
 
-    func showWelcome() {
+    @discardableResult
+    func showWelcome() -> Bool {
         showPopover(WelcomeView { [weak self] in self?.closePopover(); self?.app.startStorm() }, seconds: 20)
     }
 
-    func showPermissionPrompt() {
+    @discardableResult
+    func showPermissionPrompt() -> Bool {
         showPopover(PermissionPromptView { [weak self] in
             self?.closePopover(); Permission.request(); Permission.openSystemSettings()
         }, seconds: 45)

@@ -99,29 +99,24 @@ final class AppController: NSObject {
         updateDockTracking()
 
         // Berechtigung und Energie regelmäßig prüfen (Entzug binnen 5 s)
-        let t = Timer(timeInterval: 1.5, repeats: true) { [weak self] _ in self?.poll() }
-        t.tolerance = 0.5
+        let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in self?.poll() }
+        t.tolerance = 0.2
         RunLoop.main.add(t, forMode: .common)
         timers.append(t)
 
         apply()
-        // Erster Start: nach 3 s Schnee, dazu das Willkommens-Popover
+        // Erster Start: nach 3 s Schnee, dazu das Willkommens-Popover (nur als gezeigt markiert, wenn es wirklich erschien)
         after(3) { [weak self] in
             guard let self else { return }
             self.snowStarted = true
             self.snowRampStart = CACurrentMediaTime()
             self.apply()
-            if !self.settings.welcomeShown {
-                self.settings.welcomeShown = true
-                self.status.showWelcome()
-                if !self.settings.permissionPromptShown && !Permission.granted {
-                    self.after(62) { [weak self] in
-                        guard let self, !self.settings.permissionPromptShown, !Permission.granted else { return }
-                        self.settings.permissionPromptShown = true
-                        self.status.showPermissionPrompt()
-                    }
-                }
-            }
+            if !self.settings.welcomeShown, self.status.showWelcome() { self.settings.welcomeShown = true }
+        }
+        // Einmalig und frühestens 60 s später: Hinweis auf die Berechtigung, unabhängig davon, ob das Willkommens-Popover noch kam
+        after(65) { [weak self] in
+            guard let self, !self.settings.permissionPromptShown, !Permission.granted else { return }
+            if self.status.showPermissionPrompt() { self.settings.permissionPromptShown = true }
         }
     }
 
@@ -138,13 +133,9 @@ final class AppController: NSObject {
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
-        let wasSuspended = suspended
-        let wasReduce = reduceMotion
+        let before = RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving)
         refreshSystem()
-        if suspended != wasSuspended { scheduleApply() }
-        let e = computeEnergySaving()
-        if e != energySaving { energySaving = e; scheduleApply() }
-        if reduceMotion != wasReduce { scheduleApply() }
+        if RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving) != before { scheduleApply() }
         status.updateIcon()
     }
 
@@ -190,16 +181,19 @@ final class AppController: NSObject {
     }
 
     private func computeEnergySaving() -> Bool {
-        if settings.alwaysSaveEnergy || ProcessInfo.processInfo.isLowPowerModeEnabled { return true }
-        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else { return false }
-        for ps in list {
-            guard let d = IOPSGetPowerSourceDescription(info, ps)?.takeUnretainedValue() as? [String: Any],
-                  (d[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue,
-                  let cur = d[kIOPSCurrentCapacityKey] as? Int, let max = d[kIOPSMaxCapacityKey] as? Int, max > 0 else { continue }
-            if Double(cur) / Double(max) < 0.2 { return true }
+        var onBattery = false
+        var fraction: Double?
+        if let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(), let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] {
+            for ps in list {
+                guard let d = IOPSGetPowerSourceDescription(info, ps)?.takeUnretainedValue() as? [String: Any],
+                      (d[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue,
+                      let cur = d[kIOPSCurrentCapacityKey] as? Int, let max = d[kIOPSMaxCapacityKey] as? Int, max > 0 else { continue }
+                onBattery = true
+                fraction = Double(cur) / Double(max)
+            }
         }
-        return false
+        return PowerPolicy.energySaving(alwaysSave: settings.alwaysSaveEnergy, lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
+                                        onBattery: onBattery, batteryFraction: fraction)
     }
 
     private func reconcileScreens() {
@@ -223,6 +217,7 @@ final class AppController: NSObject {
 
     func apply() {
         let s = settings
+        energySaving = computeEnergySaving()
         let now = CACurrentMediaTime()
         let stormOn = Engine.shared.storm != nil && !reduceMotion
         if reduceMotion, Engine.shared.storm != nil { Engine.shared.storm = nil }
@@ -381,7 +376,7 @@ final class AppController: NSObject {
             settingsWindow = w
         }
         permissionModel.refresh()
-        loginModel.enabled = loginModel.enabled
+        loginModel.refresh()
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
