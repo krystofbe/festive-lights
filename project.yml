@@ -30,6 +30,7 @@ targets:
         excludes: ["menubar-icon.pdf"]
       - path: Art/Tanne
         includes: ["*.pdf", "fir-*.png"]
+        excludes: ["bauble-*.pdf"]
       - path: Art/TanneBunt
         includes: ["*.pdf"]
     info:

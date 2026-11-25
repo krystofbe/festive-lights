@@ -81,8 +81,6 @@ enum Garland {
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
-    /// x-Koordinate des Ansatzpunkts in der Leinwand des Zweigs oder Büschels.
-    static func anchorX(_ layer: BranchLayer) -> Double { layer == .cluster ? 65 : 40 }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
     static func extent(layer: BranchLayer, sprite n: Int) -> (left: Double, right: Double) {
         if layer == .cluster { return (65, 65) }
@@ -90,20 +88,6 @@ enum Garland {
         let minX: [BranchLayer: [Double]] = [.back: [39.5, 39.5, 39.5, 39.5], .mid: [39.5, 39.5, 39.5, 39.5], .hang: [33.5, 35, 15], .front: [39.5, 39.5, 39.5]]
         let i = min(max(n, 1), maxX[layer]!.count) - 1
         return (max(0, 40 - minX[layer]![i]), max(0, maxX[layer]![i] - 40))
-    }
-
-    /// Aufhängepunkt für Kugeln: Stelle mit Nadeln nahe der Zweigspitze (85 % des Wegs zur entferntesten Nadel), aus den Bildern gemessen.
-    static func tip(layer: BranchLayer, sprite n: Int) -> (x: Double, y: Double) {
-        if layer == .cluster { return (65, 52) }
-        let t: [BranchLayer: [(Double, Double)]] = [
-            .back: [(89, 50), (92, 56.5), (92.5, 65.5), (94, 72.5)],
-            .mid: [(84, 54.5), (86.5, 61.5), (87, 67.5), (88, 74.5)],
-            .hang: [(73, 115.5), (71, 124.5), (60.5, 136.5)],
-            .front: [(74.5, 61), (70.5, 71), (77, 79)],
-        ]
-        let list = t[layer]!
-        let p = list[min(max(n, 1), list.count) - 1]
-        return (p.0, p.1)
     }
 
     static let spriteCounts: [BranchLayer: Int] = [.back: 4, .mid: 4, .hang: 3, .front: 3, .cluster: 1]

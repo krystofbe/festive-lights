@@ -137,11 +137,13 @@ final class AppController: NSObject {
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
-        let before = RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving)
+        let before = runtimeState
         refreshSystem()
-        if RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving) != before { scheduleApply() }
+        if runtimeState != before { scheduleApply() }
         status.updateIcon()
     }
+
+    private var runtimeState: RuntimeState { RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving, dark: dark) }
 
     private func updateDockTracking() {
         let wanted = settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended

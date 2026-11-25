@@ -1057,6 +1057,7 @@ final class RuntimeStateTests: XCTestCase {
         XCTAssertNotEqual(base, RuntimeState(suspended: true))
         XCTAssertNotEqual(base, RuntimeState(reduceMotion: true))
         XCTAssertNotEqual(base, RuntimeState(energySaving: true), "Energiesparen löst ein Neuzeichnen aus (Befund 1)")
+        XCTAssertNotEqual(base, RuntimeState(dark: false), "Erscheinungswechsel löst ein Neuzeichnen aus")
         XCTAssertEqual(base, RuntimeState())
     }
 }
