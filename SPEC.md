@@ -30,7 +30,7 @@ Ziel: ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start, und Nutzer l
 | Schneemenge, Flockengröße, Tempo, Ausweichen | Mittelstellung |
 | Wind | aus |
 | Ebene Schnee | über allen Fenstern |
-| Lichter am Dock | an, sobald die Berechtigung erteilt ist |
+| Lichter am Dock | an; ohne Berechtigung in der Form "durchgehend", nach erteilter Berechtigung "genau am Dock" |
 | Schnee bleibt auf Fenstern liegen | an, sobald die Berechtigung erteilt ist |
 | Beim Anmelden starten | aus |
 | Immer Energie sparen | aus |
@@ -89,6 +89,9 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 
 ### F5 Lichterkette am Dock
 
+- Zwei Formen, in den Einstellungen wählbar: **"durchgehend"** und **"genau am Dock"** (Standard, sobald die Berechtigung erteilt ist).
+- **Durchgehend** (braucht keine Berechtigung, ist ohne Berechtigung automatisch aktiv): Die Kette läuft über die volle Bildschirmbreite auf Höhe der Dock-Oberkante (bei seitlichem Dock über die volle Bildschirmhöhe an dessen Innenkante), in gleichmäßigen Bögen wie an der Menüleiste. Die Höhe ergibt sich aus dem freien Bildschirmbereich ohne Dock. Ist das Dock ausgeblendet, liegt die Kette am Bildschirmrand. Ausweichen wie an der Menüleiste. Der Dock-Vergrößerung folgt sie nicht. Die übrigen Regeln dieses Abschnitts gelten nur für "genau am Dock".
+- **Genau am Dock** (mit Berechtigung):
 - Dock unten: Das Kabel liegt in flachen Bögen auf der Oberkante des Docks über dessen volle Breite. Die Birnen hängen nach unten und überdecken höchstens das obere Viertel der Symbole.
 - Dock links oder rechts: Das Kabel läuft an der Innenkante entlang, die Birnen zeigen zur Bildschirmmitte.
 - Die Kette erscheint nur auf dem Bildschirm, der gerade das Dock zeigt. Ist die Dock-Vergrößerung beim Überfahren eingeschaltet, geht die Kette mit: Der Abschnitt über den vergrößerten Symbolen wölbt sich mit deren Oberkante nach oben (bei seitlichem Dock zur Bildschirmmitte), Birnen und Zweige gehen mit, und beim Verlassen senkt sich die Kette mit dem Dock wieder ab. Die Kette folgt dabei ohne sichtbare Verzögerung, höchstens ein Bild hinter dem Dock, und liegt in jeder Phase auf der Oberkante der Symbole, ohne in sie hineinzuragen oder darüber zu schweben.
@@ -121,7 +124,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 **Menüleisten-Symbol** (schwarzweiß wie die System-Symbole, Kabel mit zwei Birnen, dezent animiert, siehe `Art/README.md`) mit Menü:
 - Pause (schaltet alles vorübergehend aus und mit erneutem Klick wieder ein, gespeichert bis zum Fortsetzen)
 - Lichter an der Menüleiste (an/aus)
-- Lichter am Dock (an/aus; ohne Berechtigung mit Hinweis "Berechtigung nötig", Klick führt zu den Systemeinstellungen)
+- Lichter am Dock (an/aus; ohne Berechtigung durchgehende Form mit Hinweis "Genau am Dock: Berechtigung nötig", Klick führt zu den Systemeinstellungen)
 - Schnee (an/aus)
 - Schneesturm
 - Einstellungen…
@@ -130,7 +133,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hinter der Kamera-Aussparung verschwindet).
 
 **Einstellungsfenster**, kompakt, drei Bereiche:
-- **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus, Stil am Dock.
+- **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus, Form am Dock (durchgehend oder genau am Dock), Stil am Dock.
 - **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
 - **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Der Status aktualisiert sich live, während das Fenster offen ist.
 
