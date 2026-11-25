@@ -54,6 +54,7 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.storm"), object: nil)
         dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
         dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.hit"), object: nil)
+        dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.welcome"), object: nil)
         dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
         #endif
@@ -109,7 +110,7 @@ final class AppController: NSObject {
 
     private func poll() {
         #if DEBUG
-        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
+        let line = "flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
         let p = Permission.granted
@@ -254,6 +255,7 @@ final class AppController: NSObject {
 
     @objc private func debugStorm() { toggleStorm() }
     @objc private func debugPrompt() { status.showPermissionPrompt() }
+    @objc private func debugWelcome() { status.showWelcome() }
 
     /// Entwicklerhilfe: welche App liegt an einem Punkt (Durchklick-Prüfung)? Objekt "x,y;x,y;..." in globalen Koordinaten oben links.
     @objc private func debugHit(_ n: Notification) {

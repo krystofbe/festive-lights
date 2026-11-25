@@ -41,7 +41,7 @@ final class StatusController: NSObject, NSMenuDelegate {
     }
 
     var debugAppearance: String {
-        "btn=\(item.button?.effectiveAppearance.name.rawValue ?? "-") win=\(item.button?.window?.effectiveAppearance.name.rawValue ?? "-") app=\(NSApp.effectiveAppearance.name.rawValue)"
+        "frame=\(item.button?.window?.frame ?? .zero) screens=\(NSScreen.screens.map(\.frame)) btn=\(item.button?.effectiveAppearance.name.rawValue ?? "-") win=\(item.button?.window?.effectiveAppearance.name.rawValue ?? "-") app=\(NSApp.effectiveAppearance.name.rawValue)"
     }
 
     func updateIcon() {

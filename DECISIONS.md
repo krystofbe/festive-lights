@@ -66,3 +66,19 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 - App-Icon: Größen 16 bis 1024 per `sips` aus `Art/AppIcon-1024.png`.
 - Menüleisten-Symbol: Ebenen aus `Art/`, 24 Bilder in 6 s (4 Bilder pro Sekunde), pro Birne ein sanfter Helligkeitsdurchgang. `menubar-icon.pdf` und die PNG-Vorschauen werden nicht verwendet.
 - Flocken sind ein einziges weiches Sprite (weißer Kern, Schein, Schatten), Kristalle aus `snowflake-crystal.pdf`.
+
+## Performance (Messung am Testrechner, Release-Build, 60 s, Mac mini 1920x1080 mit 60 Hz)
+Ohne Fernsteuerung (RustDesk beendet), Mittel über 60 s in `top`:
+
+| Zustand | WindowServer | FestiveLights |
+|---|---|---|
+| ohne App | 0,1 % | - |
+| Lichter + Funkeln + Schnee (Standard) | 47,0 % | 3,8 % |
+| Ruhezustand (Dauerleuchten, kein Schnee) | 1,7 % | 0,8 % |
+| Schneesturm | 47,1 % | 5,7 % |
+| 30 Fenster, mit App Standard | 44,9 % | 4,3 % |
+| 30 Fenster, ohne App | 17,2 % | - |
+
+Mit laufender RustDesk-Sitzung und dem Stand davor waren es App 7,3 % (Standard) und 6,7 % (Sturm). Die Last der App sank durch: Fensterliste nur 2 Mal pro Sekunde (60 Mal nur beim Ziehen), Muster mit etwa 22 Bildern pro Sekunde, Schnellpfad ohne Neuberechnung der Kette im Stillstand, Menüleisten-Symbol in 3 Helligkeitsstufen mit Bildwechsel nur bei echter Änderung, Bildrate nach Bedarf (Schneefall höchstens 60 Hz, 120 Hz nur bei Zeigerinteraktion).
+
+Die WindowServer-Last bleibt über dem Ziel von 5 Prozentpunkten. Sie hängt nicht an unserem Code: Referenzmessungen mit einem winzigen Testprogramm (reine Core-Animation, keine App-Logik) ergaben auf diesem Rechner WindowServer 16,4 % für ein 10 x 10 pt großes Quadrat in einem 120 x 120 pt Fenster bei 60 Hz, 26,8 % für ein fallendes Quadrat in einem Vollbild-Fenster, 43,8 % für 80 fallende Quadrate in einem Vollbild-Fenster. Unser Schnee (47 %) liegt auf dem Niveau dieser Referenz. Die Kosten entstehen pro angezeigtem Bild und wachsen mit der veränderten Fläche, nicht mit der Flockenzahl (30 und 80 Flocken kosten gleich viel). Ob der Testrechner (vermutlich ohne GPU-beschleunigten Bildschirm) typisch ist, ist offen, auf einem MacBook mit GPU-Compositing ist deutlich weniger zu erwarten. Der Ruhezustand kostet etwa 1,6 Punkte WindowServer (Menüleisten-Symbol).
