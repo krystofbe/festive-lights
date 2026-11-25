@@ -7,6 +7,8 @@ final class AppController: NSObject {
     private var overlays: [CGDirectDisplayID: ScreenOverlay] = [:]
     private var status: StatusController!
     private let dockTracker = DockTracker()
+    private let dockProbe = DockProbe()
+    private var exactResult = DockProbe.Result.unavailable
     private var bag = Set<AnyCancellable>()
     private var snowStarted = false
     private var snowRampStart: Double?
@@ -66,6 +68,7 @@ final class AppController: NSObject {
             Engine.shared.pointerEvent(p, time: ProcessInfo.processInfo.systemUptime)
             self?.overlays.values.forEach { $0.pointerMoved(p) }
             self?.dockTracker.pointerMoved()
+            self?.dockProbe.pointerMoved()
         } as Any)
 
         monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { _ in Engine.shared.requestBurst() } as Any)
@@ -73,13 +76,25 @@ final class AppController: NSObject {
             ws.addObserver(forName: n, object: nil, queue: .main) { _ in Engine.shared.requestBurst() }
         }
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
+        dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
+        dockProbe.onResult = { [weak self] r in
+            #if DEBUG
+            let l = "\(Date().timeIntervalSince1970) probe \(r)\n"
+            if let h = FileHandle(forWritingAtPath: NSHomeDirectory() + "/festivelights-test/dock.log") { h.seekToEndOfFile(); h.write(l.data(using: .utf8)!); h.closeFile() }
+            else { try? l.write(toFile: NSHomeDirectory() + "/festivelights-test/dock.log", atomically: true, encoding: .utf8) }
+            #endif
+            self?.exactResult = r; self?.scheduleApply()
+        }
         dockTracker.onChange = { [weak self] g in
             #if DEBUG
             let l = "\(Date().timeIntervalSince1970) \(String(describing: g?.rect)) edge=\(String(describing: g?.edge))\n"
             if let h = FileHandle(forWritingAtPath: NSHomeDirectory() + "/festivelights-test/dock.log") { h.seekToEndOfFile(); h.write(l.data(using: .utf8)!); h.closeFile() }
             else { try? l.write(toFile: NSHomeDirectory() + "/festivelights-test/dock.log", atomically: true, encoding: .utf8) }
             #endif
-            self?.dockGeometry = g; self?.scheduleApply()
+            let hidden = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+            self?.dockGeometry = g
+            if let g { self?.exactResult = .visible(g) } else { self?.exactResult = hidden ? .hidden : .unavailable }
+            self?.scheduleApply()
         }
         updateDockTracking()
 
@@ -117,7 +132,7 @@ final class AppController: NSObject {
 
     private func poll() {
         #if DEBUG
-        let line = "mag[\(dockTracker.debugItems)] flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
+        let line = "probe[\(dockProbe.statsLine)] mag[\(dockTracker.debugItems)] flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
         let p = Permission.granted
@@ -134,7 +149,12 @@ final class AppController: NSObject {
     }
 
     private func updateDockTracking() {
-        if permission && settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended { dockTracker.start() } else { dockTracker.stop() }
+        let wanted = settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended
+        switch (wanted, DockSource.choose(permission: permission)) {
+        case (true, .accessibility): dockProbe.stop(); dockTracker.start()
+        case (true, .probe): dockTracker.stop(); dockProbe.start()
+        case (false, _): dockTracker.stop(); dockProbe.stop()
+        }
     }
 
     @objc private func dockPrefsChanged() { DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.scheduleApply() } }
@@ -213,9 +233,18 @@ final class AppController: NSObject {
         updateDockTracking()
         var st = AppState()
         st.lightsOn = lightsOn
-        // Dock-Kette: "genau am Dock" nur mit Berechtigung und bekannter Geometrie, sonst durchgehend (wechselt bei Entzug von selbst)
-        let shape = DockShape.effective(choice: s.dockShape, permission: permission, exactAvailable: dockGeometry != nil)
-        let dockGeo: DockGeometry? = s.dockLights ? (shape == .exact ? dockGeometry : continuousDockGeometry()) : nil
+        // Dock-Kette: genau am Dock (mit Berechtigung über die Bedienungshilfen, sonst per Treffer-Test), bei Auto-Hide mit dem Dock
+        // verschwindend, bei unplausiblem Ergebnis sanft zurück auf durchgehend
+        var dockGeo: DockGeometry?
+        if s.dockLights {
+            let state: ExactState
+            switch exactResult { case .visible: state = .visible; case .hidden: state = .hidden; case .unavailable: state = .unavailable }
+            switch DockForm.resolve(choice: s.dockShape, exact: state) {
+            case .exact: if case .visible(let g) = exactResult { dockGeo = g }
+            case .hidden: dockGeo = nil
+            case .continuous: dockGeo = continuousDockGeometry()
+            }
+        }
         st.dockLightsOn = live && dockGeo != nil
         st.snowOn = snowOn
         st.settle = settle

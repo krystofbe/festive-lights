@@ -21,7 +21,7 @@
 "Above all windows" = "Über allen Fenstern";
 "Desktop only" = "Nur auf dem Schreibtisch";
 "Lights on the Dock" = "Lichter am Dock";
-"Permission needed, see General." = "Berechtigung nötig, siehe Allgemein.";
+"Exactly at the Dock needs permission, see General." = "Genau am Dock braucht die Berechtigung, siehe Allgemein.";
 "Amount" = "Menge";
 "Light" = "Wenig";
 "Heavy" = "Viel";
@@ -48,7 +48,7 @@
 "menu.pause" = "Pause";
 "menu.lights" = "Lichter an der Menüleiste";
 "menu.dock" = "Lichter am Dock";
-"menu.dock.needs" = "Lichter am Dock (Berechtigung nötig)";
+"menu.dock.needs" = "Genau am Dock: Berechtigung nötig";
 "menu.snow" = "Schnee";
 "menu.storm" = "Schneesturm";
 "menu.settings" = "Einstellungen…";
@@ -60,3 +60,6 @@
 "Fir, warm gold" = "Tanne warmgold";
 "Dock style" = "Dock-Stil";
 "Like menu bar" = "Wie Menüleiste";
+"Dock shape" = "Form am Dock";
+"Continuous" = "Durchgehend";
+"Exactly at the Dock" = "Genau am Dock";

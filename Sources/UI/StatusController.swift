@@ -66,11 +66,8 @@ final class StatusController: NSObject, NSMenuDelegate {
         add("menu.pause", #selector(pause), on: s.paused)
         menu.addItem(.separator())
         add("menu.lights", #selector(toggleLights), on: s.lightsEnabled)
-        if Permission.granted {
-            add("menu.dock", #selector(toggleDock), on: s.dockLights)
-        } else {
-            add("menu.dock.needs", #selector(openPermission))
-        }
+        add("menu.dock", #selector(toggleDock), on: s.dockLights)
+        if !Permission.granted { add("menu.dock.needs", #selector(openPermission)) }
         add("menu.snow", #selector(toggleSnow), on: s.snowEnabled)
         add("menu.storm", #selector(storm), on: app.stormRunning, enabled: !app.reduceMotionActive)
         menu.addItem(.separator())

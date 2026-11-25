@@ -170,6 +170,8 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 - "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen, kein Aufstöbern und kein Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
 - Die Overlays stehlen nie den Fokus. Keine Abstürze ohne Berechtigung oder beim Wechsel von Bildschirmen.
 
+- Daueraufgabe: Performance ist bei jeder Änderung mitzudenken, nicht erst am Ende. Jede Änderung, die Zeichnen, Abfragen, Timer oder Physik betrifft, wird vor dem Commit auf dem Testrechner gegen den vorherigen Stand gemessen (Ruhezustand und Standard, App und WindowServer). Die Werte kommen mit Datum und Commit in eine fortlaufende Tabelle (`PERF.md`). Verschlechtert sich ein Wert um mehr als 0,3 Prozentpunkte, wird das vor dem Weiterarbeiten behoben oder begründet.
+
 ## 11. Abnahme
 
 1. Erster Start: Lichter sichtbar in unter 2 s ohne Interaktion. Schnee und Popover nach 3 s.

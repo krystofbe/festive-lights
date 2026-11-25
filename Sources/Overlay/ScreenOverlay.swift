@@ -52,8 +52,8 @@ final class ScreenOverlay {
     private var lastTick: Double?
     private var rateMode = -1
     private var barDynamic = false
-    private var dockSpans: [DockProfile.Span] = []
-    private var dockEdge = DockEdge.bottom
+    private var dockContinuous: Bool?
+    private var dockSwitchUntil = 0.0
 
     init(screen: NSScreen) {
         self.screen = screen
@@ -141,6 +141,17 @@ final class ScreenOverlay {
             menubar.setVisible(false, layer: st.lightsLayer, intro: nil)
         }
         if st.dockLightsOn, let d = st.dock, d.screenID == screen.displayID {
+            // Formwechsel (zum Beispiel Berechtigung entzogen): sanft aus- und in der neuen Form wieder einblenden
+            let now = CACurrentMediaTime()
+            if now < dockSwitchUntil { return }
+            if dock.isShown, let prev = dockContinuous, prev != d.continuous {
+                dockSwitchUntil = now + 0.35
+                dockContinuous = nil
+                dock.setVisible(false, layer: st.lightsLayer, intro: nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { [weak self] in self?.configureChains() }
+                return
+            }
+            dockContinuous = d.continuous
             let menuH = MenuBar.info(for: screen)?.height ?? Double(NSStatusBar.system.thickness)
             let h0 = ChainLayout.bulbHeight(menuBarHeight: menuH, level: st.bulbLevel)
             // durchgehend: Dicke des Docks (ausgeblendet: Standardmaß), genau am Dock: Höhe der Symbolleiste
@@ -166,6 +177,7 @@ final class ScreenOverlay {
             dock.configure(spec: spec, style: style(st.dockKind), scale: scale, levelsKey: 0)
             dock.setVisible(true, layer: st.lightsLayer, intro: nil)
         } else {
+            dockContinuous = nil
             dock.setVisible(false, layer: st.lightsLayer, intro: nil)
         }
     }

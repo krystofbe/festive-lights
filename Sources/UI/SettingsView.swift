@@ -59,7 +59,7 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
-        .frame(width: 470, height: 400)
+        .frame(width: 470, height: 430)
         .onAppear { perm.start() }
         .onDisappear { perm.stop() }
     }
@@ -90,16 +90,20 @@ struct SettingsView: View {
                 Text("Desktop only").tag(DisplayLayer.desktop)
             }
             Toggle("Lights on the Dock", isOn: $s.dockLights)
-                .disabled(!perm.granted)
+            Picker("Dock shape", selection: $s.dockShape) {
+                Text("Continuous").tag(DockShape.continuous)
+                Text("Exactly at the Dock").tag(DockShape.exact)
+            }
+            .disabled(!s.dockLights || !perm.granted)
             Picker("Dock style", selection: $s.dockStyle) {
                 Text("Like menu bar").tag(DockStyle.sameAsBar)
                 Text("Classic").tag(DockStyle.classic)
                 Text("Fir, colorful").tag(DockStyle.firColor)
                 Text("Fir, warm gold").tag(DockStyle.firGold)
             }
-            .disabled(!perm.granted || !s.dockLights)
+            .disabled(!s.dockLights)
             if !perm.granted {
-                Text("Permission needed, see General.").font(.caption).foregroundStyle(.secondary)
+                Text("Exactly at the Dock needs permission, see General.").font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

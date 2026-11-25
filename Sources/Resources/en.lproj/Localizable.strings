@@ -21,7 +21,7 @@
 "Above all windows" = "Above all windows";
 "Desktop only" = "Desktop only";
 "Lights on the Dock" = "Lights on the Dock";
-"Permission needed, see General." = "Permission needed, see General.";
+"Exactly at the Dock needs permission, see General." = "Exactly at the Dock needs permission, see General.";
 "Amount" = "Amount";
 "Light" = "Light";
 "Heavy" = "Heavy";
@@ -48,7 +48,7 @@
 "menu.pause" = "Pause";
 "menu.lights" = "Lights on the Menu Bar";
 "menu.dock" = "Lights on the Dock";
-"menu.dock.needs" = "Lights on the Dock (permission needed)";
+"menu.dock.needs" = "Exactly at the Dock: permission needed";
 "menu.snow" = "Snow";
 "menu.storm" = "Snowstorm";
 "menu.settings" = "Settings…";
@@ -60,3 +60,6 @@
 "Fir, warm gold" = "Fir, warm gold";
 "Dock style" = "Dock style";
 "Like menu bar" = "Like menu bar";
+"Dock shape" = "Dock shape";
+"Continuous" = "Continuous";
+"Exactly at the Dock" = "Exactly at the Dock";

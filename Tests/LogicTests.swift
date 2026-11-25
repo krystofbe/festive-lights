@@ -882,22 +882,26 @@ final class DockStyleTests: XCTestCase {
 }
 
 final class DockShapeTests: XCTestCase {
-    func testExactOnlyWithChoicePermissionAndGeometry() {
-        XCTAssertEqual(DockShape.effective(choice: .exact, permission: true, exactAvailable: true), .exact)
-        XCTAssertEqual(DockShape.effective(choice: .continuous, permission: true, exactAvailable: true), .continuous)
-        XCTAssertEqual(DockShape.effective(choice: .exact, permission: false, exactAvailable: true), .continuous, "ohne Berechtigung durchgehend")
-        XCTAssertEqual(DockShape.effective(choice: .exact, permission: true, exactAvailable: false), .continuous, "ohne bekannte Dock-Geometrie durchgehend")
+    func testExactChoiceFollowsTheDockState() {
+        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .visible), .exact)
+        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .hidden), .hidden, "ausgeblendetes Dock: Kette verschwindet mit dem Dock")
+        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .unavailable), .continuous, "unplausibles Ergebnis: sanfter Rückfall auf durchgehend")
+        for s in [ExactState.visible, .hidden, .unavailable] { XCTAssertEqual(DockForm.resolve(choice: .continuous, exact: s), .continuous) }
     }
 
-    func testPermissionRevokedAtRuntimeSwitchesToContinuousAndBack() {
+    func testSourceFollowsPermissionAndSwitchesAtRuntime() {
+        XCTAssertEqual(DockSource.choose(permission: true), .accessibility)
+        XCTAssertEqual(DockSource.choose(permission: false), .probe)
         var permission = true
-        var shapes: [DockShape] = []
+        var sources: [DockSource] = []
         for step in 0..<6 {
             if step == 2 { permission = false }
             if step == 4 { permission = true }
-            shapes.append(DockShape.effective(choice: .exact, permission: permission, exactAvailable: true))
+            sources.append(DockSource.choose(permission: permission))
         }
-        XCTAssertEqual(shapes, [.exact, .exact, .continuous, .continuous, .exact, .exact])
+        XCTAssertEqual(sources, [.accessibility, .accessibility, .probe, .probe, .accessibility, .accessibility])
+        // Die Form bleibt "genau am Dock", solange eine der beiden Quellen ein Ergebnis hat: Entzug allein führt nicht zu "durchgehend"
+        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .visible), .exact)
     }
 
     let screens = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 99, width: 1920, height: 957)),
@@ -930,4 +934,68 @@ final class DockShapeTests: XCTestCase {
     }
 
     func testNoScreensNoPlacement() { XCTAssertNil(ContinuousDock.placement(screens: [], orientation: nil)) }
+}
+
+final class DockProbeTests: XCTestCase {
+    /// Künstliches Dock: Leiste von 300 bis 1600, Dicke 99, optional vergrößerte Symbole um 800 (Glockenform, bis 40 pt höher).
+    func dock(magnify: Bool, hidden: Bool = false, counter: UnsafeMutablePointer<Int>? = nil) -> (Double, Double) -> Bool {
+        return { u, d in
+            counter?.pointee += 1
+            if hidden { return false }
+            guard u >= 300, u <= 1600 else { return false }
+            var top = 99.0
+            if magnify { top += 40 * max(0, 1 - abs(u - 800) / 220) }
+            return d <= top
+        }
+    }
+
+    func testBoundaryFindsEdgeWithin1pt() {
+        XCTAssertEqual(DockProbeLogic.boundary(inside: 0, outside: 400) { $0 <= 137 }, 137)
+        XCTAssertEqual(DockProbeLogic.boundary(inside: 5, outside: 6) { $0 <= 5 }, 5)
+    }
+
+    func testFindBarMatchesTheSyntheticDock() {
+        for mag in [false, true] {
+            let bar = DockProbeLogic.findBar(length: 1920, hit: dock(magnify: mag))!
+            XCTAssertEqual(bar.a, 300, accuracy: 1.5); XCTAssertEqual(bar.b, 1601, accuracy: 1.5)
+            XCTAssertEqual(bar.thick, 100, accuracy: 1.5, "Ruhedicke, auch wenn Symbole vergrößert sind")
+        }
+    }
+
+    func testHiddenDockIsNotFound() { XCTAssertNil(DockProbeLogic.findBar(length: 1920, hit: dock(magnify: false, hidden: true))) }
+
+    func testFindBarIsCheap() {
+        var calls = 0
+        _ = DockProbeLogic.findBar(length: 1920, hit: dock(magnify: false, counter: &calls))
+        XCTAssertLessThan(calls, 150)
+    }
+
+    func testProfileFollowsMagnification() {
+        let bar = DockProbeLogic.Bar(a: 300, b: 1601, thick: 100)
+        var calls = 0
+        let spans = DockProbeLogic.profile(bar: bar, pointerU: 800, reach: 280, maxExtra: 150, hit: dock(magnify: true, counter: &calls))
+        let peak = spans.max { $0.lift < $1.lift }!
+        XCTAssertEqual(peak.lift, 40 - DockProbeLogic.hitMargin, accuracy: 3)
+        XCTAssertEqual((peak.a + peak.b) / 2, 800, accuracy: 20)
+        XCTAssertEqual(spans.first!.lift, 0, accuracy: 0.01)
+        XCTAssertLessThan(calls, 200, "Aufrufe je Messung (laufen im Hintergrund, nicht auf dem Haupt-Thread)")
+    }
+
+    func testProfileFlatWhenNotMagnified() {
+        let bar = DockProbeLogic.Bar(a: 300, b: 1601, thick: 100)
+        var calls = 0
+        let spans = DockProbeLogic.profile(bar: bar, pointerU: 800, reach: 280, maxExtra: 150, hit: dock(magnify: false, counter: &calls))
+        XCTAssertTrue(spans.allSatisfy { $0.lift == 0 })
+        XCTAssertLessThanOrEqual(calls, spans.count, "ohne Vergrößerung genügt ein Aufruf je Stützstelle")
+    }
+
+    func testPlausibilityFallsBackOnOddResults() {
+        let good = DockProbeLogic.Bar(a: 300, b: 1601, thick: 100)
+        XCTAssertTrue(DockProbeLogic.isPlausible(good, tile: 64, screenLength: 1920, expectedThickness: 99))
+        XCTAssertFalse(DockProbeLogic.isPlausible(DockProbeLogic.Bar(a: 0, b: 60, thick: 100), tile: 64, screenLength: 1920, expectedThickness: 99), "zu kurz")
+        XCTAssertFalse(DockProbeLogic.isPlausible(DockProbeLogic.Bar(a: 0, b: 3000, thick: 100), tile: 64, screenLength: 1920, expectedThickness: 99), "länger als der Bildschirm")
+        XCTAssertFalse(DockProbeLogic.isPlausible(DockProbeLogic.Bar(a: 300, b: 1600, thick: 400), tile: 64, screenLength: 1920, expectedThickness: nil), "zu dick")
+        XCTAssertFalse(DockProbeLogic.isPlausible(good, tile: 64, screenLength: 1920, expectedThickness: 60), "Dicke passt nicht zu visibleFrame")
+        XCTAssertTrue(DockProbeLogic.isPlausible(good, tile: 64, screenLength: 1920, expectedThickness: nil), "ausgeblendet: keine Dicke zum Vergleichen")
+    }
 }
