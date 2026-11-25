@@ -40,9 +40,12 @@ final class Settings: ObservableObject {
     private init() {
         // Startargumente (zum Beispiel -chainStyle) gelten höchstens einmal beim Start, danach ist die Argument-Domain leer
         let args = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
-        UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
         #if DEBUG
         adopt(args)
+        // Entwicklerschalter (-debugCapture und andere, keine Einstellungen) bleiben für die Debug-Auslöser lesbar
+        UserDefaults.standard.setVolatileDomain(args.filter { !Settings.keys.contains($0.key) }, forName: UserDefaults.argumentDomain)
+        #else
+        UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
         #endif
         load()
         observer = DefaultsObserver(keys: Settings.keys) { [weak self] in

@@ -43,6 +43,7 @@ struct ChainStyle: Equatable {
 final class ChainRenderer {
     let window = OverlayWindow(frame: NSRect(x: 0, y: 0, width: 10, height: 10))
     private let cable = CAShapeLayer()
+    private let strand = CAShapeLayer()
     private let content = CALayer()
 
     private final class Bulb {
@@ -101,10 +102,17 @@ final class ChainRenderer {
         cable.lineWidth = 1.3
         cable.lineCap = .round
         content.addSublayer(cable)
+        strand.fillColor = nil
+        strand.lineCap = .round
+        strand.zPosition = 0
         window.rootLayer.opacity = 0
     }
 
     var isShown: Bool { wantVisible }
+    private var bunt: Bool { style.kind == .firColor }
+    /// Größenfaktor der Tannen-Grafiken (Tanne bunt bezieht sich auf die Menüleiste des Zielbilds, sonst 24 pt Birnenhöhe).
+    private func unitScale(_ sp: ChainSpec) -> Double { sp.bulbH / (bunt ? Garland.tbRefBulbH : 24) }
+    private var glowAlpha: Double { bunt ? 0.6 : 0.9 }
 
     func setVisible(_ on: Bool, layer: DisplayLayer, intro now: Double?) {
         window.setLayer(layer)
@@ -133,8 +141,11 @@ final class ChainRenderer {
         CATransaction.setDisableActions(true)
         window.place(new.windowFrame)
         content.frame = CGRect(origin: .zero, size: window.frame.size)
-        cable.strokeColor = newStyle.kind.isFir ? CGColor(srgbRed: 0.1, green: 0.24, blue: 0.14, alpha: 0.95)
+        cable.strokeColor = newStyle.kind == .firColor ? FirSprites.buntCableColor : newStyle.kind.isFir ? CGColor(srgbRed: 0.1, green: 0.24, blue: 0.14, alpha: 0.95)
             : (newStyle.dark ? CGColor(gray: 0.8, alpha: 0.95) : CGColor(gray: 0.17, alpha: 0.95))
+        cable.lineWidth = newStyle.kind == .firColor ? max(0.9, 2.2 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH) : 1.3
+        strand.strokeColor = FirSprites.strandColor
+        strand.lineWidth = 8 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH
         cable.zPosition = 2
         let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)"
         if key != builtKey {
@@ -148,18 +159,19 @@ final class ChainRenderer {
     }
 
     private func rebuildBulbs(_ sp: ChainSpec) {
-        layout = ChainLayout(length: sp.length, spacing: sp.spacing)
+        layout = ChainLayout(length: sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6)
         bulbs.forEach { $0.container.removeFromSuperlayer() }
         bulbs = (0..<layout.bulbCount).map { _ in Bulb() }
         let fir = style.kind.isFir
-        let fs = sp.bulbH / 24
-        let h = fir ? FirSprites.bulbSize.height * fs : sp.bulbH
-        let w = fir ? FirSprites.bulbSize.width * fs : h * 0.6
+        let fs = unitScale(sp)
+        let bs = FirSprites.bulbSizePt(style.kind, fs: fs)
+        let h = fir ? bs.height : sp.bulbH
+        let w = fir ? bs.width : h * 0.6
         let px = max(8, Int((h * scale).rounded()))
         // Schein: klassisch Radius eine Birnenhöhe, Tanne eineinhalb Birnenlängen um die Mitte des Glaskörpers
-        let glowR = fir ? 1.5 * h : h
+        let glowR = bunt ? 1.6 * h : (fir ? 1.5 * h : h)
         let glowPx = max(16, Int((glowR * 2 * scale).rounded()))
-        let glowCenter = fir ? 1 - 14.0 / 21.0 : 0.45
+        let glowCenter = bunt ? 1 - 14.0 / 22.0 : (fir ? 1 - 14.0 / 21.0 : 0.45)
         beads = BeadChain(rest: layout.bulbPositions, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
         for (i, b) in bulbs.enumerated() {
             b.container.bounds = CGRect(x: 0, y: 0, width: w, height: h)
@@ -184,12 +196,19 @@ final class ChainRenderer {
 
     private func rebuildGarland(_ sp: ChainSpec) {
         (branches + cones + bows).forEach { $0.container.removeFromSuperlayer() }
+        strand.removeFromSuperlayer()
         branches = []; cones = []; bows = []
         coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
         branchChains = [:]
         guard style.kind.isFir else { return }
-        let fs = sp.bulbH / 24
+        let fs = unitScale(sp)
         let dock = sp.isDock
+        let bunt = self.bunt
+        if bunt { content.addSublayer(strand) }
+        func branchScale(_ br: GarlandBranch) -> Double {
+            if bunt { return dock ? Garland.tbDockScale : Garland.tbUnit * fs * br.scale }
+            return dock ? Garland.dockBranchScale : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+        }
         let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? Garland.dockAnchorScale : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
@@ -211,9 +230,14 @@ final class ChainRenderer {
         let sortedIdx = plan.branches.indices.sorted { order(plan.branches[$0].layer) != order(plan.branches[$1].layer) ? order(plan.branches[$0].layer) < order(plan.branches[$1].layer) : $0 < $1 }
         for br in sortedIdx.map({ plan.branches[$0] }) {
             if !frontStart && br.layer == .front { frontStart = true; content.addSublayer(cable) }
-            let hang = br.layer == .hang
-            let k = dock ? Garland.dockBranchScale : (hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+            let k = branchScale(br)
             let z: CGFloat = br.layer == .back ? 0 : (br.layer == .front ? 3 : 1)
+            if bunt {
+                let px = max(8, Int((FirSprites.clusterSize.height * Garland.tbUnit * 1.25 * fs * scale).rounded()))
+                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * 1.25 * scale)) : px),
+                                      size: FirSprites.clusterSize, anchor: FirSprites.clusterAnchor, z: z, u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
+                continue
+            }
             branches.append(piece(FirSprites.branch(br.layer, br.sprite), size: FirSprites.branchCanvas, anchor: FirSprites.branchAnchor, z: z,
                                   u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
         }
@@ -221,7 +245,7 @@ final class ChainRenderer {
         // Zweig-Ansatzpunkte rutschen wie die Birnen am Kabel, die Nadelspitzen dürfen nicht in die Lücke ragen
         var perLayer: [String: [(piece: Piece, e: (left: Double, right: Double))]] = [:]
         for (piece, br) in zip(branches, sortedIdx.map({ plan.branches[$0] })) {
-            let k = dock ? Garland.dockBranchScale : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+            let k = branchScale(br)
             let e = Garland.extent(layer: br.layer, sprite: br.sprite)
             let m = br.mirrored ? (left: e.right, right: e.left) : e
             piece.chainKey = br.layer.rawValue
@@ -235,29 +259,42 @@ final class ChainRenderer {
         // Kugeln hängen als Kind ihres Zweigs an der Stelle mit Nadeln nahe der Spitze und folgen ihm beim Rutschen und Biegen
         var pieceOfPlan: [Int: Piece] = [:]
         for (slot, planIdx) in sortedIdx.enumerated() { pieceOfPlan[planIdx] = branches[slot] }
-        let bpxk = max(8, Int((FirSprites.baubleSize.height * fs * Garland.baubleScale * scale).rounded()))
+        let ku = Garland.tbUnit * fs
         for bb in plan.baubles {
             guard let piece = pieceOfPlan[bb.branch] else { continue }
-            let kb = fs * Garland.baubleScale
+            let sz = Garland.tbBaubleSizes[bb.pattern]
+            let ballH = sz.h * ku, ballW = sz.w * ku
+            let total = (bb.thread - sz.hangY + sz.h) * ku
+            // Der Behälter beginnt am Fadenanfang im Büschel und pendelt um diesen Punkt
             let l = CALayer()
-            l.contents = FirSprites.pdfImage(bb.gold ? "bauble-gold" : "bauble-red", size: FirSprites.baubleSize, pixelHeight: bpxk)
-            l.contentsScale = scale
-            l.bounds = CGRect(x: 0, y: 0, width: FirSprites.baubleSize.width * kb, height: FirSprites.baubleSize.height * kb)
-            l.anchorPoint = CGPoint(x: FirSprites.baubleAnchor.x / FirSprites.baubleSize.width, y: 1 - FirSprites.baubleAnchor.y / FirSprites.baubleSize.height)
-            let kBranch = piece.container.bounds.width / FirSprites.branchCanvas.width
-            l.position = CGPoint(x: bb.x * kBranch, y: (FirSprites.branchCanvas.height - bb.y) * kBranch)
+            l.bounds = CGRect(x: 0, y: 0, width: ballW, height: total)
+            l.anchorPoint = CGPoint(x: sz.hangX / sz.w, y: 1)
+            let kBranch = piece.container.bounds.width / FirSprites.clusterSize.width
+            l.position = CGPoint(x: bb.x * kBranch, y: (FirSprites.clusterSize.height - bb.y) * kBranch)
+            let thread = CALayer()
+            let tw = max(0.6, 2 * ku)
+            thread.backgroundColor = FirSprites.threadColor
+            thread.frame = CGRect(x: sz.hangX * ku - tw / 2, y: total - bb.thread * ku, width: tw, height: bb.thread * ku)
+            let ball = CALayer()
+            ball.contents = FirSprites.pdfImage("tb-bauble-\(bb.pattern + 1)", size: CGSize(width: sz.w, height: sz.h), pixelHeight: max(8, Int((ballH * scale).rounded())))
+            ball.contentsScale = scale
+            ball.frame = CGRect(x: 0, y: 0, width: ballW, height: ballH)
+            l.addSublayer(thread); l.addSublayer(ball)
             piece.container.addSublayer(l)
             piece.bauble = l
         }
-        let px = max(8, Int((FirSprites.coneSize.height * fs * Garland.coneScale * scale).rounded()))
+        let coneSize = bunt ? FirSprites.buntConeSize : FirSprites.coneSize
+        let coneAnchor = bunt ? FirSprites.buntConeAnchor : FirSprites.coneAnchor
+        let coneK = bunt ? Garland.tbUnit * fs : fs * Garland.coneScale
+        let px = max(8, Int((coneSize.height * coneK * scale).rounded()))
         for u in plan.cones {
-            let p = piece(FirSprites.pdfImage("pinecone", size: FirSprites.coneSize, pixelHeight: px), size: FirSprites.coneSize, anchor: FirSprites.coneAnchor,
-                          z: 5, u: u, rotationDeg: ChainLayout.tilt(index: Int(u)) * 0.5, mirrored: false, scale: fs * Garland.coneScale)
+            let p = piece(FirSprites.pdfImage(bunt ? "tb-pinecone" : "pinecone", size: coneSize, pixelHeight: px), size: coneSize, anchor: coneAnchor,
+                          z: bunt ? 1.5 : 5, u: u, rotationDeg: ChainLayout.tilt(index: Int(u)) * 0.5, mirrored: false, scale: coneK)
             p.container.contentsScale = scale
             p.swings = true
             cones.append(p)
         }
-        coneBeads = BeadChain(rest: plan.cones, length: sp.length, minGap: max(1.4 * FirSprites.coneSize.width * fs * Garland.coneScale, 8), halfGap: sp.spacing)
+        coneBeads = BeadChain(rest: plan.cones, length: sp.length, minGap: max(1.4 * coneSize.width * coneK, 8), halfGap: sp.spacing)
         let bpx = max(8, Int((FirSprites.bowSize.height * fs * Garland.bowScale * scale).rounded()))
         for u in plan.bows {
             let p = piece(FirSprites.pdfImage("bow", size: FirSprites.bowSize, pixelHeight: bpx), size: FirSprites.bowSize, anchor: FirSprites.bowAnchor,
@@ -288,8 +325,11 @@ final class ChainRenderer {
         return dockLift[i] * (1 - t) + dockLift[i + 1] * t
     }
 
-    private func cableV(_ sp: ChainSpec, _ u: Double) -> Double {
-        sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
+    /// Abstand des Kabels von der Aufhängelinie. `wave`: bei "Tanne bunt" schlängelt sich das Kabel in eigenen Wellen durch das Grün.
+    private func cableV(_ sp: ChainSpec, _ u: Double, wave: Bool = true) -> Double {
+        var v = sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
+        if wave, bunt, sp.isMenuBar { v += 3.5 * sp.bulbH / Garland.tbRefBulbH * sin(2 * .pi * u / (layout.arcLength * 0.62) + 0.8) }
+        return v
     }
 
     /// Zweige, Zapfen und Schleifen sitzen am Kabel. Zweige biegen sich vom Zeiger weg, Zapfen rutschen wie die Birnen.
@@ -302,10 +342,10 @@ final class ChainRenderer {
         let first = branches.count, second = first + cones.count
         for (idx, piece) in (branches + cones + bows).enumerated() {
             let u = piece.u
-            let v = cableV(sp, u)
+            let v = cableV(sp, u, wave: false)
             let g = sp.point(u: u, v: v)
             piece.container.position = CGPoint(x: g.x - origin.x, y: g.y - origin.y)
-            let v2 = cableV(sp, u + 3), v1 = cableV(sp, u - 3)
+            let v2 = cableV(sp, u + 3, wave: false), v1 = cableV(sp, u - 3, wave: false)
             let theta = atan2(v2 - v1, 6)
             var target = piece.rotation + 0.5 * theta * sp.cross
             if idx < first {
@@ -365,7 +405,7 @@ final class ChainRenderer {
             for (i, b) in bulbs.enumerated() {
                 let bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: style.pattern, tempo: 1)
                 b.lit.opacity = Float(bright)
-                b.glow.opacity = Float(bright * 0.9)
+                b.glow.opacity = Float(bright * glowAlpha)
             }
             CATransaction.commit()
             return 1
@@ -418,6 +458,15 @@ final class ChainRenderer {
                 if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
             }
             cable.path = path
+            if bunt {
+                let sp2 = CGMutablePath()
+                for i in 0...n {
+                    let u = min(Double(i) * du, sp.length)
+                    let pt = local(sp.point(u: u, v: cableV(sp, u, wave: false)))
+                    if i == 0 { sp2.move(to: pt) } else { sp2.addLine(to: pt) }
+                }
+                strand.path = sp2
+            }
             cableDirty = false
         }
 
@@ -449,7 +498,7 @@ final class ChainRenderer {
                 bright = min(bright, s * s * (3 - 2 * s))
             }
             b.lit.opacity = Float(bright)
-            b.glow.opacity = Float(bright * 0.9)
+            b.glow.opacity = Float(bright * glowAlpha)
         }
         if moving || swayActive || cableDirtyForGarland || garlandSwaying {
             garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin)

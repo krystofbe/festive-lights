@@ -19,7 +19,7 @@ enum DockStyle: String, CaseIterable {
     }
 }
 
-enum BranchLayer: String { case back, mid, hang, front }
+enum BranchLayer: String { case back, mid, hang, front, cluster }
 
 struct GarlandBranch: Equatable {
     var layer: BranchLayer
@@ -27,13 +27,15 @@ struct GarlandBranch: Equatable {
     var u: Double            // Ansatzpunkt entlang der Kette
     var mirrored: Bool
     var rotation: Double     // Grad
+    var scale = 1.0          // Größe gegenüber der Grundgröße (Büschel von "Tanne bunt")
 }
 
 /// Christbaumkugel, die an einem Zweig hängt: `branch` ist der Index in `GarlandPlan.branches`.
 struct GarlandBauble: Equatable {
     var branch: Int
-    var gold: Bool
-    var x: Double      // Aufhängepunkt in Zweig-Koordinaten (pt der Leinwand 150 x 175)
+    var pattern: Int   // 0 bis 4, passend zu tb-bauble-<n+1>
+    var thread: Double // Fadenlänge in Einheiten der Vorlage
+    var x: Double      // Fadenanfang in Koordinaten des Zweigs oder Büschels
     var y: Double
     var u: Double      // Mitte der Kugel entlang der Kette
 }
@@ -66,11 +68,30 @@ enum Garland {
     /// Tiefe der Girlande unter dem Kabel für die Fenstergröße: Menüleiste je 24 pt Birnenhöhe, Dock fest.
     static let depthPer24 = 60.0
     static let dockDepth = 24.0
-    static let baubleScale = 0.6
-    static let baublesPerArc = 4
     static let bowScale = 0.6
+
+    // "Tanne bunt" (Art/TanneBunt): Maße des Zielbilds, 0,3 pt je Einheit der Vorlage bei Mittelstellung
+    static let tbUnit = 0.3
+    /// Birnenhöhe, bei der das Zielbild entstand (Menüleiste von 30 pt, Mittelstellung): dort gilt 0,3 pt je Einheit, sonst im Verhältnis.
+    static let tbRefBulbH = 30.0
+    /// Bogentiefe in Birnenhöhen und Tiefe der Girlande unter dem Kabel je 24 pt Birnenhöhe (Zielbild: Bogen etwa 25 pt, Kugeln bis etwa 50 pt darunter).
+    static let tbSag = 0.6
+    static let tbDepthPer24 = 40.0
+    /// Birnenabstand gegenüber dem Standard (Zielbild: etwa 30 pt, Bögen von 150 pt mit fünf Birnen).
+    static let tbSpacingFactor = 30.0 / 58.5
+    static let tbAnchorUnits = 70.0
+    static let tbBaubleUnits = 170.0
+    static let tbDockScale = 0.14
+    static let tbRotation = 22.0
+    static let tbBaubleSizes: [(w: Double, h: Double, hangX: Double, hangY: Double)] = [(80, 89, 40, 0), (88, 111, 44, 14), (76, 85, 38, 0), (88, 111, 44, 14), (80, 89, 40, 0)]
+
+    static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
+    static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
+    /// x-Koordinate des Ansatzpunkts in der Leinwand des Zweigs oder Büschels.
+    static func anchorX(_ layer: BranchLayer) -> Double { layer == .cluster ? 65 : 40 }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
     static func extent(layer: BranchLayer, sprite n: Int) -> (left: Double, right: Double) {
+        if layer == .cluster { return (65, 65) }
         let maxX: [BranchLayer: [Double]] = [.back: [98, 101.5, 102.5, 104], .mid: [92, 95.5, 96, 97], .hang: [87, 86, 87.5], .front: [80.5, 82, 85.5]]
         let minX: [BranchLayer: [Double]] = [.back: [39.5, 39.5, 39.5, 39.5], .mid: [39.5, 39.5, 39.5, 39.5], .hang: [33.5, 35, 15], .front: [39.5, 39.5, 39.5]]
         let i = min(max(n, 1), maxX[layer]!.count) - 1
@@ -79,6 +100,7 @@ enum Garland {
 
     /// Aufhängepunkt für Kugeln: Stelle mit Nadeln nahe der Zweigspitze (85 % des Wegs zur entferntesten Nadel), aus den Bildern gemessen.
     static func tip(layer: BranchLayer, sprite n: Int) -> (x: Double, y: Double) {
+        if layer == .cluster { return (65, 52) }
         let t: [BranchLayer: [(Double, Double)]] = [
             .back: [(89, 50), (92, 56.5), (92.5, 65.5), (94, 72.5)],
             .mid: [(84, 54.5), (86.5, 61.5), (87, 67.5), (88, 74.5)],
@@ -90,13 +112,14 @@ enum Garland {
         return (p.0, p.1)
     }
 
-    static let spriteCounts: [BranchLayer: Int] = [.back: 4, .mid: 4, .hang: 3, .front: 3]
+    static let spriteCounts: [BranchLayer: Int] = [.back: 4, .mid: 4, .hang: 3, .front: 3, .cluster: 1]
 
     static func anchorSpacing(scale s: Double, dock: Bool = false) -> Double { dock ? 16 : 22 * s / max(density, 0.1) }
 
     /// Stabile Platzierung: gleiche Eingaben ergeben immer denselben Plan.
     static func plan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double] = []) -> GarlandPlan {
         guard style.isFir, length > 0 else { return GarlandPlan() }
+        if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions) }
         var plan = GarlandPlan()
         let n = max(1, Int(length / anchorSpacing(scale: s, dock: dock)))
         let step = length / Double(n)
@@ -115,34 +138,47 @@ enum Garland {
                 plan.branches.append(GarlandBranch(layer: .front, sprite: pick(.front, k, 4), u: u - step * 0.2, mirrored: stableRandom(k, 4, 16) < 0.5, rotation: rot(k, 4, 10)))
             }
         }
-        if !dock && style == .firColor {
-            // Kugeln hängen nur an Zweigen (Back, Mitte, vorn), nie am Kabel und nie an einer Birne
-            let bw = 16 * baubleScale * s
-            var placed: [Double] = []
-            for a in 0..<max(arcCount, 1) {
-                let lo = Double(a) * arcLength, hi = lo + arcLength
-                var cands = plan.branches.indices.filter { plan.branches[$0].layer != .hang && plan.branches[$0].u > lo && plan.branches[$0].u < hi }
-                cands.sort { stableRandom($0, 31, 18) < stableRandom($1, 31, 18) }
-                var count = 0
-                for i in cands where count < baublesPerArc {
-                    let b = plan.branches[i]
-                    let t = tip(layer: b.layer, sprite: b.sprite)
-                    let k = branchScale * s
-                    let u = b.u + (b.mirrored ? -1 : 1) * (t.x - 40) * k
-                    guard u > bw, u < length - bw,
-                          bulbPositions.allSatisfy({ abs($0 - u) > bw / 2 + 5 * s + 2 }),
-                          placed.allSatisfy({ abs($0 - u) > bw * 1.6 }) else { continue }
-                    plan.baubles.append(GarlandBauble(branch: i, gold: (plan.baubles.count % 2 == 1), x: t.x, y: t.y, u: u))
-                    placed.append(u)
-                    count += 1
-                }
-            }
-        }
         if !dock && style == .firGold {
             for a in 0..<max(arcCount, 1) {
                 plan.cones.append((Double(a) + 0.2 + 0.6 * stableRandom(a, 5, 17)) * arcLength)
             }
             for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) }
+        }
+        return plan
+    }
+
+    /// "Tanne bunt": Büschel dicht entlang des Strangs, Kugeln an Goldfäden aus den Büscheln, zwei Zapfen je Bogen. Am Dock nur kleine Büschel.
+    private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double]) -> GarlandPlan {
+        var plan = GarlandPlan()
+        let unit = tbUnit * s
+        let n = max(1, Int(length / (dock ? 16 : tbAnchorUnits * unit)))
+        let step = length / Double(n)
+        for k in 0..<n {
+            plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,
+                                               rotation: (stableRandom(k, 2, 22) * 2 - 1) * tbRotation, scale: 1.1 + 0.15 * stableRandom(k, 3, 23)))
+        }
+        if dock { return plan }
+        let every = tbBaubleUnits * unit
+        var u = every * 0.5, i = 0
+        while u < length {
+            let sz = tbBaubleSizes[plan.baubles.count % 5]
+            let half = sz.w * unit / 2 + 2
+            let clear = 6 * unit + 2   // der Faden endet nie an einer Birne
+            let home = min(max(Int(u / step), 0), n - 1)
+            for d in [0, 1, -1, 2, -2] {
+                let c = home + d
+                guard c >= 0, c < n else { continue }
+                let bu = plan.branches[c].u
+                guard bu > half, bu < length - half, bulbPositions.allSatisfy({ abs($0 - bu) > clear }) else { continue }
+                plan.baubles.append(GarlandBauble(branch: c, pattern: plan.baubles.count % 5, thread: i % 2 == 0 ? 45 + 20 * stableRandom(i, 4, 24) : 65 - 20 * stableRandom(i, 4, 24),
+                                                  x: 65, y: 52, u: bu))
+                break
+            }
+            u += every; i += 1
+        }
+        for a in 0..<max(arcCount, 1) {
+            plan.cones.append((Double(a) + 0.25 + 0.1 * stableRandom(a, 5, 25)) * arcLength)
+            plan.cones.append((Double(a) + 0.65 + 0.1 * stableRandom(a, 6, 26)) * arcLength)
         }
         return plan
     }

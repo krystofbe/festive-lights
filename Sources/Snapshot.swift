@@ -57,8 +57,8 @@ enum Snapshot {
             for isDark in [true, false] {
                 let fh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2)
                 let fspec = ChainSpec(p0: CGPoint(x: f.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: Double(f.width),
-                                      bulbH: fh, sag: fh * Garland.sag, liftSign: -1, isMenuBar: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2),
-                                      garlandDepth: Garland.depthPer24 * (fh / 24))
+                                      bulbH: fh, sag: fh * Garland.sag(kind), liftSign: -1, isMenuBar: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2) * (kind == .firColor ? Garland.tbSpacingFactor : 1),
+                                      garlandDepth: Garland.depthPer24(kind) * (fh / 24))
                 let fr = ChainRenderer()
                 fr.configure(spec: fspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false, kind: kind), scale: 2)
                 fr.setVisible(true, layer: .above, intro: nil); fr.window.rootLayer.opacity = 1
