@@ -96,3 +96,4 @@
 "onb.done.title" = "All set";
 "onb.done.body" = "You can find FestiveLights in the menu bar at any time.";
 "menu.welcome" = "Welcome Guide…";
+"onb.storm.disabled" = "Not available while Reduce Motion is on.";

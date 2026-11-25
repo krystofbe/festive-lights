@@ -14,20 +14,26 @@
 set -euo pipefail
 
 VERSION=${1:?Aufruf: release-direct.sh <Version> [Build]}
-BUILD=${2:-2}
+BUILD=${2:-$(sed -n 's/^ *CURRENT_PROJECT_VERSION: *"\([0-9]*\)".*/\1/p' "${0:A:h:h}/project.yml" | head -1)}   # Standard: Build-Nummer aus project.yml
+[[ -n $BUILD ]] || { echo "Build-Nummer nicht lesbar" >&2; exit 1; }
 ROOT=${0:A:h:h}
 : "${SPARKLE_BIN:?SPARKLE_BIN setzen (Ordner mit generate_appcast)}"
 OUT=${OUT_DIR:-$ROOT/release/$VERSION}
 TEAM=$(sed -n 's/^DEVELOPMENT_TEAM *= *//p' "$ROOT/Local.xcconfig" | tr -d ' ')
-[[ -n $TEAM ]] || { echo "DEVELOPMENT_TEAM fehlt in Local.xcconfig" >&2; exit 1; }
+[[ -n $TEAM && $TEAM != XXXXXXXXXX ]] || { echo "DEVELOPMENT_TEAM fehlt oder ist noch der Platzhalter (Local.xcconfig)" >&2; exit 1; }
 DOWNLOAD_PREFIX="https://github.com/krystofbe/festive-lights/releases/download/$VERSION/"
 
 AUTH=()
 [[ -n ${AUTH_KEY_PATH:-} ]] && AUTH=(-authenticationKeyPath "$AUTH_KEY_PATH" -authenticationKeyID "$AUTH_KEY_ID" -authenticationKeyIssuerID "$AUTH_ISSUER_ID")
 
+[[ -n $OUT && $OUT != / && $OUT != "$ROOT" && $OUT != "$HOME" ]] || { echo "Unzulässiger Ausgabeordner: $OUT" >&2; exit 1; }
 rm -rf "$OUT"; mkdir -p "$OUT/dmg"
 echo "== Projekt erzeugen"
-command -v xcodegen >/dev/null && (cd "$ROOT" && xcodegen generate >/dev/null) || echo "(xcodegen nicht gefunden, vorhandenes Projekt wird genutzt)"
+if command -v xcodegen >/dev/null; then
+  (cd "$ROOT" && xcodegen generate >/dev/null) || { echo "xcodegen ist fehlgeschlagen" >&2; exit 1; }
+else
+  echo "(xcodegen nicht gefunden, vorhandenes Projekt wird genutzt)"
+fi
 
 echo "== Archiv"
 xcodebuild archive -project "$ROOT/FestiveLights.xcodeproj" -scheme FestiveLights-Direct -configuration Release \
@@ -63,7 +69,15 @@ PLIST
     xcodebuild -exportArchive -archivePath "$OUT/FestiveLights.xcarchive" -exportOptionsPlist "$OUT/ExportOptions.plist" \
       -exportPath "$OUT/upload" -allowProvisioningUpdates "${AUTH[@]}" | tail -3
     echo "   (Notarisierung läuft bei Apple, warte auf das Ergebnis)"
-    until xcodebuild -exportNotarizedApp -archivePath "$OUT/FestiveLights.xcarchive" -exportPath "$OUT/export" "${AUTH[@]}" >/dev/null 2>&1; do sleep 30; done
+    DEADLINE=$(( $(date +%s) + ${NOTARIZE_TIMEOUT:-1800} ))   # Zeitlimit, Standard 30 Minuten
+    until xcodebuild -exportNotarizedApp -archivePath "$OUT/FestiveLights.xcarchive" -exportPath "$OUT/export" "${AUTH[@]}" > "$OUT/notarize.log" 2>&1; do
+      if (( $(date +%s) > DEADLINE )); then
+        echo "Notarisierung nicht rechtzeitig fertig oder abgelehnt. Letzte Ausgabe:" >&2
+        tail -20 "$OUT/notarize.log" >&2
+        exit 1
+      fi
+      sleep 30
+    done
   fi
   echo "== Ticket anheften"
   xcrun stapler staple "$APP"

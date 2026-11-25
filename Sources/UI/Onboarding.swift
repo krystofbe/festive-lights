@@ -3,6 +3,20 @@ import AppKit
 import CoreText
 
 /// Farben und Schriften der Einführung (SPEC §6 Punkt 5), unabhängig vom System-Erscheinungsbild.
+/// "Bewegung reduzieren" live beobachten.
+final class ReduceMotionMonitor: ObservableObject {
+    @Published var on = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    private var token: NSObjectProtocol?
+    init() {
+        token = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let self else { return }
+            let v = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            if v != self.on { self.on = v }
+        }
+    }
+    deinit { if let t = token { NSWorkspace.shared.notificationCenter.removeObserver(t) } }
+}
+
 enum OnbStyle {
     static let cream = Color(hex: 0xFFFAF0), snow = Color(hex: 0xF3EAD8), flake = Color(hex: 0x9CC3DD)
     static let red = Color(hex: 0xD8432F), wine = Color(hex: 0x86241A), ink = Color(hex: 0x2B363F), muted = Color(hex: 0x5D6A72), dotOff = Color(hex: 0xE7DCCB)
@@ -30,6 +44,7 @@ struct OnboardingView: View {
     #if DIRECT
     @ObservedObject var perm: PermissionModel
     #endif
+    @StateObject private var motion = ReduceMotionMonitor()
     var close: () -> Void
     var startStorm: () -> Void
 
@@ -145,7 +160,11 @@ struct OnboardingView: View {
             Button(action: startStorm) {
                 Text("onb.storm").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).padding(.vertical, 7)
                     .background(Capsule().fill(Color(hex: 0xF6E2DA)))
-            }.buttonStyle(.plain)
+            }
+            .buttonStyle(.plain)
+            .disabled(motion.on)
+            .opacity(motion.on ? 0.5 : 1)
+            .accessibilityHint(Text(motion.on ? "onb.storm.disabled" : ""))
         case .access:
             #if DIRECT
             Image(systemName: "dock.rectangle").font(.system(size: 40)).foregroundColor(OnbStyle.red).accessibilityHidden(true)
@@ -236,9 +255,12 @@ struct OnboardingView: View {
 
 /// Ruhig fallende hellblaue Punkte, im Sparmodus oder bei "Bewegung reduzieren" statisch.
 struct SnowDots: View {
+    @ObservedObject private var power = PowerStatus.shared
+    @StateObject private var motion = ReduceMotionMonitor()
+
     var body: some View {
-        let still = PowerStatus.shared.active || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        TimelineView(.animation(minimumInterval: still ? nil : 1.0 / 20)) { ctx in
+        let still = power.active || motion.on
+        TimelineView(.animation(minimumInterval: 1.0 / 20, paused: still)) { ctx in
             Canvas { gc, size in
                 let t = still ? 0 : ctx.date.timeIntervalSinceReferenceDate
                 for i in 0..<9 {
@@ -254,6 +276,14 @@ struct SnowDots: View {
 }
 
 final class OnboardingController: NSObject, NSWindowDelegate {
+    /// Beim Schließen die Ansicht freigeben, damit nichts (Zeitgeber, Schneepunkte) im Hintergrund weiterläuft.
+    func windowWillClose(_ notification: Notification) {
+        let w = window
+        window = nil
+        DispatchQueue.main.async { w?.contentView = nil }
+    }
+
+
     private var window: NSWindow?
     private let model = OnboardingModel()
     private let settings: Settings
@@ -264,6 +294,12 @@ final class OnboardingController: NSObject, NSWindowDelegate {
     init(settings: Settings, login: LoginModel, startStorm: @escaping () -> Void) { self.settings = settings; self.login = login; self.startStorm = startStorm }
 
     func show() {
+        if let w = window, w.isVisible {   // schon offen: nur nach vorn holen
+            NSApp.activate(ignoringOtherApps: true)
+            w.makeKeyAndOrderFront(nil)
+            return
+        }
+        login.refresh()
         if window == nil {
             let view = OnboardingView(model: model, s: settings, login: login, close: { [weak self] in self?.window?.close() }, startStorm: startStorm)
             let host = NSHostingView(rootView: view)

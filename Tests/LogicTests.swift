@@ -1461,7 +1461,7 @@ final class OnboardingTests: XCTestCase {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/Resources")
         let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
                     "onb.welcome.title", "onb.welcome.body", "onb.reach.title", "onb.reach.body", "onb.snow.title", "onb.snow.body",
-                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body"]
+                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled"]
         for lang in ["de", "en"] {
             let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)
             for k in keys { XCTAssertTrue(text.contains("\"\(k)\" ="), "\(k) fehlt in \(lang)") }
