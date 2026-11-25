@@ -36,3 +36,4 @@ Dock-Vergrößerung ohne Berechtigung nach dem Review (c85a896, Test-Build, 8 s 
 | 25.11.2026 | acde7e3 | Standard | 47,2 | 3,9 | vorher 47,0 / 3,7, Differenz zur Referenz 43,8 ist +3,4 |
 
 Dock-Vergrößerung ohne Berechtigung (acde7e3, Test-Build, 8 s Zeigerkreisen): Haupt-Thread je Bild im Mittel 0,012 ms, höchstens 0,047 ms, Hintergrund je Messung im Mittel 4,6 ms, höchstens 25,8 ms (vorher 0,011 / 0,044 und 4,5 / 22,6).
+| 25.11.2026 | 6613994 | Ruhezustand, mit Berechtigung | 1,3 | 0,7 | zweite Nachprüfung; gleich wie acde7e3 (1,3 / 0,7), Standard nicht neu gemessen (keine Änderung an Zeichnen oder Physik) |
