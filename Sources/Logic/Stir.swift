@@ -13,6 +13,8 @@ struct PointerVelocityTracker {
         let dt = max(t - l.t, 0.001)
         if dt > 0.25 { velocity = .zero; return }
         let raw = CGVector(dx: (p.x - l.p.x) / dt, dy: (p.y - l.p.y) / dt)
+        // ein großer Satz aus dem Stand ist keine Handbewegung: Der Zeiger wurde versetzt
+        if hypot(p.x - l.p.x, p.y - l.p.y) > 150, hypot(velocity.dx, velocity.dy) < 1500 { velocity = .zero; return }
         let a = 1 - exp(-dt / smoothing)
         velocity = CGVector(dx: velocity.dx + (raw.dx - velocity.dx) * a, dy: velocity.dy + (raw.dy - velocity.dy) * a)
     }
@@ -43,7 +45,7 @@ enum Stir {
     static let gustTime = 0.12
     static let maxPuffs = 40
     /// Aufwind hinter einem aufwärts fahrenden Zeiger hebt Flocken nur gedämpft und kurz.
-    static let liftDamping = 0.4, liftTime = 0.2
+    static let liftDamping = 0.4, liftTime = 0.3
 
     /// 0 bei langsamer Bewegung, 1 bei sehr schneller.
     static func strength(speed: Double) -> Double {

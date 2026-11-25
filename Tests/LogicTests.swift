@@ -341,6 +341,13 @@ final class StirTests: XCTestCase {
         XCTAssertGreaterThan(t.velocity.dx, 0)
     }
 
+    func testWarpedPointerIsNotAFastMovement() {
+        var t = PointerVelocityTracker()
+        for i in 0..<30 { t.feed(time: Double(i) * 0.008, position: CGPoint(x: 100, y: 100)) }
+        t.feed(time: 30 * 0.008, position: CGPoint(x: 1400, y: 700))
+        XCTAssertEqual(t.speed(at: 30 * 0.008), 0)
+    }
+
     /// Fährt den Zeiger mit 120 Bildern pro Sekunde von a nach b und lässt danach `rest` Sekunden verstreichen.
     struct Probe { var p: CGPoint; var z = 0.3; var sink = 40.0; var drift = Stir.Drift(); var start = CGPoint.zero
                    var maxAir = 0.0, maxRel = 0.0, minVy = Double.infinity, maxStep = 0.0 }
