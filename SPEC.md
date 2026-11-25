@@ -33,7 +33,7 @@ Ziel: ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start, und Nutzer l
 | Lichter am Dock | an, Form "genau am Dock" |
 | Schnee bleibt auf Fenstern liegen | an, sobald die Berechtigung erteilt ist |
 | Beim Anmelden starten | aus |
-| Immer Energie sparen | aus |
+| Sparmodus | Automatisch |
 
 Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
 
@@ -139,7 +139,7 @@ Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hi
 - **Dock:** oben Schalter "Lichter am Dock", darunter dieselben Einstellungen wie bei der Menüleiste, eigene Werte, zusätzlich "Länge" (siehe F5). Standardwerte wie bei der Menüleiste.
 
 - **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
-- **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Unten ein Button "Auf Standard zurücksetzen": Nach einer kurzen Rückfrage im Fenster (kein Systemdialog, mit "Abbrechen" als Standard) gelten wieder alle Werte aus Abschnitt 3, sofort sichtbar und ohne Neustart. Nicht zurückgesetzt werden "Beim Anmelden starten", die erteilte Berechtigung und die Info, dass Willkommens- und Berechtigungs-Popover schon gezeigt wurden. Die Schneeschichten auf Fenstern bleiben liegen, wenn "Schnee bleibt liegen" danach weiter an ist. Der Status aktualisiert sich live, während das Fenster offen ist.
+- **Allgemein:** Beim Anmelden starten, "Sparmodus" (Englisch "Low Power Mode") als Auswahl mit drei Optionen "Automatisch", "Immer", "Aus" (Englisch "Automatic", "Always", "Off") und einer grauen Erklärzeile darunter, die zur gewählten Option passt: Automatisch: "Weniger Schnee und ruhigere Animation im Stromsparmodus und bei Akkustand unter 20 %." Immer: "Weniger Schnee und ruhigere Animation, auch am Netzteil." Aus: "Volle Darstellung, auch im Akkubetrieb." Ist der Sparmodus gerade aktiv, steht dahinter "(gerade aktiv)". Danach Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Unten ein Button "Auf Standard zurücksetzen": Nach einer kurzen Rückfrage im Fenster (kein Systemdialog, mit "Abbrechen" als Standard) gelten wieder alle Werte aus Abschnitt 3, sofort sichtbar und ohne Neustart. Nicht zurückgesetzt werden "Beim Anmelden starten", die erteilte Berechtigung und die Info, dass Willkommens- und Berechtigungs-Popover schon gezeigt wurden. Die Schneeschichten auf Fenstern bleiben liegen, wenn "Schnee bleibt liegen" danach weiter an ist. Der Status aktualisiert sich live, während das Fenster offen ist.
 
 Alle Einstellungen werden sofort sichtbar übernommen und bleiben über Neustarts erhalten. Die Oberfläche ist auf Deutsch und Englisch, je nach Systemsprache, sonst Englisch. Die Einstellungen sind mit VoiceOver bedienbar. Lichter und Schnee sind für VoiceOver unsichtbar.
 
@@ -168,7 +168,7 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 - Nur zeichnen, was sich bewegt: Steht alles still (Dauerleuchten, kein Schnee, Zeiger weit weg), wird nichts neu gezeichnet. Bildschirme ohne sichtbare Bewegung und verdeckte Bereiche verursachen keine Arbeit.
 - Fensterpositionen für F6 nur so oft ermitteln wie nötig: im Ruhezustand selten, beim Ziehen eines Fensters häufig genug für flüssiges Abschütteln.
 - Mit vielen Fenstern (30 offene Fenster) und zwei Bildschirmen gelten dieselben Grenzen.
-- Energiesparen: Im Akkubetrieb unter 20 % Ladung, im Stromsparmodus oder mit "Immer Energie sparen" halbe Flockenzahl und ruhigere Animation. Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
+- Sparmodus: halbe Flockenzahl und ruhigere Animation. "Automatisch" aktiviert ihn im Stromsparmodus von macOS und im Akkubetrieb unter 20 % Ladung, "Immer" dauerhaft, "Aus" nie. Bisher gespeichertes "Immer Energie sparen = an" wird zu "Immer", "aus" zu "Automatisch". Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
 - Keine sichtbar ausgelassenen Bilder bei 60 Hz und 120 Hz.
 - "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen, kein Aufstöbern und kein Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
 - Die Overlays stehlen nie den Fokus. Keine Abstürze ohne Berechtigung oder beim Wechsel von Bildschirmen.
