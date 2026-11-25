@@ -570,12 +570,11 @@ final class GarlandTests: XCTestCase {
         XCTAssertLessThan(c(.mid), c(.back)); XCTAssertLessThan(c(.front), c(.mid))
     }
 
-    func testOneConePerArcInBothFirStyles() {
-        for s in [ChainStyleKind.firColor, .firGold] {
-            let cones = plan(s).cones
-            XCTAssertEqual(cones.count, 7)
-            for (a, u) in cones.enumerated() { XCTAssertGreaterThan(u, Double(a) * 274); XCTAssertLessThan(u, Double(a + 1) * 274) }
-        }
+    func testOneConePerArcOnlyForWarmGold() {
+        XCTAssertTrue(plan(.firColor).cones.isEmpty)
+        let cones = plan(.firGold).cones
+        XCTAssertEqual(cones.count, 7)
+        for (a, u) in cones.enumerated() { XCTAssertGreaterThan(u, Double(a) * 274); XCTAssertLessThan(u, Double(a + 1) * 274) }
     }
 
     func testBowsOnlyForWarmGoldAtArcJoints() {
@@ -771,4 +770,49 @@ final class DockProfileTests: XCTestCase {
         let restR = CGRect(x: 1800, y: 100, width: 93, height: 77), curR = CGRect(x: 1777, y: 90, width: 115.9, height: 99.9)
         XCTAssertGreaterThan(DockProfile.lift(edge: .right, current: curR, rest: restR, tile: 64, barLine: 1840), 0)
     }
+}
+
+final class BaubleTests: XCTestCase {
+    let layout = ChainLayout(length: 1920, spacing: ChainLayout.spacing(bulbHeight: 24, level: 2))
+    func plan(_ style: ChainStyleKind = .firColor, dock: Bool = false) -> GarlandPlan {
+        Garland.plan(length: 1920, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: 1, style: style, dock: dock, bulbPositions: layout.bulbPositions)
+    }
+
+    func testEveryBaubleHangsOnABranchAtItsTip() {
+        let p = plan()
+        XCTAssertGreaterThan(p.baubles.count, 12)
+        for b in p.baubles {
+            XCTAssertTrue(p.branches.indices.contains(b.branch), "jede Kugel hat einen Zweig als Anker")
+            let br = p.branches[b.branch]
+            XCTAssertNotEqual(br.layer, .hang)
+            let tip = Garland.tip(layer: br.layer, sprite: br.sprite)
+            XCTAssertEqual(b.x, tip.x); XCTAssertEqual(b.y, tip.y)
+            XCTAssertGreaterThan(tip.x, 70, "nahe der Zweigspitze, nicht am Ansatzpunkt am Kabel")
+            XCTAssertGreaterThan(tip.y, 40, "unterhalb des Kabels")
+            let k = Garland.branchScale
+            XCTAssertEqual(b.u, br.u + (br.mirrored ? -1 : 1) * (tip.x - 40) * k, accuracy: 1e-9)
+        }
+    }
+
+    func testBaublesKeepDistanceToEveryBulb() {
+        let width = 16 * Garland.baubleScale
+        for b in plan().baubles {
+            for bulb in layout.bulbPositions { XCTAssertGreaterThan(abs(bulb - b.u), width, "Kugel an einer Birne bei u=\(b.u)") }
+        }
+    }
+
+    func testRedAndGoldAlternateAboutFourPerArc() {
+        let p = plan()
+        XCTAssertLessThanOrEqual(p.baubles.count, layout.arcCount * Garland.baublesPerArc)
+        XCTAssertGreaterThan(Set(p.baubles.map(\.gold)).count, 1)
+        for i in 1..<p.baubles.count { XCTAssertNotEqual(p.baubles[i].gold, p.baubles[i - 1].gold) }
+    }
+
+    func testNoBaublesAtDockOrOtherStyles() {
+        XCTAssertTrue(plan(.firColor, dock: true).baubles.isEmpty)
+        XCTAssertTrue(plan(.firGold).baubles.isEmpty)
+        XCTAssertTrue(plan(.classic).baubles.isEmpty)
+    }
+
+    func testStablePlacement() { XCTAssertEqual(plan().baubles, plan().baubles) }
 }

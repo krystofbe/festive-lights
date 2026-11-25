@@ -6,6 +6,7 @@ enum FirSprites {
     static let branchAnchor = CGPoint(x: 40, y: 12)
     static let bulbSize = CGSize(width: 8, height: 28)
     static let coneSize = CGSize(width: 24, height: 40), coneAnchor = CGPoint(x: 12, y: 6)
+    static let baubleSize = CGSize(width: 16, height: 26), baubleAnchor = CGPoint(x: 8, y: 2.5)
     static let bowSize = CGSize(width: 40, height: 34), bowAnchor = CGPoint(x: 20, y: 12)
 
     private static var pngs: [String: CGImage] = [:]
@@ -20,7 +21,7 @@ enum FirSprites {
         switch kind {
         case .firGold: return (rgb(0xFFC766), rgb(0xFFB547))
         default:
-            let bulbs = [0xE8432F, 0xF5A623, 0x7FB4D8, 0x5FC25A], glows = [0xFF6A3D, 0xFFB547, 0xBFE0FF, 0x9CF08A]
+            let bulbs = [0xD42A2E, 0xF2B33D, 0xFFEFC4, 0xF2B33D], glows = [0xFF5238, 0xFFB547, 0xFFE0A0, 0xFFB547]
             let i = index % 4
             return (rgb(bulbs[i]), rgb(glows[i]))
         }

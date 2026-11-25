@@ -65,6 +65,8 @@ final class ChainRenderer {
         var swings = false
         var chainKey = ""
         var slot = 0
+        var bauble: CALayer?
+        var baubleSway = Spring()
     }
 
     private(set) var spec: ChainSpec?
@@ -181,7 +183,7 @@ final class ChainRenderer {
         guard style.kind.isFir else { return }
         let fs = sp.bulbH / 24
         let dock = sp.isDock
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? 0.73 : fs, style: style.kind, dock: dock)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? 0.73 : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -199,7 +201,8 @@ final class ChainRenderer {
         // Reihenfolge von hinten nach vorn: hinten, Mitte und hängend, Kabel, vorn, Birnen, Zapfen, Schleifen
         func order(_ l: BranchLayer) -> Int { l == .back ? 0 : (l == .front ? 2 : 1) }
         var frontStart = false
-        for br in plan.branches.sorted(by: { order($0.layer) < order($1.layer) }) {
+        let sortedIdx = plan.branches.indices.sorted { order(plan.branches[$0].layer) != order(plan.branches[$1].layer) ? order(plan.branches[$0].layer) < order(plan.branches[$1].layer) : $0 < $1 }
+        for br in sortedIdx.map({ plan.branches[$0] }) {
             if !frontStart && br.layer == .front { frontStart = true; content.addSublayer(cable) }
             let hang = br.layer == .hang
             let k = dock ? 0.2 : (hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
@@ -210,7 +213,7 @@ final class ChainRenderer {
         if !frontStart { content.addSublayer(cable) }
         // Zweig-Ansatzpunkte rutschen wie die Birnen am Kabel, die Nadelspitzen dürfen nicht in die Lücke ragen
         var perLayer: [String: [(piece: Piece, e: (left: Double, right: Double))]] = [:]
-        for (piece, br) in zip(branches, plan.branches.sorted(by: { order($0.layer) < order($1.layer) })) {
+        for (piece, br) in zip(branches, sortedIdx.map({ plan.branches[$0] })) {
             let k = dock ? 0.2 : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
             let e = Garland.extent(layer: br.layer, sprite: br.sprite)
             let m = br.mirrored ? (left: e.right, right: e.left) : e
@@ -222,6 +225,23 @@ final class ChainRenderer {
             branchChains[key] = BeadChain(rest: list.map { $0.piece.u }, length: sp.length, minGap: 8, halfGap: sp.spacing, extents: list.map { $0.e })
         }
         bulbs.forEach { content.addSublayer($0.container) }
+        // Kugeln hängen als Kind ihres Zweigs an der Stelle mit Nadeln nahe der Spitze und folgen ihm beim Rutschen und Biegen
+        var pieceOfPlan: [Int: Piece] = [:]
+        for (slot, planIdx) in sortedIdx.enumerated() { pieceOfPlan[planIdx] = branches[slot] }
+        let bpxk = max(8, Int((FirSprites.baubleSize.height * fs * Garland.baubleScale * scale).rounded()))
+        for bb in plan.baubles {
+            guard let piece = pieceOfPlan[bb.branch] else { continue }
+            let kb = fs * Garland.baubleScale
+            let l = CALayer()
+            l.contents = FirSprites.pdfImage(bb.gold ? "bauble-gold" : "bauble-red", size: FirSprites.baubleSize, pixelHeight: bpxk)
+            l.contentsScale = scale
+            l.bounds = CGRect(x: 0, y: 0, width: FirSprites.baubleSize.width * kb, height: FirSprites.baubleSize.height * kb)
+            l.anchorPoint = CGPoint(x: FirSprites.baubleAnchor.x / FirSprites.baubleSize.width, y: 1 - FirSprites.baubleAnchor.y / FirSprites.baubleSize.height)
+            let kBranch = piece.container.bounds.width / FirSprites.branchCanvas.width
+            l.position = CGPoint(x: bb.x * kBranch, y: (FirSprites.branchCanvas.height - bb.y) * kBranch)
+            piece.container.addSublayer(l)
+            piece.bauble = l
+        }
         let px = max(8, Int((FirSprites.coneSize.height * fs * Garland.coneScale * scale).rounded()))
         for u in plan.cones {
             let p = piece(FirSprites.pdfImage("pinecone", size: FirSprites.coneSize, pixelHeight: px), size: FirSprites.coneSize, anchor: FirSprites.coneAnchor,
@@ -300,6 +320,18 @@ final class ChainRenderer {
                 }
             } else { piece.sway = Spring(value: target, velocity: 0) }
             piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + piece.sway.value, 0, 0, 1), piece.mirrored ? -1 : 1, 1, 1)
+            if let bl = piece.bauble {
+                // Die Kugel hängt senkrecht an ihrem Faden und pendelt nach, wenn der Zweig rutscht
+                let vel = branchChains[piece.chainKey].map { piece.slot < $0.vel.count ? $0.vel[piece.slot] : 0 } ?? 0
+                let target = -sp.cross * min(max(vel / 900, -0.6), 0.6)
+                if reduce { piece.baubleSway = Spring(value: target, velocity: 0) }
+                else if abs(piece.baubleSway.value - target) > 0.0008 || abs(piece.baubleSway.velocity) > 0.003 {
+                    piece.baubleSway.step(target: target, dt: dt, params: Spring.sway)
+                    moving = true
+                }
+                let m: Double = piece.mirrored ? -1 : 1
+                bl.transform = CATransform3DMakeRotation(m * (piece.baubleSway.value - (baseAngle + piece.sway.value)), 0, 0, 1)
+            }
         }
         return moving
     }
