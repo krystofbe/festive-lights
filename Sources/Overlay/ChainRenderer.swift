@@ -412,7 +412,7 @@ final class ChainRenderer {
         let pointerNear = pointer.map { window.frame.insetBy(dx: -80, dy: -80).contains($0) } ?? false
         if !lastMotion && !cableDirty && !introRunning && !pointerNear {
             guard patternOn else { return 0 }
-            if time - lastPatternTime < 0.03 { return 1 }
+            if time - lastPatternTime < (sp.isDock ? 0.06 : 0.03) { return 1 }   // Dock-Kette funkelt mit halber Rate
             lastPatternTime = time
             CATransaction.begin()
             CATransaction.setDisableActions(true)

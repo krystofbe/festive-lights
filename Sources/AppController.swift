@@ -6,9 +6,14 @@ final class AppController: NSObject {
     let settings = Settings.shared
     private var overlays: [CGDirectDisplayID: ScreenOverlay] = [:]
     private var status: StatusController!
+    #if !APPSTORE
     private let dockTracker = DockTracker()
+    private var accessibilityRunner: DockSourceRunner { dockTracker }
+    #else
+    private let accessibilityRunner: DockSourceRunner = NullRunner()
+    #endif
     private let dockProbe = DockProbe()
-    private lazy var dockSources = DockSourceCoordinator(accessibility: dockTracker, probe: dockProbe)
+    private lazy var dockSources = DockSourceCoordinator(accessibility: accessibilityRunner, probe: dockProbe)
     /// nil: noch nicht ermittelt, dann zeigt die Dock-Kette nichts (statt kurz in der falschen Form).
     private var exactResult: DockProbe.Result?
     private var bag = Set<AnyCancellable>()
@@ -17,7 +22,12 @@ final class AppController: NSObject {
     private var suspended = false
     private var screensAsleep = false
     private var locked = false
+    #if !APPSTORE
     private var permission = Permission.granted
+    private let permissionModel = PermissionModel()
+    #else
+    private var permission = false
+    #endif
     private var reduceMotion = false
     // nur bei echter Änderung veröffentlichen: apply() läuft beim Einblenden des Schnees bildweise, jede Veröffentlichung layoutet das Einstellungsfenster neu
     private var energySaving = false { didSet { PowerStatus.shared.update(energySaving) } }
@@ -26,7 +36,6 @@ final class AppController: NSObject {
     private var settingsWindow: NSWindow?
     private var monitors: [Any] = []
     private var timers: [Timer] = []
-    private let permissionModel = PermissionModel()
     private let loginModel = LoginModel()
     private let settingsNav = SettingsNav()
     private var applyScheduled = false
@@ -61,7 +70,9 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
         dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.hit"), object: nil)
         dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.welcome"), object: nil)
+        #if !APPSTORE
         dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
+        #endif
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(dockPrefsChanged), name: NSNotification.Name("com.apple.dock.prefchanged"), object: nil)
@@ -71,7 +82,9 @@ final class AppController: NSObject {
             let p = NSEvent.mouseLocation
             Engine.shared.pointerEvent(p, time: ProcessInfo.processInfo.systemUptime)
             self?.overlays.values.forEach { $0.pointerMoved(p) }
+            #if !APPSTORE
             self?.dockTracker.pointerMoved()
+            #endif
             self?.dockProbe.pointerMoved()
         } as Any)
 
@@ -79,7 +92,9 @@ final class AppController: NSObject {
         for n in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.didHideApplicationNotification, NSWorkspace.didTerminateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
             ws.addObserver(forName: n, object: nil, queue: .main) { _ in Engine.shared.requestBurst() }
         }
+        #if !APPSTORE
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
+        #endif
         dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         dockProbe.onResult = { [weak self] r in
             #if DEBUG
@@ -89,6 +104,7 @@ final class AppController: NSObject {
             #endif
             self?.exactResult = r; self?.scheduleApply()
         }
+        #if !APPSTORE
         dockTracker.onChange = { [weak self] g in
             #if DEBUG
             let l = "\(Date().timeIntervalSince1970) \(String(describing: g?.rect)) edge=\(String(describing: g?.edge))\n"
@@ -100,6 +116,7 @@ final class AppController: NSObject {
             if let g { self?.exactResult = .visible(g) } else { self?.exactResult = hidden ? .hidden : .unavailable }
             self?.scheduleApply()
         }
+        #endif
         updateDockTracking()
 
         // Berechtigung und Energie regelmäßig prüfen (Entzug binnen 5 s)
@@ -117,11 +134,13 @@ final class AppController: NSObject {
             self.apply()
             if !self.settings.welcomeShown, self.status.showWelcome() { self.settings.welcomeShown = true }
         }
+        #if !APPSTORE
         // Einmalig und frühestens 60 s später: Hinweis auf die Berechtigung, unabhängig davon, ob das Willkommens-Popover noch kam
         after(65) { [weak self] in
             guard let self, !self.settings.permissionPromptShown, !Permission.granted else { return }
             if self.status.showPermissionPrompt() { self.settings.permissionPromptShown = true }
         }
+        #endif
     }
 
     private func after(_ s: Double, _ f: @escaping () -> Void) {
@@ -131,12 +150,14 @@ final class AppController: NSObject {
 
     private func poll() {
         #if DEBUG
-        let line = "probe[\(dockProbe.statsLine)] mag[\(dockTracker.debugItems)] flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.readRect())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
+        let line = "probe[\(dockProbe.statsLine)] mag[\(debugAX)] flakes=\(overlays.values.map { $0.snow.aliveCount }) trusted=\(permission) dock=\(String(describing: dockGeometry))  suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
+        #if !APPSTORE
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
+        #endif
         let before = runtimeState
         refreshSystem()
         if runtimeState != before { scheduleApply() }
@@ -144,6 +165,16 @@ final class AppController: NSObject {
     }
 
     private var runtimeState: RuntimeState { RuntimeState(suspended: suspended, reduceMotion: reduceMotion, energySaving: energySaving, dark: dark) }
+
+    #if DEBUG
+    private var debugAX: String {
+        #if !APPSTORE
+        return dockTracker.debugItems
+        #else
+        return "n/a"
+        #endif
+    }
+    #endif
 
     private func updateDockTracking() {
         let wanted = settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended
@@ -227,7 +258,7 @@ final class AppController: NSObject {
         let live = !s.paused && !suspended
         let lightsOn = s.lightsEnabled && live
         let snowOn = ((s.snowEnabled && snowStarted) || stormOn) && live
-        let settle = snowOn && s.settleSnow && permission && s.snowLayer == .above
+        let settle = snowOn && s.settleSnow && AppVariant.settleAllowed(accessibilityGranted: permission) && s.snowLayer == .above
         updateDockTracking()
         var st = AppState()
         st.lightsOn = lightsOn
@@ -317,7 +348,9 @@ final class AppController: NSObject {
 
     #if DEBUG
     @objc private func debugStorm() { toggleStorm() }
+    #if !APPSTORE
     @objc private func debugPrompt() { status.showPermissionPrompt() }
+    #endif
     @objc private func debugWelcome() { status.showWelcome() }
 
     /// Entwicklerhilfe: welche App liegt an einem Punkt (Durchklick-Prüfung)? Objekt "x,y;x,y;..." in globalen Koordinaten oben links.
@@ -378,7 +411,11 @@ final class AppController: NSObject {
 
     func showSettings() {
         if settingsWindow == nil {
+            #if !APPSTORE
             let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, login: loginModel, nav: settingsNav))
+            #else
+            let host = NSHostingController(rootView: SettingsView(s: settings, login: loginModel, nav: settingsNav))
+            #endif
             let w = NSWindow(contentViewController: host)
             w.title = String(localized: "settings.title")
             w.styleMask = [.titled, .closable, .miniaturizable]
@@ -387,7 +424,9 @@ final class AppController: NSObject {
             settingsWindow = w
         }
         if settingsWindow?.isVisible != true { settingsNav.tab = .general }
+        #if !APPSTORE
         permissionModel.refresh()
+        #endif
         loginModel.refresh()
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)

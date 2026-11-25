@@ -1,3 +1,4 @@
+#if !APPSTORE
 import AppKit
 import ApplicationServices
 
@@ -249,9 +250,4 @@ extension DockTracker: DockSourceRunner {
     func end() { stop() }
     func endQuiet() { stop(reportNil: false) }
 }
-
-extension DockProbe: DockSourceRunner {
-    func begin() { start() }
-    func end() { stop() }
-    func endQuiet() { stop() }
-}
+#endif

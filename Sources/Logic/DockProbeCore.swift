@@ -196,3 +196,10 @@ final class DockSourceCoordinator {
         }
     }
 }
+
+/// Platzhalter für den Weg über die Bedienungshilfen in der App-Store-Fassung (dort nicht einkompiliert, der Treffer-Test-Weg liefert alles).
+final class NullRunner: DockSourceRunner {
+    func begin() {}
+    func end() {}
+    func endQuiet() {}
+}

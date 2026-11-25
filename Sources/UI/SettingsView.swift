@@ -1,12 +1,14 @@
 import SwiftUI
 import ServiceManagement
 
+#if !APPSTORE
 final class PermissionModel: ObservableObject {
     @Published var granted = Permission.granted
 
     /// Aufgefrischt wird beim Öffnen und von `AppController.poll` (jede Sekunde), ein eigener Timer ist nicht nötig.
     func refresh() { let g = Permission.granted; if g != granted { granted = g } }
 }
+#endif
 
 enum SettingsTab: Hashable { case general, menuBar, dock, snow }
 
@@ -86,7 +88,9 @@ struct PowerModeRows: View {
 
 struct SettingsView: View {
     @ObservedObject var s: Settings
+    #if !APPSTORE
     @ObservedObject var perm: PermissionModel
+    #endif
     @ObservedObject var login: LoginModel
     @ObservedObject var nav: SettingsNav
     @State private var confirmReset = false
@@ -104,7 +108,9 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }.tag(SettingsTab.snow)
         }
         .frame(width: 470, height: 480)
+        #if !APPSTORE
         .onAppear { perm.refresh() }
+        #endif
         .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name("com.apple.dock.prefchanged"))) { _ in dockOnSide = Self.dockIsOnSide() }
     }
 
@@ -175,8 +181,10 @@ struct SettingsView: View {
             LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
             layerPicker($s.snowLayer)
             Toggle("Snow stays on windows", isOn: $s.settleSnow)
+                #if !APPSTORE
                 .disabled(!perm.granted)
                 .accessibilityHint(Text(perm.granted ? "" : "settle.hint"))
+                #endif
         }
     }
 
@@ -184,6 +192,7 @@ struct SettingsView: View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
             PowerModeRows(s: s, status: PowerStatus.shared)
+            #if !APPSTORE
             Section("Permission") {
                 HStack(spacing: 6) {
                     Image(systemName: perm.granted ? "checkmark.circle.fill" : "exclamationmark.circle")
@@ -195,6 +204,7 @@ struct SettingsView: View {
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("Open System Settings") { Permission.request(); Permission.openSystemSettings() }
             }
+            #endif
             Section {
                 Button("Reset to defaults", role: .destructive) { confirmReset = true }
                     .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
@@ -218,6 +228,7 @@ struct WelcomeView: View {
     }
 }
 
+#if !APPSTORE
 struct PermissionPromptView: View {
     let open: () -> Void
     var body: some View {
@@ -230,3 +241,4 @@ struct PermissionPromptView: View {
         .padding(16).frame(width: 280)
     }
 }
+#endif

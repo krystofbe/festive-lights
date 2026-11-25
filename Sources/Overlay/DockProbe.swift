@@ -266,3 +266,9 @@ final class DockProbe {
         }
     }
 }
+
+extension DockProbe: DockSourceRunner {
+    func begin() { start() }
+    func end() { stop() }
+    func endQuiet() { stop() }
+}
