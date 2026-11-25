@@ -50,6 +50,21 @@ struct LevelSlider: View {
     }
 }
 
+/// Gemeinsamer Aufbau der Bereiche Menüleiste, Dock und Schnee: Schalter zuoberst in eigener Gruppe, darunter die Einstellungen (ausgegraut, wenn aus).
+struct SettingsPane<Content: View>: View {
+    let title: LocalizedStringKey
+    @Binding var isOn: Bool
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Form {
+            Section { Toggle(title, isOn: $isOn) }
+            Section { content }.disabled(!isOn)
+        }
+        .formStyle(.grouped)
+    }
+}
+
 struct SettingsView: View {
     @ObservedObject var s: Settings
     @ObservedObject var perm: PermissionModel
@@ -69,28 +84,20 @@ struct SettingsView: View {
     }
 
     private var menuBar: some View {
-        Form {
-            Toggle("Lights on the menu bar", isOn: $s.lightsEnabled)
+        SettingsPane(title: "Lights on the menu bar", isOn: $s.lightsEnabled) {
             chainControls(style: $s.chainStyle, colors: $s.colorMode, pattern: $s.pattern, tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, layer: $s.lightsLayer)
-                .disabled(!s.lightsEnabled)
         }
-        .formStyle(.grouped)
     }
 
     private var dock: some View {
-        Form {
-            Toggle("Lights on the Dock", isOn: $s.dockLights)
-            Group {
-                chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
-                let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
-                Picker("Length", selection: $s.dockShape) {
-                    Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
-                    Text(LocalizedStringKey(side ? "Full height" : "Full width")).tag(DockShape.continuous)
-                }.pickerStyle(.segmented)
-            }
-            .disabled(!s.dockLights)
+        SettingsPane(title: "Lights on the Dock", isOn: $s.dockLights) {
+            chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
+            let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
+            Picker("Length", selection: $s.dockShape) {
+                Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
+                Text(LocalizedStringKey(side ? "Full height" : "Full width")).tag(DockShape.continuous)
+            }.pickerStyle(.segmented)
         }
-        .formStyle(.grouped)
     }
 
     /// Gleicher Aufbau für Menüleiste und Dock, jede Kette mit eigenen Werten.
@@ -116,31 +123,35 @@ struct SettingsView: View {
         LevelSlider(title: "Speed", value: tempo, low: "Slow", high: "Fast")
         LevelSlider(title: "Size", value: size, low: "Small", high: "Large")
         LevelSlider(title: "Spacing", value: spacing, low: "Tight", high: "Wide")
-        Picker("Layer", selection: layer) {
-            Text("Above all windows").tag(DisplayLayer.above)
-            Text("Desktop only").tag(DisplayLayer.desktop)
+        layerPicker(layer)
+    }
+
+    private func layerPicker(_ layer: Binding<DisplayLayer>) -> some View {
+        LabeledContent("Layer") {
+            Picker("Layer", selection: layer) {
+                Text("Above all windows").tag(DisplayLayer.above)
+                Text("Desktop only").tag(DisplayLayer.desktop)
+            }.pickerStyle(.segmented).labelsHidden().frame(width: 335)
         }
     }
 
     private var snow: some View {
-        Form {
+        SettingsPane(title: "Snow", isOn: $s.snowEnabled) {
             LevelSlider(title: "Amount", value: $s.snowAmount, low: "Light", high: "Heavy")
             LevelSlider(title: "Flake size", value: $s.flakeSize, low: "Small", high: "Large")
             LevelSlider(title: "Speed", value: $s.snowSpeed, low: "Slow", high: "Fast")
             LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
-            Picker("Wind", selection: $s.wind) {
-                Text("Off").tag(Wind.off)
-                Text("Blowing left").tag(Wind.left)
-                Text("Blowing right").tag(Wind.right)
+            LabeledContent("Wind") {
+                Picker("Wind", selection: $s.wind) {
+                    Text("Off").tag(Wind.off)
+                    Text("Blowing left").tag(Wind.left)
+                    Text("Blowing right").tag(Wind.right)
+                }.pickerStyle(.segmented).labelsHidden().frame(width: 335)
             }
-            Picker("Layer", selection: $s.snowLayer) {
-                Text("Above all windows").tag(DisplayLayer.above)
-                Text("Desktop only").tag(DisplayLayer.desktop)
-            }
+            layerPicker($s.snowLayer)
             Toggle("Snow stays on windows", isOn: $s.settleSnow)
                 .disabled(!perm.granted)
         }
-        .formStyle(.grouped)
     }
 
     private var general: some View {
@@ -153,6 +164,7 @@ struct SettingsView: View {
             } label: {
                 Text(LocalizedStringKey(s.powerActive ? "Low Power Mode (active now)" : "Low Power Mode"))
             }
+            .pickerStyle(.segmented)
             Text(LocalizedStringKey(s.powerMode == .automatic ? "power.automatic" : s.powerMode == .always ? "power.always" : "power.off"))
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Section("Permission") {
