@@ -94,7 +94,7 @@ struct SettingsView: View {
                 Text("Continuous").tag(DockShape.continuous)
                 Text("Exactly at the Dock").tag(DockShape.exact)
             }
-            .disabled(!s.dockLights || !perm.granted)
+            .disabled(!s.dockLights)
             Picker("Dock style", selection: $s.dockStyle) {
                 Text("Like menu bar").tag(DockStyle.sameAsBar)
                 Text("Classic").tag(DockStyle.classic)
@@ -102,9 +102,6 @@ struct SettingsView: View {
                 Text("Fir, warm gold").tag(DockStyle.firGold)
             }
             .disabled(!s.dockLights)
-            if !perm.granted {
-                Text("Exactly at the Dock needs permission, see General.").font(.caption).foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
     }

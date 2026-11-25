@@ -67,7 +67,6 @@ final class StatusController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         add("menu.lights", #selector(toggleLights), on: s.lightsEnabled)
         add("menu.dock", #selector(toggleDock), on: s.dockLights)
-        if !Permission.granted { add("menu.dock.needs", #selector(openPermission)) }
         add("menu.snow", #selector(toggleSnow), on: s.snowEnabled)
         add("menu.storm", #selector(storm), on: app.stormRunning, enabled: !app.reduceMotionActive)
         menu.addItem(.separator())
@@ -81,7 +80,6 @@ final class StatusController: NSObject, NSMenuDelegate {
     @objc private func toggleSnow() { Settings.shared.snowEnabled.toggle() }
     @objc private func storm() { app.toggleStorm() }
     @objc private func openSettings() { app.showSettings() }
-    @objc private func openPermission() { Permission.request(); Permission.openSystemSettings() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     /// Zeigt ein Popover unter dem Symbol, ohne den Fokus zu nehmen. Schließt nach `seconds` oder bei Klick daneben.
