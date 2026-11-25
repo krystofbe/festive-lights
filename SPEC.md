@@ -161,11 +161,11 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 
 - Referenzgerät: MacBook Air M2, internes Display, Standardwerte. Messung: Mittel über 60 s in der Aktivitätsanzeige.
   - Nur Lichter mit Dauerleuchten, Zeiger weit weg: unter 1 % CPU.
-  - Lichter mit Funkeln plus Schnee: unter 5 % CPU.
+  - Lichter mit Funkeln plus Schnee: unter 5 % CPU mit einer Kette, unter 7 % mit Ketten an Menüleiste und Dock.
   - Schneesturm: unter 10 % CPU.
   - Speicher unter 150 MB.
   - Für Intel gibt es keinen Zielwert, die App muss dort aber flüssig laufen.
-- Gesamtkosten zählen, nicht nur der eigene Prozess: Jede sichtbare Bewegung lässt den System-Prozess WindowServer das Bild neu zusammensetzen, das kostet je nach Gerät viel und ist nicht ganz vermeidbar. Maßstab ist deshalb ein Referenzprogramm auf demselben Gerät: ein transparentes Vollbildfenster, in dem 80 Punkte mit 60 Bildern pro Sekunde fallen. Mit Lichtern, Funkeln und Schnee darf die WindowServer-Last höchstens 3 Prozentpunkte über diesem Referenzwert liegen. Im Ruhezustand höchstens 2 Prozentpunkte über dem Wert ohne laufende App. Wo die Bildrate ohne sichtbaren Unterschied sinken kann, soll sie sinken.
+- Gesamtkosten zählen, nicht nur der eigene Prozess: Jede sichtbare Bewegung lässt den System-Prozess WindowServer das Bild neu zusammensetzen, das kostet je nach Gerät viel und ist nicht ganz vermeidbar. Maßstab ist deshalb ein Referenzprogramm auf demselben Gerät: ein transparentes Vollbildfenster, in dem 80 Punkte mit 60 Bildern pro Sekunde fallen. Mit Lichtern, Funkeln und Schnee darf die WindowServer-Last höchstens 3 Prozentpunkte über diesem Referenzwert liegen, mit Ketten an Menüleiste und Dock höchstens 6. Im Ruhezustand höchstens 2 Prozentpunkte über dem Wert ohne laufende App. Wo die Bildrate ohne sichtbaren Unterschied sinken kann, soll sie sinken.
 - Andere Apps bleiben flüssig: Scrollen und Animationen in Safari und Finder laufen mit laufender App sichtbar genauso flüssig wie ohne, auch auf 120-Hz-Displays. Eingaben (Tippen, Klicken, Ziehen) bekommen keine spürbare Verzögerung.
 - Energiebedarf in der Aktivitätsanzeige (Spalte "Energie") im Bereich typischer Hintergrund-Apps: im Ruhezustand nahe 0, mit Schnee niedrig.
 - Nur zeichnen, was sich bewegt: Steht alles still (Dauerleuchten, kein Schnee, Zeiger weit weg), wird nichts neu gezeichnet. Bildschirme ohne sichtbare Bewegung und verdeckte Bereiche verursachen keine Arbeit.
