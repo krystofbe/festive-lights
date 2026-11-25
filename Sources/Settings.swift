@@ -40,7 +40,7 @@ final class Settings: ObservableObject {
     private init() {
         #if !DEBUG
         // Im Release wirken Startargumente (zum Beispiel -chainStyle) nicht, nur gespeicherte Einstellungen
-        UserDefaults.standard.removeVolatileDomain(forName: UserDefaults.argumentDomain)
+        UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
         #endif
         load()
         observer = DefaultsObserver(keys: Settings.keys) { [weak self] in
