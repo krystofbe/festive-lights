@@ -49,6 +49,8 @@ struct Spring {
     static let release = Params(omega: 14, zeta: 0.55)
     /// Pendeln der Birne.
     static let sway = Params(omega: 13, zeta: 0.28)
+    /// Zweige biegen sich weich weg und federn zurück.
+    static let branch = Params(omega: 10, zeta: 0.4)
 
     mutating func step(target: Double, dt: Double, params p: Params) {
         let n = max(1, Int(ceil(dt / 0.004)))

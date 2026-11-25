@@ -599,3 +599,91 @@ final class GarlandTests: XCTestCase {
                              Garland.plan(length: 1000, arcLength: 250, arcCount: 4, scale: 1.0, style: .firColor, dock: false).branches.count)
     }
 }
+
+final class BeadChainTests: XCTestCase {
+    func makeChain() -> BeadChain {
+        let rest = (0..<40).map { 25.0 + Double($0) * 47 }   // Länge etwa 1900
+        return BeadChain(rest: rest, length: 1920, minGap: 20, halfGap: 47)
+    }
+
+    func testGapAroundPointer() {
+        let c = makeChain()
+        let p = 900.0
+        let t = BeadChain.targets(rest: c.rest, pointer: p, strength: 1, halfGap: 47, minGap: 20, length: 1920)
+        for x in t { XCTAssertGreaterThanOrEqual(abs(x - p), 47 - 1e-9, "Lücke um den Zeiger") }
+        XCTAssertEqual(BeadChain.targets(rest: c.rest, pointer: p, strength: 0, halfGap: 47, minGap: 20, length: 1920), c.rest, "ohne Zeigernähe bleibt alles an den Ruheplätzen")
+        // weit entfernte Perlen bleiben stehen
+        XCTAssertEqual(t[0], c.rest[0]); XCTAssertEqual(t[39], c.rest[39])
+    }
+
+    func testPushedBeadsPileUpAgainstNeighboursAtMinGap() {
+        let c = makeChain()
+        let t = BeadChain.targets(rest: c.rest, pointer: c.rest[20] + 5, strength: 1, halfGap: 47, minGap: 20, length: 1920)
+        for i in 1..<t.count { XCTAssertGreaterThanOrEqual(t[i] - t[i - 1], 20 - 1e-9) }
+        XCTAssertLessThan(t[19], c.rest[19], "Nachbar wird ein Stück mitgeschoben")
+    }
+
+    func testNeverOvertakeOrOverlapDuringFastSweepsAndJumps() {
+        var c = makeChain()
+        var pointer = 100.0
+        var dir = 1.0
+        for frame in 0..<1500 {
+            // schnelles Durchfahren hin und her, dazu Sprünge
+            pointer += dir * 40
+            if pointer > 1800 || pointer < 100 { dir = -dir }
+            if frame % 211 == 0 { pointer = Double((frame * 37) % 1700 + 100) }
+            let k: Double = frame % 400 < 300 ? 1 : 0
+            c.step(dt: 1.0 / 60, pointer: pointer, strength: k)
+            for i in 1..<c.pos.count {
+                XCTAssertGreaterThanOrEqual(c.pos[i] - c.pos[i - 1], 20 - 1e-6, "Überlappung oder Überholen bei Bild \(frame)")
+            }
+            XCTAssertGreaterThan(c.pos.first!, 0); XCTAssertLessThan(c.pos.last!, 1920)
+        }
+    }
+
+    func testReturnsWithinOneSecondWithOvershoot() {
+        var c = makeChain()
+        for _ in 0..<60 { c.step(dt: 1.0 / 60, pointer: 900, strength: 1) }
+        XCTAssertGreaterThan(abs(c.pos[19] - c.rest[19]), 10)
+        var maxOvershoot = 0.0
+        for _ in 0..<60 {
+            c.step(dt: 1.0 / 60, pointer: nil, strength: 0)
+            for i in c.pos.indices {
+                let d = c.pos[i] - c.rest[i]
+                let displacedLeft = i < 20
+                maxOvershoot = max(maxOvershoot, displacedLeft ? d : -d)
+            }
+        }
+        for i in c.pos.indices { XCTAssertLessThan(abs(c.pos[i] - c.rest[i]), 1.5, "Perle \(i) nicht binnen 1 s zurück") }
+        XCTAssertGreaterThan(maxOvershoot, 0.3, "leichtes Überschwingen")
+        for _ in 0..<120 { c.step(dt: 1.0 / 60, pointer: nil, strength: 0) }
+        XCTAssertTrue(c.isSettled())
+    }
+
+    func testReactionWithinTenthOfASecond() {
+        var c = makeChain()
+        c.step(dt: 0.1, pointer: c.rest[20] + 2, strength: 1)
+        XCTAssertGreaterThan(abs(c.pos[20] - c.rest[20]) + abs(c.pos[19] - c.rest[19]), 8)
+    }
+
+    func testRestPositionsAndCableUnaffected() {
+        var c = makeChain()
+        let rest = c.rest
+        for _ in 0..<200 { c.step(dt: 1.0 / 60, pointer: 700, strength: 1) }
+        XCTAssertEqual(c.rest, rest, "Ruhepositionen entlang des Kabels ändern sich nie, das Kabel bleibt")
+        var calm = makeChain()
+        for _ in 0..<100 { calm.step(dt: 1.0 / 60, pointer: nil, strength: 0) }
+        XCTAssertEqual(calm.pos, rest, "ohne Zeiger kein Drift")
+    }
+
+    func testGapFollowsPointerAlongChain() {
+        var c = makeChain()
+        var sum = 0.0, n = 0
+        for frame in 0..<480 {
+            let p = 300 + Double(frame) * 2   // gemächliches Entlangfahren, 120 pt/s
+            c.step(dt: 1.0 / 60, pointer: p, strength: 1)
+            if frame > 120 { sum += c.pos.map { abs($0 - p) }.min()!; n += 1 }
+        }
+        XCTAssertGreaterThan(sum / Double(n), 25, "im Mittel bleibt eine Lücke um den Zeiger, sie wandert mit")
+    }
+}

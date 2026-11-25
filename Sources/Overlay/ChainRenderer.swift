@@ -70,7 +70,8 @@ final class ChainRenderer {
     private var style = ChainStyle()
     private var layout = ChainLayout(length: 10, spacing: 40)
     private var bulbs: [Bulb] = []
-    private var lifts: [Spring] = []
+    private var beads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
+    private var coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
     private var cableDirty = true
     private var cableDirtyForGarland = true
     private var garlandSwaying = false
@@ -131,7 +132,6 @@ final class ChainRenderer {
             rebuildBulbs(new)
             rebuildGarland(new)
         }
-        if lifts.count != Int(new.length / du) + 2 { lifts = Array(repeating: Spring(), count: Int(new.length / du) + 2) }
         cableDirty = true
         cableDirtyForGarland = true
         CATransaction.commit()
@@ -148,6 +148,7 @@ final class ChainRenderer {
         let px = max(8, Int((h * scale).rounded()))
         let glowPx = max(16, Int((h * 2 * scale).rounded()))
         let glowCenter = fir ? 0.4 : 0.45
+        beads = BeadChain(rest: layout.bulbPositions, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
         for (i, b) in bulbs.enumerated() {
             b.container.bounds = CGRect(x: 0, y: 0, width: w, height: h)
             b.container.contentsScale = scale
@@ -172,6 +173,7 @@ final class ChainRenderer {
     private func rebuildGarland(_ sp: ChainSpec) {
         (branches + cones + bows).forEach { $0.container.removeFromSuperlayer() }
         branches = []; cones = []; bows = []
+        coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
         guard style.kind.isFir else { return }
         let fs = sp.bulbH / 24
         let dock = sp.isDock
@@ -211,6 +213,7 @@ final class ChainRenderer {
             p.swings = true
             cones.append(p)
         }
+        coneBeads = BeadChain(rest: plan.cones, length: sp.length, minGap: max(1.4 * FirSprites.coneSize.width * fs * Garland.coneScale, 8), halfGap: sp.spacing)
         let bpx = max(8, Int((FirSprites.bowSize.height * fs * Garland.bowScale * scale).rounded()))
         for u in plan.bows {
             let p = piece(FirSprites.pdfImage("bow", size: FirSprites.bowSize, pixelHeight: bpx), size: FirSprites.bowSize, anchor: FirSprites.bowAnchor,
@@ -220,57 +223,51 @@ final class ChainRenderer {
         }
     }
 
-    /// Zweige, Zapfen und Schleifen folgen dem Kabel. Gibt zurück, ob Zapfen noch pendeln.
-    private func updateGarland(_ sp: ChainSpec, dt: Double, reduce: Bool, origin: CGPoint) -> Bool {
-        var swaying = false
+    private func cableV(_ sp: ChainSpec, _ u: Double) -> Double { sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) }
+
+    /// Zweige, Zapfen und Schleifen sitzen am Kabel. Zweige biegen sich vom Zeiger weg, Zapfen rutschen wie die Birnen.
+    /// Gibt zurück, ob noch etwas schwingt.
+    private func updateGarland(_ sp: ChainSpec, dt: Double, reduce: Bool, origin: CGPoint, pointerU: Double?, strength k: Double) -> Bool {
+        var moving = false
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
-        for piece in branches + cones + bows {
+        for (j, c) in cones.enumerated() where j < coneBeads.pos.count { c.u = coneBeads.pos[j] }
+        let first = branches.count, second = first + cones.count
+        for (idx, piece) in (branches + cones + bows).enumerated() {
             let u = piece.u
-            let w = liftAt(u)
-            let v = vValue(sp, base: sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)), w: w)
+            let v = cableV(sp, u)
             let g = sp.point(u: u, v: v)
             piece.container.position = CGPoint(x: g.x - origin.x, y: g.y - origin.y)
-            let v2 = vValue(sp, base: sp.sag * layout.sagFactor(at: min(u + 3, sp.length - 0.001)), w: liftAt(u + 3))
-            let v1 = vValue(sp, base: sp.sag * layout.sagFactor(at: max(u - 3, 0)), w: liftAt(u - 3))
+            let v2 = cableV(sp, u + 3), v1 = cableV(sp, u - 3)
             let theta = atan2(v2 - v1, 6)
-            let target = piece.rotation + 0.5 * theta * sp.cross
-            var angle = target
-            if piece.swings && !reduce {
+            var target = piece.rotation + 0.5 * theta * sp.cross
+            if idx < first, let pu = pointerU, k > 0 {
+                // Zweige biegen sich weich vom Zeiger weg
+                let d = abs(u - pu)
+                let w = d < 90 ? pow(1 - d / 90, 2) : 0
+                target += (u >= pu ? 1 : -1) * 0.55 * k * w * -sp.cross
+            }
+            if idx >= first && idx < second {
+                let i = idx - first
+                let vel = i < coneBeads.vel.count ? coneBeads.vel[i] : 0
+                target += -sp.cross * min(max(vel / 900, -0.6), 0.6)
+            }
+            if reduce { piece.sway = Spring(value: target, velocity: 0) }
+            else if piece.swings || idx < first {
                 if abs(piece.sway.value - target) > 0.0008 || abs(piece.sway.velocity) > 0.003 {
-                    piece.sway.step(target: target, dt: dt, params: Spring.sway)
-                    swaying = true
+                    piece.sway.step(target: target, dt: dt, params: idx < first ? Spring.branch : Spring.sway)
+                    moving = true
                     if abs(piece.sway.value - target) < 0.0008 && abs(piece.sway.velocity) < 0.003 { piece.sway = Spring(value: target, velocity: 0) }
                 }
-                angle = piece.sway.value
             } else { piece.sway = Spring(value: target, velocity: 0) }
-            piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1), piece.mirrored ? -1 : 1, 1, 1)
-            piece.container.opacity = Float(Dodge.opacity(forWeight: w))
+            piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + piece.sway.value, 0, 0, 1), piece.mirrored ? -1 : 1, 1, 1)
         }
-        return swaying
-    }
-
-    private func sampleV(_ sp: ChainSpec, _ i: Int, base: Double) -> Double {
-        let w = lifts[min(i, lifts.count - 1)].value
-        return vValue(sp, base: base, w: w)
-    }
-
-    private func vValue(_ sp: ChainSpec, base: Double, w: Double) -> Double {
-        if sp.liftToTop { return max(0.8, base * (1 - w)) }
-        return base + sp.liftSign * w * sp.liftMax
-    }
-
-    private func liftAt(_ u: Double) -> Double {
-        let f = max(0, u) / du
-        let i = min(Int(f), lifts.count - 2)
-        let t = min(max(f - Double(i), 0), 1)
-        return lifts[i].value * (1 - t) + lifts[i + 1].value * t
+        return moving
     }
 
     /// 0: nichts zu tun, 1: nur Muster (niedrige Bildrate genügt), 2: Bewegung (volle Bildrate).
     @discardableResult
     func update(time: Double, dt: Double, pointer: CGPoint?) -> Int {
         guard let sp = spec, !bulbs.isEmpty, wantVisible || window.rootLayer.presentation()?.opacity ?? 0 > 0.01 else { return 0 }
-        var active = false
         let reduce = style.reduceMotion
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
@@ -294,99 +291,91 @@ final class ChainRenderer {
         }
         lastPatternTime = time
 
-        // Zeigerabstand und Federn
-        var target = [Double](repeating: 0, count: lifts.count)
-        var anyTarget = false
+        // Zeiger: Nähe zum Kabel bestimmt die Stärke, die Lücke sitzt am Fußpunkt des Zeigers
+        var k = 0.0
+        var pu: Double?
         if let p = pointer, !reduce {
             let rel = CGPoint(x: p.x - sp.p0.x, y: p.y - sp.p0.y)
-            let pu = Double(rel.x * sp.uDir.dx + rel.y * sp.uDir.dy)
+            let u0 = Double(rel.x * sp.uDir.dx + rel.y * sp.uDir.dy)
             let pv = Double(rel.x * sp.hang.dx + rel.y * sp.hang.dy)
             let inBar = sp.liftToTop && pv < -1
-            if !inBar, pu > -80, pu < sp.length + 80, abs(pv) < 200 {
-                let lo = max(0, Int((pu - 70) / du)), hi = min(lifts.count - 1, Int((pu + 70) / du) + 1)
+            if !inBar, u0 > -80, u0 < sp.length + 80, abs(pv) < 200 {
+                var dmin = Double.infinity
+                let lo = max(0, Int((u0 - 70) / du)), hi = min(Int(sp.length / du), Int((u0 + 70) / du) + 1)
                 if lo <= hi {
                     for i in lo...hi {
                         let u = Double(i) * du
-                        let v = sp.sag * layout.sagFactor(at: min(u, sp.length - 0.001))
-                        let d = Dodge.distance(from: CGPoint(x: pu, y: pv), toSegment: CGPoint(x: u, y: v), CGPoint(x: u, y: v + 0.6 * sp.bulbH))
-                        target[i] = Dodge.liftWeight(distance: d)
-                        if target[i] > 0 { anyTarget = true }
+                        let v = cableV(sp, u)
+                        dmin = min(dmin, Dodge.distance(from: CGPoint(x: u0, y: pv), toSegment: CGPoint(x: u, y: v), CGPoint(x: u, y: v + 0.6 * sp.bulbH)))
                     }
                 }
+                k = Dodge.liftWeight(distance: dmin)
+                if k > 0 { pu = u0 }
             }
         }
-        var springsActive = anyTarget
-        for i in lifts.indices {
-            if lifts[i].isSettled(target: target[i]) { lifts[i].value = target[i]; lifts[i].velocity = 0; continue }
-            lifts[i].lift(target: target[i], dt: dt)
-            springsActive = true
+        if reduce { beads.snapToRest(); coneBeads.snapToRest() }
+        else if k > 0 || !beads.isSettled() || !coneBeads.isSettled() {
+            beads.step(dt: dt, pointer: pu, strength: k)
+            coneBeads.step(dt: dt, pointer: pu, strength: k)
         }
-        if reduce { for i in lifts.indices { lifts[i] = Spring() }; springsActive = cableDirty }
+        var moving = k > 0 || !beads.isSettled() || !coneBeads.isSettled()
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         let origin = window.frame.origin
         func local(_ g: CGPoint) -> CGPoint { CGPoint(x: g.x - origin.x, y: g.y - origin.y) }
 
-        if springsActive || cableDirty {
+        if cableDirty {
             let path = CGMutablePath()
-            for i in 0..<lifts.count {
+            let n = Int(sp.length / du) + 1
+            for i in 0...n {
                 let u = min(Double(i) * du, sp.length)
-                let base = sp.sag * layout.sagFactor(at: min(u, sp.length - 0.001))
-                let pt = local(sp.point(u: u, v: sampleV(sp, i, base: base)))
+                let pt = local(sp.point(u: u, v: cableV(sp, u)))
                 if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
             }
             cable.path = path
             cableDirty = false
         }
 
-        // Birnen
+        // Birnen: Position entlang des Kabels aus der Perlenkette, Neigung aus der Geschwindigkeit
         let intro = introStart.map { time - $0 } ?? 10
         let n = bulbs.count
         var swayActive = false
+        let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (i, b) in bulbs.enumerated() {
-            let u = layout.bulbPositions[i]
-            let base = sp.sag * layout.sagFactor(at: u)
-            let w = liftAt(u)
-            let v = vValue(sp, base: base, w: w)
-            b.container.position = local(sp.point(u: u, v: v))
-
-            let v2 = vValue(sp, base: sp.sag * layout.sagFactor(at: min(u + 3, sp.length - 0.001)), w: liftAt(u + 3))
-            let v1 = vValue(sp, base: sp.sag * layout.sagFactor(at: max(u - 3, 0)), w: liftAt(u - 3))
-            let theta = atan2(v2 - v1, 6)
-            let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
+            let u = beads.pos[i]
+            b.container.position = local(sp.point(u: u, v: cableV(sp, u)))
+            let theta = atan2(cableV(sp, u + 3) - cableV(sp, u - 3), 6)
             let tilt = ChainLayout.tilt(index: i) * .pi / 180
-            let targetAngle = tilt + 0.5 * theta * sp.cross
-            var angle = targetAngle
+            let target = tilt + 0.5 * theta * sp.cross - sp.cross * min(max(beads.vel[i] / 900, -0.6), 0.6)
+            var angle = target
             if !reduce {
-                if !b.sway.isSettled(target: targetAngle, eps: 0.0008) || abs(b.sway.value - targetAngle) > 0.0008 {
-                    b.sway.step(target: targetAngle, dt: dt, params: Spring.sway)
+                if abs(b.sway.value - target) > 0.0008 || abs(b.sway.velocity) > 0.003 {
+                    b.sway.step(target: target, dt: dt, params: Spring.sway)
                     swayActive = true
-                    if b.sway.isSettled(target: targetAngle, eps: 0.0008) { b.sway.value = targetAngle; b.sway.velocity = 0 }
+                    if abs(b.sway.value - target) < 0.0008 && abs(b.sway.velocity) < 0.003 { b.sway = Spring(value: target, velocity: 0) }
                 }
                 angle = b.sway.value
-            } else { b.sway = Spring(value: targetAngle, velocity: 0) }
+            } else { b.sway = Spring(value: target, velocity: 0) }
             b.container.transform = CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1)
 
             var bright = PatternSchedule.brightness(index: i, count: n, time: time, pattern: reduce ? .steady : style.pattern, tempo: style.tempo)
             if intro < 1.8 {
                 let s = min(max((intro - Double(i) / Double(n) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
-                active = true
             }
             b.lit.opacity = Float(bright)
             b.glow.opacity = Float(bright * 0.9)
-            b.container.opacity = Float(Dodge.opacity(forWeight: w))
         }
-        if springsActive || cableDirtyForGarland || garlandSwaying {
-            garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin)
+        if moving || swayActive || cableDirtyForGarland || garlandSwaying {
+            garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin, pointerU: pu, strength: k)
             if garlandSwaying { swayActive = true }
         }
         cableDirtyForGarland = false
         CATransaction.commit()
-        if style.pattern != .steady && !reduce { active = true }
-        lastMotion = springsActive || swayActive || intro < 1.8
+        moving = moving || swayActive
+        lastMotion = moving || intro < 1.8
         if lastMotion { return 2 }
-        return active ? 1 : 0
+        return (style.pattern != .steady && !reduce) ? 1 : 0
     }
 }
