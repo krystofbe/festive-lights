@@ -37,3 +37,5 @@ Dock-Vergrößerung ohne Berechtigung nach dem Review (c85a896, Test-Build, 8 s 
 
 Dock-Vergrößerung ohne Berechtigung (acde7e3, Test-Build, 8 s Zeigerkreisen): Haupt-Thread je Bild im Mittel 0,012 ms, höchstens 0,047 ms, Hintergrund je Messung im Mittel 4,6 ms, höchstens 25,8 ms (vorher 0,011 / 0,044 und 4,5 / 22,6).
 | 25.11.2026 | 6613994 | Ruhezustand, mit Berechtigung | 1,3 | 0,7 | zweite Nachprüfung; gleich wie acde7e3 (1,3 / 0,7), Standard nicht neu gemessen (keine Änderung an Zeichnen oder Physik) |
+
+A/B-Messung Ruhezustand am Testrechner (25.11.2026, direkt hintereinander, gleiche Bedingungen, Test-Build, mit Berechtigung, WindowServer / App): c85a896 1,3 / 0,7 und 1,3 / 0,7, 6613994 1,3 / 0,6 und 1,3 / 0,7 (ein Lauf mit 7,2 / 0,0 und einer mit 4,0 / 0,7 durch Fremdlast beziehungsweise nicht gestartete App, nicht gewertet beziehungsweise nur App gewertet). Der alte Stand liegt heute ebenfalls bei 0,7, der Unterschied zu den 0,4 vom Vormittag ist also Schwankung des Testrechners, keine Regression.
