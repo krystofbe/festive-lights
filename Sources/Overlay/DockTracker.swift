@@ -34,6 +34,10 @@ final class DockTracker {
     private var started = false
     private var inZone = false
     private var autohide = false
+    private var magnificationOn = false
+    private var tile = 64.0
+    private var reading = false
+    private let axQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockax", qos: .userInteractive)
     var debugItems = ""
     private var timer: Timer?
     private var stabilizer = DockFrameStabilizer()
@@ -66,6 +70,8 @@ final class DockTracker {
         guard started else { return }
         burstUntil = CACurrentMediaTime() + 2.5
         autohide = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+        magnificationOn = Self.magnification
+        tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
         schedule(1.0 / 30)
     }
 
@@ -84,20 +90,33 @@ final class DockTracker {
         let geo = Permission.granted ? Self.read() : nil
         startMagnificationIfNeeded()
         // Vergrößerung beim Überfahren ignorieren: Zeiger im Dock-Bereich friert den Rahmen ein.
-        if Self.magnification, let c = current, c.rect.insetBy(dx: -40, dy: -40).contains(NSEvent.mouseLocation) { return }
+        if magnificationOn, let c = current, c.rect.insetBy(dx: -40, dy: -40).contains(NSEvent.mouseLocation) { return }
         guard let result = stabilizer.feed(time: now, frame: geo?.rect) else { return }
         current = result == nil ? nil : geo
-        restItems = current == nil ? [] : (Self.readItems() ?? [])
+        restItems = current == nil ? [] : (Self.readItems(primaryHeight: Double(NSScreen.screens.first?.frame.height ?? 0)) ?? [])
         onChange?(current)
     }
 
-    /// Während der Zeiger über dem Dock ist (Vergrößerung an): Symbolrahmen mit Bildrate lesen, sonst nichts tun.
+    /// Während der Zeiger über dem Dock ist (Vergrößerung an): Symbolrahmen lesen, sonst nichts tun. Die Abfrage läuft auf einer eigenen
+    /// Queue (höchstens eine zugleich), der Haupt-Thread wartet nie auf das Dock. Bei der ersten Störung bricht sie ab.
     private func pollMagnification() {
-        guard Self.magnification, let c = current else { stopMagnification(); return }
-        let near = c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation)
+        guard magnificationOn, current != nil else { stopMagnification(); return }
+        let near = current!.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation)
         if !near && !spansActive { stopMagnification(); return }
-        guard let items = Self.readItems(), items.count == restItems.count, !items.isEmpty else { return }
-        let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
+        guard !reading else { return }
+        reading = true
+        let primary = Double(NSScreen.screens.first?.frame.height ?? 0)
+        axQueue.async { [weak self] in
+            let items = Self.readItems(primaryHeight: primary)
+            DispatchQueue.main.async { self?.applyItems(items) }
+        }
+    }
+
+    private func applyItems(_ items: [CGRect]?) {
+        reading = false
+        guard magnificationOn, let c = current else { stopMagnification(); return }
+        let near = c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation)
+        guard let items, items.count == restItems.count, !items.isEmpty else { if !near && !spansActive { stopMagnification() }; return }
         var spans: [DockProfile.Span] = []
         for (r, rest) in zip(items, restItems) {
             let lift = DockProfile.lift(edge: c.edge, current: r, rest: rest, tile: tile, barLine: c.edgeLine)
@@ -113,7 +132,7 @@ final class DockTracker {
     }
 
     private func startMagnificationIfNeeded() {
-        guard magTimer == nil, Self.magnification, let c = current, c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation) else { return }
+        guard magnificationOn, magTimer == nil, let c = current, c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation) else { return }
         let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.pollMagnification() }
         RunLoop.main.add(t, forMode: .common)
         magTimer = t
@@ -137,11 +156,10 @@ final class DockTracker {
     }
 
     /// Rahmen aller Dock-Symbole (Cocoa-Koordinaten), bei Vergrößerung die aktuell vergrößerten.
-    static func readItems() -> [CGRect]? {
-        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first,
-              let primary = NSScreen.screens.first else { return nil }
+    static func readItems(primaryHeight: Double) -> [CGRect]? {
+        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { return nil }
         let el = AXUIElementCreateApplication(app.processIdentifier)
-        AXUIElementSetMessagingTimeout(el, 0.1)
+        AXUIElementSetMessagingTimeout(el, 0.05)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(el, kAXChildrenAttribute as CFString, &ref) == .success, let kids = ref as? [AXUIElement] else { return nil }
         for k in kids {
@@ -153,10 +171,10 @@ final class DockTracker {
             var out: [CGRect] = []
             for it in items {
                 var fv: CFTypeRef?
-                guard AXUIElementCopyAttributeValue(it, "AXFrame" as CFString, &fv) == .success else { continue }
+                guard AXUIElementCopyAttributeValue(it, "AXFrame" as CFString, &fv) == .success else { return nil }   // erste Störung: Abbruch
                 var r = CGRect.zero
                 AXValueGetValue(fv as! AXValue, .cgRect, &r)
-                out.append(CGRect(x: r.minX, y: primary.frame.height - r.maxY, width: r.width, height: r.height))
+                out.append(CGRect(x: r.minX, y: primaryHeight - r.maxY, width: r.width, height: r.height))
             }
             return out
         }
