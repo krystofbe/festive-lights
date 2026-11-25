@@ -67,7 +67,7 @@ final class ChainRenderer {
         var mirrored = false
         var sway = Spring()
         var swings = false
-        var chainKey = ""
+        var chainIdx = 0
         var slot = 0
         var bauble: CALayer?
         var baubleSway = Spring()
@@ -75,7 +75,8 @@ final class ChainRenderer {
 
     private(set) var spec: ChainSpec?
     private var branches: [Piece] = [], cones: [Piece] = [], bows: [Piece] = []
-    private var branchChains: [String: BeadChain] = [:]
+    private var branchChains: [BeadChain] = []
+    private var allPieces: [Piece] = []
     private var style = ChainStyle()
     private var layout = ChainLayout(length: 10, spacing: 40)
     private var bulbs: [Bulb] = []
@@ -205,7 +206,7 @@ final class ChainRenderer {
         strand.removeFromSuperlayer()
         branches = []; cones = []; bows = []
         coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
-        branchChains = [:]
+        branchChains = []; allPieces = []
         guard style.kind.isFir else { return }
         let fs = unitScale(sp)
         let dock = sp.isDock
@@ -250,17 +251,17 @@ final class ChainRenderer {
         }
         if !frontStart { content.addSublayer(cable) }
         // Zweig-Ansatzpunkte rutschen wie die Birnen am Kabel, die Nadelspitzen dürfen nicht in die Lücke ragen
-        var perLayer: [String: [(piece: Piece, e: (left: Double, right: Double))]] = [:]
+        var perLayer = [[(piece: Piece, e: (left: Double, right: Double))]](repeating: [], count: BranchLayer.allCases.count)
         for (piece, br) in zip(branches, sortedIdx.map({ plan.branches[$0] })) {
             let k = branchScale(br)
             let e = Garland.extent(layer: br.layer, sprite: br.sprite)
             let m = br.mirrored ? (left: e.right, right: e.left) : e
-            piece.chainKey = br.layer.rawValue
-            perLayer[br.layer.rawValue, default: []].append((piece, (m.left * k * 1.2, m.right * k * 1.2)))
+            piece.chainIdx = br.layer.index
+            perLayer[br.layer.index].append((piece, (m.left * k * 1.2, m.right * k * 1.2)))
         }
-        for (key, list) in perLayer {
+        branchChains = perLayer.map { list in
             for (i, item) in list.enumerated() { item.piece.slot = i }
-            branchChains[key] = BeadChain(rest: list.map { $0.piece.u }, length: sp.length, minGap: 8, halfGap: sp.spacing, extents: list.map { $0.e })
+            return BeadChain(rest: list.isEmpty ? [0] : list.map { $0.piece.u }, length: sp.length, minGap: 8, halfGap: sp.spacing, extents: list.isEmpty ? [(0, 0)] : list.map { $0.e })
         }
         bulbs.forEach { content.addSublayer($0.container) }
         // Kugeln hängen als Kind ihres Zweigs an der Stelle mit Nadeln nahe der Spitze und folgen ihm beim Rutschen und Biegen
@@ -309,6 +310,7 @@ final class ChainRenderer {
             p.container.contentsScale = scale
             bows.append(p)
         }
+        allPieces = branches + cones + bows
     }
 
     private var dockLift: [Double] = []
@@ -348,9 +350,9 @@ final class ChainRenderer {
         var moving = false
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (j, c) in cones.enumerated() where j < coneBeads.pos.count { c.u = coneBeads.pos[j] }
-        for b in branches { if let c = branchChains[b.chainKey], b.slot < c.pos.count { b.u = c.pos[b.slot] } }
+        for b in branches { let c = branchChains[b.chainIdx]; if b.slot < c.pos.count { b.u = c.pos[b.slot] } }
         let first = branches.count, second = first + cones.count
-        for (idx, piece) in (branches + cones + bows).enumerated() {
+        for (idx, piece) in allPieces.enumerated() {
             let u = piece.u
             let v = cableV(sp, u, wave: false)
             let g = sp.point(u: u, v: v)
@@ -360,7 +362,7 @@ final class ChainRenderer {
             var target = piece.rotation + 0.5 * theta * sp.cross
             if idx < first {
                 // Zweige biegen sich leicht in Rutschrichtung und federn beim Zurückrutschen nach
-                let vel = branchChains[piece.chainKey].map { piece.slot < $0.vel.count ? $0.vel[piece.slot] : 0 } ?? 0
+                let vel = piece.slot < branchChains[piece.chainIdx].vel.count ? branchChains[piece.chainIdx].vel[piece.slot] : 0
                 target += -sp.cross * min(max(vel / 700, -0.5), 0.5)
             }
             if idx >= first && idx < second {
@@ -380,7 +382,7 @@ final class ChainRenderer {
             piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + piece.sway.value, 0, 0, 1), (piece.mirrored ? -1 : 1) * grow, grow, 1)
             if let bl = piece.bauble {
                 // Die Kugel hängt senkrecht an ihrem Faden und pendelt nach, wenn der Zweig rutscht
-                let vel = branchChains[piece.chainKey].map { piece.slot < $0.vel.count ? $0.vel[piece.slot] : 0 } ?? 0
+                let vel = piece.slot < branchChains[piece.chainIdx].vel.count ? branchChains[piece.chainIdx].vel[piece.slot] : 0
                 let target = -sp.cross * min(max(vel / 900, -0.6), 0.6)
                 if reduce { piece.baubleSway = Spring(value: target, velocity: 0) }
                 else if abs(piece.baubleSway.value - target) > 0.0008 || abs(piece.baubleSway.velocity) > 0.003 {
@@ -393,6 +395,8 @@ final class ChainRenderer {
         }
         return moving
     }
+
+    private func chainsSettled() -> Bool { beads.isSettled() && coneBeads.isSettled() && branchChains.allSatisfy { $0.isSettled() } }
 
     /// 0: nichts zu tun, 1: nur Muster (niedrige Bildrate genügt), 2: Bewegung (volle Bildrate).
     @discardableResult
@@ -445,15 +449,15 @@ final class ChainRenderer {
                 if k > 0 { pu = u0 }
             }
         }
-        var branchesSettled = true
-        if branchChains.values.contains(where: { !$0.isSettled() }) { branchesSettled = false }
-        if reduce { beads.snapToRest(); coneBeads.snapToRest(); for key in branchChains.keys { branchChains[key]!.snapToRest() } }
-        else if k > 0 || !beads.isSettled() || !coneBeads.isSettled() || !branchesSettled {
+        if reduce {
+            beads.snapToRest(); coneBeads.snapToRest()
+            for i in branchChains.indices { branchChains[i].snapToRest() }
+        } else if k > 0 || !chainsSettled() {
             beads.step(dt: dt, pointer: pu, strength: k)
             coneBeads.step(dt: dt, pointer: pu, strength: k)
-            for key in branchChains.keys { branchChains[key]!.step(dt: dt, pointer: pu, strength: k) }
+            for i in branchChains.indices { branchChains[i].step(dt: dt, pointer: pu, strength: k) }
         }
-        var moving = k > 0 || !beads.isSettled() || !coneBeads.isSettled() || branchChains.values.contains { !$0.isSettled() }
+        var moving = k > 0 || !chainsSettled()
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)

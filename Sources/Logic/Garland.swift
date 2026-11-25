@@ -5,7 +5,10 @@ enum ChainStyleKind: String, CaseIterable {
     var isFir: Bool { self != .classic }
 }
 
-enum BranchLayer: String { case back, mid, hang, front, cluster }
+enum BranchLayer: String, CaseIterable {
+    case back, mid, hang, front, cluster
+    var index: Int { Self.allCases.firstIndex(of: self)! }
+}
 
 struct GarlandBranch: Equatable {
     var layer: BranchLayer
