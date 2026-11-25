@@ -97,7 +97,7 @@ NSPopover erschien auf macOS 26 etwa 230 pt unter dem Menüleisten-Symbol (Pfeil
 - Dock: schmale Girlande mit hinteren, mittleren und vorderen Zweigen (Skalierung 0,2), ohne hängende Zweige, Zapfen und Schleifen. Die Birnen sind die kleinen Mini-Birnen im üblichen Dock-Maß.
 - Performance: Alle Zweige sind Layer mit geteilten Bildern und werden nur neu positioniert, wenn sich Federn bewegen. Im Stillstand kostet die Girlande nichts. Ruhezustand mit Tanne warmgold gemessen: WindowServer 1,7 %, App 0,8 % (gleich wie klassisch).
 
-Nach dem Praxistest schlanker (SPEC Commit 4843b35): `Garland.density` 0,4, `branchScale` 0,45, `hangScale` 0,21, Zapfen und Schleifen mit 0,6, Durchhang bei Tanne 0,2 Birnenhöhen, Birnen unverändert. Gemessen am Testrechner (Tanne warmgold, Mittelstellung, dunkler Grund): dichtes Grün (mindestens 10 % der Spalten belegt) bis 22 pt unter der Menüleiste, tiefste Zweigspitzen 48 pt. Am Dock sind Ansatzpunkte fest alle 16 pt.
+Nach dem Praxistest schlanker (SPEC Commit 4843b35): `Garland.density` 0,4, `branchScale` 0,45, `hangScale` 0,21, Zapfen und Schleifen mit 0,6, Durchhang bei Tanne zunächst 0,2 Birnenhöhen (später auf 0,45 geändert, siehe oben), Birnen unverändert. Gemessen am Testrechner (Tanne warmgold, Mittelstellung, dunkler Grund): dichtes Grün (mindestens 10 % der Spalten belegt) bis 22 pt unter der Menüleiste, tiefste Zweigspitzen 48 pt. Am Dock sind Ansatzpunkte fest alle 16 pt.
 
 ## Funkeln ruhiger (SPEC Commit 5aee61b)
 Phasen von 6 s: In geraden Phasen dürfen nur Birnen mit gerader Nummer dimmen, in ungeraden nur die ungeraden. Benachbarte Birnen dimmen dadurch nie gleichzeitig (getestet über 150 Birnen und 150 s). Jede Birne dimmt in ihrer Phase mit Wahrscheinlichkeit 0,5 einmal für 1,5 bis 3 s, Aus- und Aufglimmen je 0,8 s mit smoothstep (bei kurzen Ereignissen kürzer). Das ergibt im Test im Mittel etwa 6 % gedimmte Birnen. Bildrate fürs Muster bleibt 22 pro Sekunde: Bei 0,8 s Übergang ändert sich die Deckkraft je Bild um höchstens etwa 8 %, das wirkt nicht stufig.
@@ -169,3 +169,12 @@ Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (
 - N7: Pause, Sperre und Quellwechsel halten beide Quellen ohne Meldung an (`endQuiet`), `exactResult` bleibt bis zur ersten neuen stabilen Messung stehen. N9: `DockTracker.stop` beendet die Vergrößerungsabfrage und löscht die Spannen.
 - N10: DECISIONS an Durchhang 0,45, Ausweichen und Glanz 50 % angepasst.
 - Tests: Die Logik des Treffer-Test-Wegs liegt in `DockProbeCore` (ohne Fensterserver, Uhr als Parameter): Messung und Auswertung gegen ein Fake-Dock (unten, links, rechts, zweiter Bildschirm, ausgeblendet), veralteter gegen frischer Snapshot, Watchdog und Generation, Marke der Schleife. Der Quellwechsel (Berechtigung entzogen und erteilt, Pause) läuft über `DockSourceCoordinator` mit Fakes. Das alte Test mit der lokalen Variable ist ersetzt. Nicht abgedeckt bleibt die dünne Hülle (`Timer`, `DispatchQueue`, `NSWindow.windowNumber`) und `RuntimeStateTests` prüft weiter nur die Gleichheit.
+
+## Zweite Nachprüfung 952d48b
+- 7: App-Start und -Ende lösen nur noch für `com.apple.dock` einen Burst aus (beide Pfade). Befund 8 von f1f6f15 ist damit begründet: Der Dock-Neustart wird erkannt.
+- 1: `pointerMoved` steigt ohne Auto-Hide und Vergrößerung sofort aus, ohne Arrays anzulegen.
+- 2 und 3: Der Snapshot wird alle 0,4 s neu gelesen, solange der Zustand unfertig oder die Messung unplausibel ist (`BurstPlanner`, höchstens 6 s). Der Rückfall auf "durchgehend" braucht 0,65 s statt 0,35 s, also mehr als Nachlesen plus Messtakt.
+- 4: `measureStarted` trägt die Generation, eine abgelöste Messung wird nicht mehr als Hänger der neuen gewertet. 6: höchstens eine wartende Vergrößerungsschleife.
+- 5: `exactResult` wird bei Pause, Sperre und abgeschaltetem Dock auf nil gesetzt, `DockProbe.stop` setzt Leiste, Snapshot und Burst zurück. Bei reinem Quellwechsel bleibt der alte Rahmen bewusst stehen (kein Sprung der Kette).
+- 8: Im Bedienungshilfen-Pfad löst der Kantenstreifen nur einen Burst aus, wenn keiner läuft.
+- Test: `BurstPlannerTests` prüft die Verdrahtung von `burst(event:)` (Lesen bei Ereignis, Nachlesen im 0,4-s-Takt, Messen nur bei Ereignis oder Start, Ende nach Ablauf, Verlängerung bei unfertigem Zustand, Höchstlänge) mit der Uhr als Parameter. Timer und Queues selbst bleiben ungetestet.

@@ -47,7 +47,9 @@ final class DockTracker {
         burst()
         let nc = NSWorkspace.shared.notificationCenter
         for n in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
-            observers.append(nc.addObserver(forName: n, object: nil, queue: .main) { [weak self] _ in self?.burst() })
+            observers.append(nc.addObserver(forName: n, object: nil, queue: .main) { [weak self] note in
+                if (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier == "com.apple.dock" { self?.burst() }
+            })
         }
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in self?.burst() })
         observers.append(DistributedNotificationCenter.default().addObserver(forName: NSNotification.Name("com.apple.dock.prefchanged"), object: nil, queue: .main) { [weak self] _ in self?.burst() })
@@ -160,7 +162,7 @@ final class DockTracker {
         if let c = current {
             let inside = c.rect.insetBy(dx: -20, dy: -20).contains(m)
             if inside != inZone { inZone = inside; if autohide { burst() } }
-        } else if autohide, DockProbeCore.edgeStrips(screens: NSScreen.screens.map(\.frame), orientation: orientation).contains(where: { $0.contains(m) }) { burst() }
+        } else if autohide, DockProbeCore.edgeStrips(screens: NSScreen.screens.map(\.frame), orientation: orientation).contains(where: { $0.contains(m) }), timer == nil { burst() }
     }
 
     private func stopMagnification() { magTimer?.invalidate(); magTimer = nil; spansActive = false }

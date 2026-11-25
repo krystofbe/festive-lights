@@ -120,19 +120,52 @@ struct ProbeScheduler {
     mutating func stop() { generation += 1; measuring = false }
 }
 
-/// Wann die Dock-Einstellungen neu gelesen werden: bei jedem Ereignis sofort und einmal kurz danach (AppKit zieht `visibleFrame` nach).
+/// Wann die Dock-Einstellungen neu gelesen werden: bei jedem Ereignis sofort und danach alle 0,4 s, solange der Zustand noch nicht
+/// feststeht (AppKit zieht `visibleFrame` womöglich später nach).
 struct SnapshotPolicy {
     static let followUp = 0.4
     private var again: Double?
 
     mutating func event(now: Double) { again = now + Self.followUp }
+    mutating func reset() { again = nil }
 
-    /// true, wenn jetzt nachgelesen werden soll.
-    mutating func due(now: Double) -> Bool {
+    /// true, wenn jetzt nachgelesen werden soll. `keepGoing`: danach in 0,4 s erneut (Zustand unfertig oder unplausibel).
+    mutating func due(now: Double, keepGoing: Bool = false) -> Bool {
         guard let a = again, now >= a else { return false }
-        again = nil
+        again = keepGoing ? now + Self.followUp : nil
         return true
     }
+}
+
+/// Ablauf eines Bursts (Haupt-Thread, Uhr als Parameter): wann gelesen, gemessen und beendet wird.
+struct BurstPlanner {
+    struct Plan: Equatable { var retake: Bool; var measure: Bool; var startTimer: Bool }
+    struct Tick: Equatable { var retake: Bool; var ended: Bool }
+    static let maxLength = 6.0
+
+    private(set) var active = false
+    private var start = 0.0
+    private var until = 0.0
+    private var policy = SnapshotPolicy()
+
+    /// `event`: Dock-, Bildschirm- oder App-Ereignis (liest neu und misst sofort). Zeigerbewegungen messen nur beim Start eines Bursts.
+    mutating func request(now: Double, duration: Double, event: Bool, haveSnapshot: Bool) -> Plan {
+        let fresh = !active
+        if fresh { active = true; start = now }
+        if event { policy.event(now: now) }
+        until = max(until, now + duration)
+        return Plan(retake: event || !haveSnapshot, measure: event || fresh, startTimer: fresh)
+    }
+
+    /// Ein Takt des Timers. `settling`: Zustand noch nicht gemeldet. `unavailable`: letzte Messung unplausibel oder nichts gefunden.
+    mutating func tick(now: Double, settling: Bool, unavailable: Bool) -> Tick {
+        let retake = policy.due(now: now, keepGoing: settling || unavailable)
+        if now > until, settling, now - start < Self.maxLength { until = now + 0.3 }
+        if now > until { active = false; return Tick(retake: retake, ended: true) }
+        return Tick(retake: retake, ended: false)
+    }
+
+    mutating func reset() { self = BurstPlanner() }
 }
 
 /// Eine Vergrößerungsschleife je Marke: Eine ältere Schleife erkennt an der Marke, dass sie abgelöst wurde, und rührt nichts mehr an.

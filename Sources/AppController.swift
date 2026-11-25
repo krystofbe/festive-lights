@@ -144,6 +144,7 @@ final class AppController: NSObject {
     private func updateDockTracking() {
         let wanted = settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended
         dockSources.update(wanted: wanted, permission: permission)
+        if !wanted { exactResult = nil }   // nach Pause oder Sperre kein alter Rahmen
     }
 
     @objc private func dockPrefsChanged() { DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.scheduleApply() } }

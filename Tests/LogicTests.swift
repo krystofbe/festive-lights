@@ -1005,7 +1005,7 @@ final class DockStateMachineTests: XCTestCase {
     func testRealFallbackAfterHysteresisAndReturnToTheSameFrame() {
         var m = DockStateMachine()
         var seq: [DockObservation] = Array(repeating: .visible(r), count: 8)
-        seq += Array(repeating: .unavailable, count: 15)   // 0,5 s unplausibel
+        seq += Array(repeating: .unavailable, count: 25)   // 0,8 s unplausibel
         seq += Array(repeating: .visible(r), count: 10)    // derselbe Rahmen wie vorher
         XCTAssertEqual(feed(&m, seq), [.visible(r), .unavailable, .visible(r)], "nach dem Rückfall wird derselbe Rahmen wieder gemeldet")
     }
@@ -1171,6 +1171,34 @@ final class DockProbeCoreTests: XCTestCase {
         XCTAssertFalse(p.due(now: 10.2))
         XCTAssertTrue(p.due(now: 10.4))
         XCTAssertFalse(p.due(now: 10.5))
+        p.event(now: 20)
+        XCTAssertTrue(p.due(now: 20.4, keepGoing: true))
+        XCTAssertFalse(p.due(now: 20.6))
+        XCTAssertTrue(p.due(now: 20.8, keepGoing: false))   // bleibt im Takt, solange unfertig
+        XCTAssertFalse(p.due(now: 21.3))
+    }
+
+    func testBurstPlannerWiring() {
+        var b = BurstPlanner()
+        // Ereignis startet den Burst: lesen, messen, Timer
+        XCTAssertEqual(b.request(now: 0, duration: 1.5, event: true, haveSnapshot: true), .init(retake: true, measure: true, startTimer: true))
+        // Zeigerbewegung während des Bursts: nichts lesen, nichts messen, kein zweiter Timer
+        XCTAssertEqual(b.request(now: 0.1, duration: 3.5, event: false, haveSnapshot: true), .init(retake: false, measure: false, startTimer: false))
+        XCTAssertEqual(b.tick(now: 0.2, settling: false, unavailable: false), .init(retake: false, ended: false))
+        XCTAssertEqual(b.tick(now: 0.45, settling: false, unavailable: true), .init(retake: true, ended: false))   // Nachlesen
+        XCTAssertEqual(b.tick(now: 0.9, settling: false, unavailable: true), .init(retake: true, ended: false))    // und weiter, solange unplausibel
+        XCTAssertEqual(b.tick(now: 3.7, settling: false, unavailable: false), .init(retake: true, ended: true))    // durch die 3,5 s verlängert
+        XCTAssertFalse(b.active)
+        // Zeigerbewegung ohne laufenden Burst misst einmal, liest nur ohne Snapshot
+        XCTAssertEqual(b.request(now: 10, duration: 1.5, event: false, haveSnapshot: true), .init(retake: false, measure: true, startTimer: true))
+    }
+
+    func testBurstPlannerExtendsWhileSettlingButNotBeyondSixSeconds() {
+        var b = BurstPlanner()
+        _ = b.request(now: 0, duration: 1.5, event: true, haveSnapshot: true)
+        XCTAssertFalse(b.tick(now: 1.6, settling: true, unavailable: false).ended)   // verlängert um 0,3 s
+        XCTAssertFalse(b.tick(now: 1.8, settling: true, unavailable: false).ended)
+        XCTAssertTrue(b.tick(now: 6.1, settling: true, unavailable: false).ended)    // Höchstlänge
     }
 
     func testLeftAndRightGeometry() {

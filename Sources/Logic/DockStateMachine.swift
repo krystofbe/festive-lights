@@ -13,7 +13,7 @@ enum DockObservation: Equatable {
 /// wird derselbe Rahmen wie vorher wieder gemeldet.
 struct DockStateMachine {
     var settle = 0.15
-    var settleUnavailable = 0.35   // Rückfall mit Hysterese
+    var settleUnavailable = 0.65   // Rückfall mit Hysterese, länger als Nachlesen (0,4 s) plus Messtakt
     var tolerance: CGFloat = 0.5
     private(set) var committed: DockObservation?
     private var candidate: DockObservation?

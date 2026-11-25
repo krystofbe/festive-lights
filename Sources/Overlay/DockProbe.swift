@@ -29,10 +29,10 @@ final class DockProbe {
     private var observers: [NSObjectProtocol] = []
     private var burstTimer: Timer?
     private var watchdog: Timer?
-    private var burstStart = 0.0
-    private var burstUntil = 0.0
+    private var planner = BurstPlanner()
     private var sched = ProbeScheduler()
-    private var policy = SnapshotPolicy()
+    private var lastUnavailable = false
+    private var loopBlocks = 0
     private var loopRunning = false
     private var machine = DockStateMachine()
     private var placed: Placed?
@@ -43,7 +43,7 @@ final class DockProbe {
 
     // zwischen den Threads
     private let loopGate = LoopGate()
-    private let measureStarted = OSAllocatedUnfairLock<Double?>(initialState: nil)
+    private let measureStarted = OSAllocatedUnfairLock<(gen: Int, t: Double)?>(initialState: nil)
     private let heartbeat = OSAllocatedUnfairLock(initialState: 0.0)
     private let slot = OSAllocatedUnfairLock<(spans: [DockProfile.Span], edge: DockEdge)?>(initialState: nil)
 
@@ -60,9 +60,13 @@ final class DockProbe {
         running = true
         machine.reset()
         let nc = NSWorkspace.shared.notificationCenter
-        for n in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
-            observers.append(nc.addObserver(forName: n, object: nil, queue: .main) { [weak self] _ in self?.burst() })
+        // App-Start und -Ende zählen nur für das Dock selbst (Neustart), sonst gäbe es Dauerlast durch Hilfs-Apps
+        for n in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            observers.append(nc.addObserver(forName: n, object: nil, queue: .main) { [weak self] note in
+                if (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier == "com.apple.dock" { self?.burst() }
+            })
         }
+        observers.append(nc.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in self?.burst() })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in self?.burst() })
         observers.append(DistributedNotificationCenter.default().addObserver(forName: NSNotification.Name("com.apple.dock.prefchanged"), object: nil, queue: .main) { [weak self] _ in self?.burst() })
         burst()
@@ -76,6 +80,7 @@ final class DockProbe {
         loopGate.cancel()
         sched.stop()
         loopRunning = false
+        planner.reset(); placed = nil; snapshot = nil; lastUnavailable = false
         observers.forEach { NotificationCenter.default.removeObserver($0); NSWorkspace.shared.notificationCenter.removeObserver($0); DistributedNotificationCenter.default().removeObserver($0) }
         observers = []
     }
@@ -85,21 +90,15 @@ final class DockProbe {
     /// lesen nichts neu und messen nur beim Start eines Bursts, sonst nur der Timer mit 30 Hz.
     func burst(duration: Double = 1.5, event: Bool = true) {
         guard running else { return }
-        let now = CACurrentMediaTime()
-        let fresh = burstTimer == nil
-        if fresh { burstStart = now }
-        if event { policy.event(now: now) }
-        if event || snapshot == nil { snapshot = takeSnapshot() }
-        burstUntil = max(burstUntil, now + duration)
-        if event || fresh { measureNow() }
-        guard burstTimer == nil else { return }
+        let plan = planner.request(now: CACurrentMediaTime(), duration: duration, event: event, haveSnapshot: snapshot != nil)
+        if plan.retake { snapshot = takeSnapshot() }
+        if plan.measure { measureNow() }
+        guard plan.startTimer else { return }
         let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
             guard let self else { return }
-            let t = CACurrentMediaTime()
-            if self.policy.due(now: t) { self.snapshot = self.takeSnapshot() }
-            // solange der Zustand sich noch ändert (späte Dock-Animation), weitermessen
-            if t > self.burstUntil, self.machine.isSettling, t - self.burstStart < 6 { self.burstUntil = t + 0.3 }
-            if t > self.burstUntil { self.burstTimer?.invalidate(); self.burstTimer = nil; return }
+            let tick = self.planner.tick(now: CACurrentMediaTime(), settling: self.machine.isSettling, unavailable: self.lastUnavailable)
+            if tick.retake { self.snapshot = self.takeSnapshot() }
+            if tick.ended { self.burstTimer?.invalidate(); self.burstTimer = nil; return }
             self.measureNow()
         }
         RunLoop.main.add(t, forMode: .common)
@@ -111,7 +110,7 @@ final class DockProbe {
 
     /// Bei jedem Mausereignis: billige Entscheidung ohne Nebenwirkung, sonst nichts.
     func pointerMoved() {
-        guard running, let s = snapshot else { return }
+        guard running, let s = snapshot, s.autohide || s.magnification else { return }   // sonst gibt es nie etwas zu tun
         let zone = placed.map { p in
             DockPointerLogic.barZone(a: p.bar.a, length: p.bar.b - p.bar.a, thick: p.bar.thick, grow: max(s.large - s.tile, 0) + 8, edge: p.edge, screen: p.frame)
         }
@@ -132,7 +131,8 @@ final class DockProbe {
         let t = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
             guard let self else { return }
             let now = CACurrentMediaTime()
-            _ = self.sched.watchdog(now: now, startedAt: self.measureStarted.withLock { $0 })   // Hänger aufgeben
+            let started = self.measureStarted.withLock { $0 }.flatMap { $0.gen == self.sched.generation ? $0.t : nil }
+            _ = self.sched.watchdog(now: now, startedAt: started)   // Hänger aufgeben
             if self.loopRunning, now - self.heartbeat.withLock({ $0 }) > 0.5 {
                 self.loopGate.cancel()
                 self.loopRunning = false
@@ -161,10 +161,10 @@ final class DockProbe {
         startWatchdog()
         measureQueue.async { [weak self] in
             let t0 = CACurrentMediaTime()
-            self?.measureStarted.withLock { $0 = t0 }   // Hänger zählen erst ab dem echten Start
+            self?.measureStarted.withLock { $0 = (gen, t0) }   // Hänger zählen erst ab dem echten Start, je Generation
             let m = Self.measure(snap)
             let ms = (CACurrentMediaTime() - t0) * 1000
-            self?.measureStarted.withLock { $0 = nil }
+            self?.measureStarted.withLock { if $0?.gen == gen { $0 = nil } }
             DispatchQueue.main.async {
                 guard let self, self.sched.finish(gen) else { return }   // veraltete Ergebnisse nach Hänger oder Stopp verwerfen
                 self.probeMsMax = max(self.probeMsMax, ms); self.probeMsSum += ms; self.probeRuns += 1
@@ -201,6 +201,7 @@ final class DockProbe {
         guard running else { return }
         let r = DockProbeCore.evaluate(m, s) { f in NSScreen.screens.first { $0.frame == f }?.displayID ?? 0 }
         placed = r.geometry == nil ? nil : m.placed
+        lastUnavailable = { if case .unavailable = r.obs { return true } else { return false } }()
         if let g = r.geometry { lastGeo = g }
         guard let emitted = machine.observe(r.obs, time: CACurrentMediaTime()) else { return }
         switch emitted {
@@ -224,6 +225,8 @@ final class DockProbe {
     }
 
     private func startLoop(_ p: Placed, _ s: Snapshot) {
+        guard loopBlocks < 2 else { return }   // hängende Schleife: höchstens eine wartende
+        loopBlocks += 1
         loopRunning = true
         let token = loopGate.start()
         heartbeat.withLock { $0 = CACurrentMediaTime() }
@@ -254,6 +257,7 @@ final class DockProbe {
             }
             DispatchQueue.main.async {
                 guard let me = self else { return }
+                me.loopBlocks -= 1
                 if me.loopGate.isCurrent(token) { me.loopRunning = false }
                 guard !me.loopRunning else { return }   // eine neuere Schleife läuft: nichts anrühren
                 me.slot.withLock { $0 = nil }
