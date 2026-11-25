@@ -49,3 +49,40 @@ Die Birne darf beliebig skaliert und um den Aufhängepunkt gedreht werden. Das K
 - `menubar-icon-light@2x.png` / `menubar-icon-dark@2x.png`: zusammengesetzte Vorschau.
 
 Das Symbol bleibt farbig und wird vom System nicht einfarbig umgefärbt. Die Variante (hell oder dunkel) folgt dem Erscheinungsbild der Menüleiste. Animation: Die drei Birnen glimmen nacheinander sanft etwas heller und dunkler, ein ruhiger Durchgang dauert einige Sekunden. Bei "Bewegung reduzieren" steht das Symbol still.
+
+## Stil "Tanne" (Ordner `Tanne/`)
+
+Zwei weitere Stile neben dem klassischen: **"Tanne bunt"** und **"Tanne warmgold"**. Zielbild ist `Tanne/garland-preview.png`. Statt des schlichten Kabels hängt eine natürliche Tannengirlande, das Kabel ist dunkelgrün und nur stellenweise zwischen den Zweigen zu sehen. Die Birnen sind schlanke Mini-Kerzenbirnen wie bei einer klassischen Innen-Lichterkette.
+
+**Zweige** (PNG @2x, Leinwand 150 × 175 pt, Ansatzpunkt (40, 12), der Zweig wächst nach rechts unten; für die Gegenrichtung waagerecht spiegeln, leicht drehen erlaubt):
+
+| Dateien | Schicht | Verwendung |
+|---|---|---|
+| `fir-back-1…4.png` | hinten, dunkel | dicht entlang der ganzen Girlande, abwechselnd nach links und rechts |
+| `fir-mid-1…4.png` | Mitte | entlang der Girlande, etwas weniger dicht |
+| `fir-hang-1…3.png` | Mitte, lang hängend | etwa jeder fünfte Ansatzpunkt, gibt der Girlande die unregelmäßige Unterkante |
+| `fir-front-1…3.png` | vorn, hell mit frischen Spitzen | sparsam, zwischen den Birnen |
+
+Reihenfolge von hinten nach vorn: hintere Zweige, mittlere und hängende Zweige, Kabel, vordere Zweige, Birnen, Zapfen, Schleifen. Die Birnen liegen vor dem Grün, damit sie gut sichtbar bleiben. Zufällige, aber stabile Auswahl, Spiegelung und Drehung je Ansatzpunkt, damit sich nichts sichtbar wiederholt.
+
+**Mini-Birne** (8 × 28 pt, Aufhängepunkt Mitte oben (4, 0), Spitze unten):
+
+| Datei | Inhalt | Darstellung |
+|---|---|---|
+| `minibulb-socket.pdf` | Fassung | dunkelgrün, unverändert |
+| `minibulb-glass.pdf` | Glasröhre als Form | in der Birnenfarbe gefüllt |
+| `minibulb-outline.pdf` | Kontur | Birnenfarbe deutlich dunkler |
+| `minibulb-shine.pdf` | Glühfaden, Lichtverlauf, Glanzlinie | darüber, unverändert |
+
+Leuchten: weicher Schein in der Schein-Farbe, Mitte etwa 60 % der Birnenlänge unterhalb der Fassung, Radius etwa eine Birnenlänge.
+
+**Farben:**
+
+| Stil | Birne | Schein |
+|---|---|---|
+| Tanne warmgold | #FFC766 | #FFB547 |
+| Tanne bunt, reihum | rot #E8432F, gelb #F5A623, blau #7FB4D8, grün #5FC25A | rot #FF6A3D, gelb #FFB547, blau #BFE0FF, grün #9CF08A |
+
+**Zapfen** `pinecone.pdf` (24 × 40 pt, Aufhängepunkt (12, 6)): in beiden Tannen-Stilen, etwa einer pro Bogen, hängt knapp unter der Girlande.
+
+**Schleife** `bow.pdf` (40 × 34 pt, Mitte des Knotens bei (20, 12)): nur bei "Tanne warmgold", an jedem Aufhängepunkt der Bögen.

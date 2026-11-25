@@ -21,6 +21,7 @@ Ziel: ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start, und Nutzer l
 | Einstellung | Standard |
 |---|---|
 | Lichter an der Menüleiste | an |
+| Stil | klassisch |
 | Farbmodus | bunt |
 | Muster | Funkeln |
 | Tempo, Birnengröße, Abstand | jeweils Mittelstellung (entspricht `Art/preview.png`) |
@@ -50,6 +51,7 @@ Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
   - **Lauflicht:** Ein heller Abschnitt wandert von links nach rechts, die übrigen Birnen sind gedimmt.
   - Das Tempo wirkt auf Funkeln und Lauflicht.
 - **Ausweichen:** Kommt der Zeiger dem Kabel näher als etwa 60 pt (von unten oder seitlich), hebt sich der betroffene Abschnitt samt Birnen weich nach oben, bis knapp unter die Menüleiste. Birnen und Schein blenden in Zeigernähe auf etwa 30 % Deckkraft ab. Die Reaktion beginnt innerhalb von 0,1 s. Entfernt sich der Zeiger, senkt sich die Kette innerhalb von etwa 0,5 s wieder, und die Birnen pendeln kurz nach. Steht der Zeiger in der Menüleiste selbst, passiert nichts.
+- **Stil:** "klassisch" (wie oben), "Tanne bunt" oder "Tanne warmgold", Aussehen siehe `Art/README.md`, Abschnitt Stil "Tanne". In den Tannen-Stilen hängt statt des Kabels eine Tannengirlande mit Mini-Kerzenbirnen und Zapfen, bei "Tanne warmgold" zusätzlich rote Schleifen an den Aufhängepunkten. Die Farben stehen durch den Stil fest, der Farbmodus gilt nur für "klassisch". Muster, Tempo, Ausweichen und Nachpendeln wirken in allen Stilen gleich: Beim Ausweichen hebt sich die Girlande samt Zweigen, Birnen, Zapfen und Schleifen, beim Nachpendeln schwingen Birnen und Zapfen, die Zweige wippen leicht mit. Birnengröße skaliert die ganze Girlande, Abstand den Birnenabstand. Die Girlande samt hängender Zweige reicht bei Mittelstellung höchstens etwa 2,5 Menüleistenhöhen unter die Menüleiste. Klicks gehen auch durch das Grün hindurch.
 - Ein- und Ausschalten: Die Kette blendet in etwa 0,3 s ein oder aus. Beim App-Start gehen die Birnen innerhalb von etwa 1,5 s nacheinander von links nach rechts an.
 
 ### F2 Schnee
@@ -92,7 +94,7 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 - Die Kette erscheint nur auf dem Bildschirm, der gerade das Dock zeigt. Die Vergrößerung beim Überfahren wird ignoriert.
 - Ändert sich die Dock-Größe (Apps öffnen oder beenden, Dock-Position, Größe), liegt die Kette spätestens 0,5 s nachdem das Dock seine neue Größe erreicht hat, wieder deckungsgleich an. Abweichung höchstens 2 pt.
 - Ausgeblendetes Dock: Die Kette erscheint und verschwindet mit dem Dock.
-- Farbe, Muster, Größe und Abstand gelten für beide Ketten gemeinsam. Dock-Lichter haben eine eigene Ein/Aus-Einstellung. Ausweichen wie F1, nur hebt sich das Kabel hier vom Dock weg zur Bildschirmmitte.
+- Stil, Farbe, Muster, Größe und Abstand gelten für beide Ketten gemeinsam. Am Dock ist die Girlande der Tannen-Stile schmal: nur kurze Zweige, keine hängenden, keine Zapfen, damit die Regel mit dem oberen Viertel der Symbole gilt. Dock-Lichter haben eine eigene Ein/Aus-Einstellung. Ausweichen wie F1, nur hebt sich das Kabel hier vom Dock weg zur Bildschirmmitte.
 
 ### F6 Schnee bleibt auf Fenstern liegen
 
@@ -128,7 +130,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hinter der Kamera-Aussparung verschwindet).
 
 **Einstellungsfenster**, kompakt, drei Bereiche:
-- **Lichter:** Farbmodus, Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus.
+- **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus.
 - **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
 - **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Der Status aktualisiert sich live, während das Fenster offen ist.
 
