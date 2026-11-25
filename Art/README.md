@@ -40,15 +40,14 @@ Die Birne darf beliebig skaliert und um den Aufhängepunkt gedreht werden. Das K
 
 `AppIcon-1024.png` (macOS-Raster, Form und Schatten enthalten). Daraus alle benötigten Größen erzeugen.
 
-## Menüleisten-Symbol (bunt, dezent animiert)
+## Menüleisten-Symbol (schwarzweiß, dezent animiert)
 
-18 × 18 pt, als Ebenen jeweils für helle und dunkle Menüleiste:
+18 × 18 pt, schwarz als Vorlage (Template): Das System färbt es passend zur Menüleiste ein, wie die übrigen System-Symbole. Motiv: ein Kabelbogen mit zwei gefüllten Birnen.
 
-- `menubar-cable-light.pdf` / `menubar-cable-dark.pdf`: das Kabel
-- `menubar-bulb1-*.pdf` (rot), `menubar-bulb2-*.pdf` (grün), `menubar-bulb3-*.pdf` (blau): die drei Birnen samt Schein. Die `-dark`-Varianten haben einen hellen Rand an der Fassung.
-- `menubar-icon-light@2x.png` / `menubar-icon-dark@2x.png`: zusammengesetzte Vorschau.
+- `menubar-icon.pdf`: das komplette Symbol
+- `menubar-cable.pdf`, `menubar-bulb-left.pdf`, `menubar-bulb-right.pdf`: dieselben Teile als Ebenen für die Animation
 
-Das Symbol bleibt farbig und wird vom System nicht einfarbig umgefärbt. Die Variante (hell oder dunkel) folgt dem Erscheinungsbild der Menüleiste. Animation: Die drei Birnen glimmen nacheinander sanft etwas heller und dunkler, ein ruhiger Durchgang dauert einige Sekunden. Bei "Bewegung reduzieren" steht das Symbol still.
+Animation: Die beiden Birnen glimmen abwechselnd sanft etwas schwächer (Deckkraft bis etwa 55 %) und wieder voll, ein ruhiger Durchgang dauert einige Sekunden. Das Kabel bleibt stehen. Bei "Bewegung reduzieren" steht das Symbol still.
 
 ## Stil "Tanne" (Ordner `Tanne/`)
 

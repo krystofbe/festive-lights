@@ -118,7 +118,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 
 ## 7. Bedienung
 
-**Menüleisten-Symbol** (bunt, drei Birnen am Kabel, dezent animiert, siehe `Art/README.md`) mit Menü:
+**Menüleisten-Symbol** (schwarzweiß wie die System-Symbole, Kabel mit zwei Birnen, dezent animiert, siehe `Art/README.md`) mit Menü:
 - Pause (schaltet alles vorübergehend aus und mit erneutem Klick wieder ein, gespeichert bis zum Fortsetzen)
 - Lichter an der Menüleiste (an/aus)
 - Lichter am Dock (an/aus; ohne Berechtigung mit Hinweis "Berechtigung nötig", Klick führt zu den Systemeinstellungen)
