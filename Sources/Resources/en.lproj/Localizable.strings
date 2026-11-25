@@ -76,3 +76,5 @@
 "Start at login and the permission stay as they are." = "Start at login and the permission stay as they are.";
 
 "settle.hint" = "Needs the Accessibility permission.";
+"menu.updates" = "Check for Updates…";
+"Automatically check for updates" = "Automatically check for updates";

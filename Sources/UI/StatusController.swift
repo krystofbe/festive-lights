@@ -72,10 +72,16 @@ final class StatusController: NSObject, NSMenuDelegate {
         add("menu.snow", #selector(toggleSnow), on: s.snowEnabled)
         add("menu.storm", #selector(storm), on: app.stormRunning, enabled: !app.reduceMotionActive)
         menu.addItem(.separator())
+        #if DIRECT
+        add("menu.updates", #selector(checkUpdates))
+        #endif
         add("menu.settings", #selector(openSettings), key: ",")
         add("menu.quit", #selector(quit), key: "q")
     }
 
+    #if DIRECT
+    @objc private func checkUpdates() { app.checkForUpdates() }
+    #endif
     @objc private func pause() { Settings.shared.paused.toggle() }
     @objc private func toggleLights() { Settings.shared.lightsEnabled.toggle() }
     @objc private func toggleDock() { Settings.shared.dockLights.toggle() }

@@ -38,6 +38,10 @@ final class AppController: NSObject {
     private var timers: [Timer] = []
     private let loginModel = LoginModel()
     private let settingsNav = SettingsNav()
+    #if DIRECT
+    private let updates = UpdateController()
+    func checkForUpdates() { updates.checkForUpdates() }
+    #endif
     private var applyScheduled = false
     private var animating = false
 
@@ -412,7 +416,7 @@ final class AppController: NSObject {
     func showSettings() {
         if settingsWindow == nil {
             #if DIRECT
-            let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, login: loginModel, nav: settingsNav))
+            let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, updates: updates, login: loginModel, nav: settingsNav))
             #else
             let host = NSHostingController(rootView: SettingsView(s: settings, login: loginModel, nav: settingsNav))
             #endif

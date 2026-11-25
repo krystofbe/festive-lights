@@ -90,6 +90,7 @@ struct SettingsView: View {
     @ObservedObject var s: Settings
     #if DIRECT
     @ObservedObject var perm: PermissionModel
+    @ObservedObject var updates: UpdateController
     #endif
     @ObservedObject var login: LoginModel
     @ObservedObject var nav: SettingsNav
@@ -192,6 +193,9 @@ struct SettingsView: View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
             PowerModeRows(s: s, status: PowerStatus.shared)
+            #if DIRECT
+            Toggle("Automatically check for updates", isOn: Binding(get: { updates.automatic }, set: { updates.automatic = $0 }))
+            #endif
             #if DIRECT
             Section("Permission") {
                 HStack(spacing: 6) {

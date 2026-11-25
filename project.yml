@@ -23,13 +23,17 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     ARCHS: "$(ARCHS_STANDARD)"
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.10.1
 targets:
   FestiveLights:
     type: application
     platform: macOS
     sources:
       - path: Sources
-        excludes: ["Resources/Info.plist", "Resources/FestiveLights.entitlements"]
+        excludes: ["Resources/Info.plist", "Resources/Info-Direct.plist", "Resources/FestiveLights.entitlements"]
       - path: Art
         includes: ["*.pdf"]
         excludes: ["menubar-icon.pdf"]
@@ -60,6 +64,50 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Sources/Resources/FestiveLights.entitlements
+  FestiveLightsDirect:
+    # Direkt-Download: gleicher Code mit Compile-Schalter DIRECT, ohne Sandbox, mit Bedienungshilfen und Sparkle (nur hier gelinkt)
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+        excludes: ["Resources/Info.plist", "Resources/Info-Direct.plist", "Resources/FestiveLights.entitlements"]
+      - path: Art
+        includes: ["*.pdf"]
+        excludes: ["menubar-icon.pdf"]
+      - path: Art/Tanne
+        includes: ["*.pdf", "fir-*.png"]
+        excludes: ["bauble-*.pdf"]
+      - path: Art/TanneBunt
+        includes: ["*.pdf"]
+    dependencies:
+      - package: Sparkle
+    info:
+      path: Sources/Resources/Info-Direct.plist
+      properties:
+        CFBundleName: FestiveLights
+        CFBundleDisplayName: FestiveLights
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, de]
+        NSHumanReadableCopyright: "Copyright © 2026 Blackbox Innovation GmbH"
+        CFBundleIconName: AppIcon
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: public.app-category.entertainment
+        ITSAppUsesNonExemptEncryption: false
+        SUFeedURL: "https://github.com/krystofbe/festive-lights/releases/latest/download/appcast.xml"
+        SUPublicEDKey: "W/2EcmmB+6w9na/g6C29/ly+yDyRp7dh/eaBdQBiRwo="
+        SUScheduledCheckInterval: 86400
+        SUEnableSystemProfiling: false
+    settings:
+      base:
+        PRODUCT_NAME: FestiveLights
+        PRODUCT_BUNDLE_IDENTIFIER: ms.blackbox.festivelights
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/Resources/Info-Direct.plist
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DIRECT"
   FestiveLightsTests:
     type: bundle.unit-test
     platform: macOS
@@ -79,3 +127,9 @@ schemes:
         FestiveLightsTests: [test]
     test:
       targets: [FestiveLightsTests]
+  FestiveLights-Direct:
+    build:
+      targets:
+        FestiveLightsDirect: all
+    archive:
+      config: Release
