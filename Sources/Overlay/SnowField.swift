@@ -22,7 +22,7 @@ private struct Flake {
     var fade = 0.0, fadeRate = 0.0
     var ttl = -1.0
     var vx = 0.0
-    var ox = 0.0, oy = 0.0
+    var ox = 0.0, slow = 1.0
     var svx = 0.0, svy = 0.0, stirAge = 99.0, stirCool = 0.0, spin = 0.0
     var layer = 0
     var dying = false, debris = false
@@ -226,7 +226,7 @@ final class SnowField {
                     f.x += f.svx * dt; f.y += f.svy * dt
                     f.rot += f.spin * dt * max(0, 1 - f.stirAge / 1.8)
                 }
-                f.y += f.speed * speedMult * dt * fallFactor
+                f.y += Stir.verticalVelocity(fall: f.speed * speedMult * f.slow, fallScale: fallFactor, stirVy: 0) * dt
                 f.x += windV * (0.35 + 0.65 * f.z) * dt
                 if f.crystal { f.rot += f.rotSpeed * dt * (reduce ? 0.5 : 1) }
                 if f.y > H + f.size * 2 {
@@ -252,22 +252,19 @@ final class SnowField {
                 }
                 var sx = f.x, sy = f.y
                 if swayOn { sx += sin(f.phase + time * f.freq) * f.amp }
-                var tox = 0.0, toy = 0.0
+                var tox = 0.0, tslow = 1.0
                 if let p = pointerSmooth {
-                    let dx = sx - p.x, dy = sy - p.y
-                    let d = hypot(dx, dy)
-                    if d < R {
-                        let nd = Dodge.dodgedDistance(d, radius: R)
-                        if d > 0.01 { tox = dx / d * (nd - d); toy = dy / d * (nd - d) } else { tox = nd }
-                    }
+                    let fl = Dodge.flow(flake: CGPoint(x: sx, y: sy), pointer: p, radius: R, side: f.phase < .pi ? 1 : -1)
+                    tox = fl.dx; tslow = fl.fallScale
                 }
-                if tox != 0 || toy != 0 || f.ox != 0 || f.oy != 0 {
-                    let a = 1 - exp(-dt / 0.07)
-                    f.ox += (tox - f.ox) * a; f.oy += (toy - f.oy) * a
-                    if abs(f.ox) < 0.05, abs(f.oy) < 0.05, tox == 0, toy == 0 { f.ox = 0; f.oy = 0 }
+                if tox != 0 || f.ox != 0 {
+                    let a = 1 - exp(-dt / 0.09)
+                    f.ox += (tox - f.ox) * a
+                    if abs(f.ox) < 0.05, tox == 0 { f.ox = 0 }
                 }
+                f.slow += (tslow - f.slow) * (1 - exp(-dt / 0.12))
                 let l = layers[f.layer]
-                l.position = CGPoint(x: sx + f.ox, y: ScreenCoords.layerY(topDown: sy + f.oy, height: H))
+                l.position = CGPoint(x: sx + f.ox, y: ScreenCoords.layerY(topDown: sy, height: H))
                 if f.crystal { l.transform = CATransform3DMakeRotation(f.rot, 0, 0, 1) }
                 l.opacity = Float(f.alpha * max(0, min(1, f.fade)))
                 flakes[i] = f

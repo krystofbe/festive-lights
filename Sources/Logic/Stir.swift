@@ -43,7 +43,7 @@ enum Stir {
     static func radius(strength s: Double) -> Double { 80 + 100 * s }
 
     /// Impuls auf eine Flocke in Bildschirmkoordinaten mit y nach unten (nach oben ist dy negativ).
-    /// `jitter` in -1...1 streut Richtung und Stärke leicht.
+    /// `jitter` in -1...1 streut die Stärke leicht.
     static func impulse(flake: CGPoint, from a: CGPoint, to b: CGPoint, velocity v: CGVector, jitter: Double = 0) -> CGVector? {
         let speed = hypot(v.dx, v.dy)
         let s = strength(speed: speed)
@@ -55,10 +55,17 @@ enum Stir {
         let falloff = fall * fall * (3 - 2 * fall)
         let ux = Double(v.dx) / speed, uy = Double(v.dy) / speed
         let carry = min(speed * 0.55, 900) * falloff * (1 + 0.25 * jitter)
-        let lift = min(speed * 0.25, 420) * falloff
-        // seitlich verwirbeln, damit die Flocken nicht in einer Linie fliegen
-        let swirl = jitter * 0.35 * carry
-        return CGVector(dx: ux * carry - uy * swirl, dy: uy * carry + ux * swirl - lift)
+        // überwiegend waagerecht. Aufwärts nur, wenn der Zeiger selbst deutlich nach oben fährt, dann kurz und schwach.
+        var dy: Double
+        if uy < -0.35 { dy = uy * carry * 0.35 } else { dy = max(0, uy * carry * 0.5) }
+        let dx = ux * carry
+        return CGVector(dx: dx, dy: dy)
+    }
+
+    /// Senkrechte Geschwindigkeit (y nach unten): Fallen mal Bremsfaktor plus Aufstöber-Anteil.
+    /// Ohne nach oben gerichteten Aufstöber-Impuls ist das Ergebnis nie negativ.
+    static func verticalVelocity(fall: Double, fallScale: Double, stirVy: Double) -> Double {
+        fall * max(0, fallScale) + stirVy
     }
 
     /// Anteil der normalen Fallgeschwindigkeit nach `age` Sekunden: gebremst, nach etwa 1,8 s wieder normal.
@@ -70,6 +77,7 @@ enum Stir {
     /// Wirbelgeschwindigkeit klingt exponentiell ab.
     static func decayed(_ v: CGVector, dt: Double) -> CGVector {
         let k = exp(-dt / 0.55)
-        return CGVector(dx: v.dx * k, dy: v.dy * k)
+        let ky = v.dy < 0 ? exp(-dt / 0.2) : k   // Aufwärtsanteil klingt schnell ab
+        return CGVector(dx: v.dx * k, dy: v.dy * ky)
     }
 }

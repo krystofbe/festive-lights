@@ -166,16 +166,6 @@ final class DodgeTests: XCTestCase {
         XCTAssertTrue(s.isSettled(target: 0))
     }
 
-    func testSnowDodgeContinuousMonotonicWithFreeZone() {
-        XCTAssertEqual(Dodge.dodgedDistance(80, radius: 80), 80)
-        XCTAssertEqual(Dodge.dodgedDistance(0, radius: 80), 40, accuracy: 1e-9)
-        var last = -1.0
-        for d in stride(from: 0.0, through: 120, by: 0.5) {
-            let v = Dodge.dodgedDistance(d, radius: 80)
-            XCTAssertGreaterThanOrEqual(v, last); XCTAssertGreaterThanOrEqual(v, d - 1e-9); last = v
-        }
-    }
-
     func testSegmentDistance() {
         XCTAssertEqual(Dodge.distance(from: CGPoint(x: 5, y: 5), toSegment: CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 0)), 5)
         XCTAssertEqual(Dodge.distance(from: CGPoint(x: 13, y: 4), toSegment: CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 0)), 5)
@@ -357,11 +347,11 @@ final class StirTests: XCTestCase {
         XCTAssertEqual(Stir.strength(speed: 2000), 1)
     }
 
-    func testFastMovementCarriesFlakesForwardAndUp() {
+    func testFastMovementCarriesFlakesForward() {
         let v = CGVector(dx: 1200, dy: 0)
         let imp = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 80, y: 0), to: CGPoint(x: 120, y: 0), velocity: v)!
         XCTAssertGreaterThan(imp.dx, 100, "in Bewegungsrichtung")
-        XCTAssertLessThan(imp.dy, 0, "etwas nach oben (y nach unten)")
+        XCTAssertGreaterThanOrEqual(imp.dy, 0, "waagerechte Bewegung wirft nichts nach oben")
     }
 
     func testFasterStirsMoreFlakesAndHarder() {
@@ -383,5 +373,59 @@ final class StirTests: XCTestCase {
         for a in stride(from: 0.0, through: 2.0, by: 0.1) { let f = Stir.fallFactor(age: a); XCTAssertGreaterThanOrEqual(f, last); last = f }
         let d = Stir.decayed(CGVector(dx: 1000, dy: -400), dt: 2.0)
         XCTAssertLessThan(hypot(d.dx, d.dy), 40)
+    }
+}
+
+final class GravityTests: XCTestCase {
+    func testDodgeIsSidewaysOnlyAndNeverSpeedsUpOrReversesFall() {
+        let pointer = CGPoint(x: 500, y: 500)
+        for x in stride(from: 380.0, through: 620, by: 7) {
+            for y in stride(from: 380.0, through: 620, by: 7) {
+                let f = Dodge.flow(flake: CGPoint(x: x, y: y), pointer: pointer, radius: 120)
+                XCTAssertGreaterThan(f.fallScale, 0, "Fallen wird nur gebremst, nie umgekehrt")
+                XCTAssertLessThanOrEqual(f.fallScale, 1)
+                if x > 500.5 { XCTAssertGreaterThanOrEqual(f.dx, 0) }
+                if x < 499.5 { XCTAssertLessThanOrEqual(f.dx, 0) }
+                if y > 500 { XCTAssertEqual(f.fallScale, 1, "unterhalb des Zeigers kein Bremsen") }
+            }
+        }
+        XCTAssertEqual(Dodge.flow(flake: CGPoint(x: 900, y: 500), pointer: pointer, radius: 120).dx, 0)
+    }
+
+    func testFlakesAboveSlowDownAndMoveAside() {
+        let f = Dodge.flow(flake: CGPoint(x: 510, y: 460), pointer: CGPoint(x: 500, y: 500), radius: 120)
+        XCTAssertLessThan(f.fallScale, 0.7)
+        XCTAssertGreaterThan(f.dx, 10)
+    }
+
+    func testNoUpwardVelocityForRestingOrHorizontallyMovingPointer() {
+        let pointer = CGPoint(x: 500, y: 500)
+        for speed in [0.0, 400, 900, 1500, 3000] {
+            for noise in [-0.2, -0.1, 0, 0.1, 0.3] {  // leichtes Zittern der Maus senkrecht
+                let v = CGVector(dx: speed, dy: speed * noise)
+                for x in stride(from: 400.0, through: 700, by: 25) {
+                    for y in stride(from: 380.0, through: 640, by: 20) {
+                        let flake = CGPoint(x: x, y: y)
+                        let flow = Dodge.flow(flake: flake, pointer: pointer, radius: 120)
+                        let imp = Stir.impulse(flake: flake, from: CGPoint(x: 450, y: 500), to: CGPoint(x: 550, y: 500), velocity: v, jitter: 1)
+                        let vy = Stir.verticalVelocity(fall: 40, fallScale: flow.fallScale * Stir.fallFactor(age: 0.3), stirVy: Double(imp?.dy ?? 0))
+                        XCTAssertGreaterThanOrEqual(vy, 0, "Flocke darf sich nie nach oben bewegen (Tempo \(speed), Zittern \(noise))")
+                    }
+                }
+            }
+        }
+    }
+
+    func testUpwardOnlyWhenPointerMovesUpAndThenSmall() {
+        let imp = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 100, y: 200), to: CGPoint(x: 100, y: 0), velocity: CGVector(dx: 0, dy: -1500))!
+        XCTAssertLessThan(imp.dy, 0)
+        XCTAssertGreaterThan(imp.dy, -420)
+        let down = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 100, y: 0), to: CGPoint(x: 100, y: 200), velocity: CGVector(dx: 0, dy: 1500))!
+        XCTAssertGreaterThanOrEqual(down.dy, 0)
+    }
+
+    func testUpwardStirDecaysFast() {
+        let d = Stir.decayed(CGVector(dx: 0, dy: -300), dt: 0.5)
+        XCTAssertGreaterThan(d.dy, -30)
     }
 }

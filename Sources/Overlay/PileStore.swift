@@ -167,7 +167,7 @@ final class PileStore {
                 for _ in 0..<n {
                     debris.append(DebrisRequest(x: x + Double.random(in: -12...12), y: edge - h * Double.random(in: 0.2...1), count: 1,
                                                 vx: Double(v.dx) * Double.random(in: 0.15...0.4) + Double.random(in: -40...40),
-                                                vy: Double(v.dy) * 0.2 - Double.random(in: 60...260) * (0.5 + strength)))
+                                                vy: -Double.random(in: 5...28) * (0.5 + 0.5 * strength) * (v.dy < -200 ? 1 : 0.6)))
                 }
             }
         }

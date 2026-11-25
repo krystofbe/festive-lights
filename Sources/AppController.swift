@@ -53,6 +53,8 @@ final class AppController: NSObject {
         #if DEBUG
         dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.storm"), object: nil)
         dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
+        dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.hit"), object: nil)
+        dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil)
@@ -63,7 +65,14 @@ final class AppController: NSObject {
             self?.overlays.values.forEach { $0.pointerMoved(p) }
         } as Any)
 
-        dockTracker.onChange = { [weak self] g in self?.dockGeometry = g; self?.scheduleApply() }
+        dockTracker.onChange = { [weak self] g in
+            #if DEBUG
+            let l = "\(Date().timeIntervalSince1970) \(String(describing: g?.rect)) edge=\(String(describing: g?.edge))\n"
+            if let h = FileHandle(forWritingAtPath: NSHomeDirectory() + "/festivelights-test/dock.log") { h.seekToEndOfFile(); h.write(l.data(using: .utf8)!); h.closeFile() }
+            else { try? l.write(toFile: NSHomeDirectory() + "/festivelights-test/dock.log", atomically: true, encoding: .utf8) }
+            #endif
+            self?.dockGeometry = g; self?.scheduleApply()
+        }
         updateDockTracking()
 
         // Berechtigung und Energie regelmäßig prüfen (Entzug binnen 5 s)
@@ -236,6 +245,23 @@ final class AppController: NSObject {
     var reduceMotionActive: Bool { reduceMotion }
 
     @objc private func debugStorm() { toggleStorm() }
+    @objc private func debugPrompt() { status.showPermissionPrompt() }
+
+    /// Entwicklerhilfe: welche App liegt an einem Punkt (Durchklick-Prüfung)? Objekt "x,y;x,y;..." in globalen Koordinaten oben links.
+    @objc private func debugHit(_ n: Notification) {
+        var out = ""
+        for part in (n.object as? String ?? "").split(separator: ";") {
+            let v = part.split(separator: ",").compactMap { Double($0) }
+            guard v.count == 2 else { continue }
+            var el: AXUIElement?
+            AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(v[0]), Float(v[1]), &el)
+            var pid: pid_t = 0
+            if let el { AXUIElementGetPid(el, &pid) }
+            let name = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "?"
+            out += "\(Int(v[0])),\(Int(v[1])) -> \(name)\n"
+        }
+        try? out.write(toFile: NSHomeDirectory() + "/festivelights-test/hit.txt", atomically: true, encoding: .utf8)
+    }
 
     /// Entwicklerhilfe: schüttelt ein Fenster per echten Mausereignissen. Objekt "x,y,Wechsel,Ausschlag,Intervall".
     @objc private func debugShake(_ n: Notification) {

@@ -20,12 +20,22 @@ enum Dodge {
     /// Deckkraft der Birnen bei Gewicht w: bis auf 30 %.
     static func opacity(forWeight w: Double) -> Double { 1 - 0.7 * min(max(w, 0), 1) }
 
-    /// Schneeflocken: verschobener Abstand zum Zeiger. Stetig, monoton, im Zentrum eine freie Zone von s*R.
-    static func dodgedDistance(_ d: Double, radius R: Double, strength s: Double = 0.5) -> Double {
-        guard d < R, R > 0 else { return d }
-        let u = R - d
-        return R - u * (1 - s * u / R)
+    struct Flow { var dx: Double; var fallScale: Double }
+
+    /// Schnee weicht dem Zeiger seitlich aus: Flocken im Umkreis werden zur Seite verschoben, Flocken über dem
+    /// Zeiger fallen langsamer. Es gibt nie eine senkrechte Verschiebung, die Schwerkraft gewinnt immer.
+    /// Koordinaten mit y nach unten. `side` entscheidet bei genau senkrechter Lage, wohin die Flocke ausweicht.
+    static func flow(flake: CGPoint, pointer: CGPoint, radius R: Double, side: Double = 1) -> Flow {
+        let hx = Double(flake.x - pointer.x), vy = Double(flake.y - pointer.y)
+        let d = hypot(hx, vy)
+        guard R > 0, d < R else { return Flow(dx: 0, fallScale: 1) }
+        let t = 1 - d / R
+        let w = t * t * (3 - 2 * t)
+        let dir: Double = abs(hx) > 0.5 ? (hx > 0 ? 1 : -1) : (side >= 0 ? 1 : -1)
+        let above = vy < 0
+        return Flow(dx: dir * R * 0.55 * w, fallScale: above ? 1 - 0.65 * w : 1)
     }
+
 }
 
 struct Spring {
