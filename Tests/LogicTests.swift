@@ -1384,6 +1384,12 @@ final class DockSizeTests: XCTestCase {
         XCTAssertEqual(Garland.dockMagnification(lift: -5, tile: 64), 1)
     }
 
+    func testMaxGrowFollowsLargeOverTileAndIsClamped() {
+        XCTAssertEqual(Garland.dockMaxGrow(large: 96, tile: 64), 1.5, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockMaxGrow(large: 128, tile: 16), 2.5, "kleine Symbole mit großer Vergrößerung werden geklemmt")
+        XCTAssertEqual(Garland.dockMaxGrow(large: 50, tile: 64), 1, "nie unter 1")
+    }
+
     func testBuntDockClustersFollowTheBulbSize() {
         let small = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 12 / Garland.dockRefBulbH, style: .firColor, dock: true)
         let big = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 25 / Garland.dockRefBulbH, style: .firColor, dock: true)

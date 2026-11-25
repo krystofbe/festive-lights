@@ -77,6 +77,8 @@ enum Garland {
     /// Birnenhöhe, auf die die Dock-Büschel und -Zweige bezogen sind (Symbolgröße 73 pt bei Mittelstellung).
     static let dockRefBulbH = 73.0 * 0.25
     /// Wachstum der Birnen und des Grüns über einem vergrößerten Symbol: Symbolgröße mit Vergrößerung geteilt durch Ruhegröße (`lift` ist die Anhebung der Oberkante).
+    /// Größtes Wachstum der Dock-Kette (largesize durch tilesize), höchstens 2,5: Sprites und Fenster werden darauf ausgelegt.
+    static func dockMaxGrow(large: Double, tile: Double) -> Double { min(max(large / max(tile, 1), 1), 2.5) }
     static func dockMagnification(lift: Double, tile: Double) -> Double { 1 + max(lift, 0) / max(tile, 1) }
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }

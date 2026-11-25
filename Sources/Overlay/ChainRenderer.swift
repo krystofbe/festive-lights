@@ -13,6 +13,7 @@ struct ChainSpec: Equatable {
     var spacing: Double
     var garlandDepth = 0.0   // Tiefe der Girlande unter dem Kabel, für die Fenstergröße
     var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
+    var dockMaxGrow = 1.0    // größtes Wachstum bei der Vergrößerung (largesize durch tilesize), für Fenstergröße und scharfe Sprites
     var isDock: Bool { !isMenuBar }
 
     func point(u: Double, v: Double) -> CGPoint {
@@ -24,7 +25,8 @@ struct ChainSpec: Equatable {
     var windowFrame: NSRect {
         let glow = bulbH * 1.0
         let vMin = liftSign < 0 && !isMenuBar ? -liftMax - 4 : -2
-        let vMax = sag + max(bulbH, garlandDepth) + glow + (liftSign > 0 ? liftMax : 0)
+        let g = isMenuBar ? 1 : dockMaxGrow
+        let vMax = sag + max(bulbH, garlandDepth) * g + glow * g + (liftSign > 0 ? liftMax : 0)
         let pts = [point(u: -glow, v: vMin), point(u: length + glow, v: vMin), point(u: -glow, v: vMax), point(u: length + glow, v: vMax)]
         let xs = pts.map(\.x), ys = pts.map(\.y)
         return NSRect(x: xs.min()!.rounded(.down), y: ys.min()!.rounded(.down),
@@ -169,10 +171,12 @@ final class ChainRenderer {
         let bs = sp.isDock ? CGSize(width: sp.bulbH * (bunt ? 12.0 / 22 : 10.0 / 21), height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
         let h = fir ? bs.height : sp.bulbH
         let w = fir ? bs.width : h * 0.6
-        let px = max(8, Int((h * scale).rounded()))
+        // Am Dock werden die Sprites für die größte Vergrößerung gerendert, damit sie beim Mitwachsen scharf bleiben
+        let reserve = sp.isDock ? sp.dockMaxGrow : 1
+        let px = max(8, Int((h * scale * reserve).rounded()))
         // Schein: klassisch Radius eine Birnenhöhe, Tanne eineinhalb Birnenlängen um die Mitte des Glaskörpers
         let glowR = bunt ? 1.6 * h : (fir ? 1.5 * h : h)
-        let glowPx = max(16, Int((glowR * 2 * scale).rounded()))
+        let glowPx = max(16, Int((glowR * 2 * scale * reserve).rounded()))
         let glowCenter = bunt ? 1 - 14.0 / 22.0 : (fir ? 1 - 14.0 / 21.0 : 0.45)
         beads = BeadChain(rest: layout.bulbPositions, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
         for (i, b) in bulbs.enumerated() {
@@ -237,7 +241,7 @@ final class ChainRenderer {
             let z: CGFloat = br.layer == .back ? 0 : (br.layer == .front ? 3 : 1)
             if bunt {
                 let px = max(8, Int((FirSprites.clusterSize.height * Garland.tbUnit * 1.25 * fs * scale).rounded()))
-                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * 1.3 * 1.25 * scale)) : px),
+                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * 1.25 * scale * sp.dockMaxGrow)) : px),
                                       size: FirSprites.clusterSize, anchor: FirSprites.clusterAnchor, z: z, u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
                 continue
             }
@@ -325,12 +329,12 @@ final class ChainRenderer {
         let f = max(0, u) / du
         let i = min(Int(f), dockLift.count - 2)
         let t = min(max(f - Double(i), 0), 1)
-        return dockLift[i] * (1 - t) + dockLift[i + 1] * t
+        return min(dockLift[i] * (1 - t) + dockLift[i + 1] * t, spec?.liftMax ?? 110)
     }
 
     /// Abstand des Kabels von der Aufhängelinie. `wave`: bei "Tanne bunt" schlängelt sich das Kabel in eigenen Wellen durch das Grün.
     /// Am Dock wachsen Birnen und Grün über vergrößerten Symbolen mit.
-    private func magnify(_ sp: ChainSpec, _ u: Double) -> Double { sp.isDock && sp.dockTile > 0 ? Garland.dockMagnification(lift: liftAt(u), tile: sp.dockTile) : 1 }
+    private func magnify(_ sp: ChainSpec, _ u: Double) -> Double { sp.isDock && sp.dockTile > 0 ? min(Garland.dockMagnification(lift: liftAt(u), tile: sp.dockTile), sp.dockMaxGrow) : 1 }
 
     private func cableV(_ sp: ChainSpec, _ u: Double, wave: Bool = true) -> Double {
         var v = sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
