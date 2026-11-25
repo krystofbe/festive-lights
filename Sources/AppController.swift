@@ -24,6 +24,7 @@ final class AppController: NSObject {
     private let permissionModel = PermissionModel()
     private let loginModel = LoginModel()
     private var applyScheduled = false
+    private var animating = false
 
     var stormRunning: Bool { Engine.shared.storm.map { !$0.isStopping(at: CACurrentMediaTime()) } ?? false }
 
@@ -95,6 +96,9 @@ final class AppController: NSObject {
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
+        let wasSuspended = suspended
+        refreshSystem()
+        if suspended != wasSuspended { scheduleApply() }
         let e = computeEnergySaving()
         if e != energySaving { energySaving = e; scheduleApply() }
         status.updateIcon()
@@ -120,8 +124,10 @@ final class AppController: NSObject {
         reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         energySaving = computeEnergySaving()
         dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        locked = (CGSessionCopyCurrentDictionary() as? [String: Any])?["CGSSessionScreenIsLocked"] as? Bool ?? false
         suspended = screensAsleep || locked
-        status?.setAnimating(!reduceMotion && !suspended)
+        let anim = !reduceMotion && !suspended
+        if anim != animating { animating = anim; status?.setAnimating(anim) }
     }
 
     private func computeEnergySaving() -> Bool {

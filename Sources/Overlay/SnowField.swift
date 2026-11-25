@@ -83,7 +83,7 @@ final class SnowField {
     }
 
     private func baseSize(_ f: Flake) -> Double {
-        f.crystal ? (11 + 6 * (f.z - 0.9) * 10 / 1) * appliedSize : (2.0 + 6.5 * f.z * f.z + 1.0 * f.z) * appliedSize
+        f.crystal ? (11 + 6 * (f.z - 0.9) * 10 / 1) * appliedSize : (2.5 + 7 * f.z * f.z + 1.5 * f.z) * appliedSize
     }
 
     private func resize(_ f: inout Flake) {
@@ -313,10 +313,11 @@ final class SnowField {
             var x = x0
             while true {
                 let lx = x - Double(e.frame.minX)
-                let edge = min(1, min(x - x0, x1 - x) / 7)
-                let taper = edge * edge * (3 - 2 * edge)
+                let edge = min(1, min(x - x0, x1 - x) / 14)
+                let taper = sqrt(max(0, 1 - (1 - edge) * (1 - edge)))
                 let col = Int(max(0, lx) / SnowPile.columnWidth)
-                let noise = 0.82 + 0.36 * stableRandom(id, col, 5)
+                let wave = 0.88 + 0.12 * sin(lx / 23 + Double(id % 7)) + 0.08 * sin(lx / 9 + Double(id % 5))
+                let noise = wave * (0.9 + 0.2 * stableRandom(id, col, 5))
                 let h = Double(e.pile.height(at: lx)) * noise * taper * factor
                 pts.append(CGPoint(x: x - originX, y: edgeY - h))
                 if x >= x1 { break }

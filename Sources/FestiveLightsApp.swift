@@ -23,6 +23,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 enum Main {
     static func main() {
+        #if DEBUG
+        if let i = CommandLine.arguments.firstIndex(of: "--render-snapshots"), i + 1 < CommandLine.arguments.count {
+            Snapshot.run(dir: CommandLine.arguments[i + 1]); return
+        }
+        #endif
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

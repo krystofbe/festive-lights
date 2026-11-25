@@ -105,9 +105,9 @@ enum BulbSprites {
         let rgb = color(index, warm: warm)
         let ctx = Art.context(px, px)
         let stops: [CGFloat] = [0, 0.35, 0.7, 1]
-        let alphas: [CGFloat] = [0.62, 0.36, 0.1, 0]
+        let alphas: [CGFloat] = [0.75, 0.45, 0.14, 0]
         var comps: [CGFloat] = []
-        for a in alphas { comps += [rgb.r * a, rgb.g * a, rgb.b * a, a] }
+        for a in alphas { comps += [rgb.r, rgb.g, rgb.b, a] }
         let g = CGGradient(colorSpace: Art.srgb, colorComponents: comps, locations: stops, count: 4)!
         let c = CGPoint(x: CGFloat(px) / 2, y: CGFloat(px) / 2)
         ctx.drawRadialGradient(g, startCenter: c, startRadius: 0, endCenter: c, endRadius: CGFloat(px) / 2, options: [])
@@ -127,7 +127,7 @@ enum SnowSprites {
         let c = CGPoint(x: CGFloat(px) / 2, y: CGFloat(px) / 2 + 1.5)
         let core = CGFloat(px) / 2.4 / 2
         ctx.saveGState()
-        ctx.setShadow(offset: CGSize(width: 0, height: -1.5), blur: 4, color: CGColor(gray: 0, alpha: 0.5))
+        ctx.setShadow(offset: CGSize(width: 0, height: -2), blur: 6, color: CGColor(gray: 0, alpha: 0.75))
         ctx.setFillColor(CGColor(gray: 1, alpha: 1))
         ctx.fillEllipse(in: CGRect(x: c.x - core, y: c.y - core, width: core * 2, height: core * 2))
         ctx.restoreGState()

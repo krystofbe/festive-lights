@@ -11,7 +11,7 @@ final class OverlayWindow: NSWindow {
         isOpaque = false
         hasShadow = false
         ignoresMouseEvents = true
-        sharingType = .none
+        sharingType = UserDefaults.standard.bool(forKey: "debugCapture") ? .readOnly : .none
         animationBehavior = .none
         canHide = false
         isExcludedFromWindowsMenu = true
