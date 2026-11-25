@@ -82,7 +82,7 @@ Lichter und Schnee lassen sich jeweils "über allen Fenstern" oder "nur auf dem 
 - Anstecken, Abstecken und Auflösungswechsel werden ohne Neustart übernommen.
 - Lichter und Schnee sind auf allen Spaces sichtbar. In Vollbild-Apps sind sie ausgeblendet.
 - Sie erscheinen nicht als eigene Fenster in Mission Control, im App-Umschalter oder in Fensterlisten.
-- Sie erscheinen nicht in Bildschirmfotos, Bildschirmaufnahmen und Bildschirmfreigaben.
+- Sie erscheinen wie normaler Bildschirminhalt in Bildschirmfotos, Bildschirmaufnahmen und Bildschirmfreigaben.
 
 ## 5. Funktionen, Stufe 2 (nach einer optionalen Berechtigung)
 
