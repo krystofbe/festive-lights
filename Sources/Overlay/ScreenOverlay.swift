@@ -48,7 +48,7 @@ final class ScreenOverlay {
     private var link: CADisplayLink?
     private var state = AppState()
     private var lastTick: Double?
-    private var heavy: Bool?
+    private var rateMode = -1
     private var barDynamic = false
 
     init(screen: NSScreen) {
@@ -158,17 +158,21 @@ final class ScreenOverlay {
         let mouse = NSEvent.mouseLocation
         let pointer: CGPoint? = screen.frame.contains(mouse) ? mouse : nil
         var level = max(menubar.update(time: now, dt: dt, pointer: pointer), dock.update(time: now, dt: dt, pointer: pointer))
+        let chainMoving = level >= 2
         var snowBusy = false
         if state.snowOn || !snow.isEmpty {
             snowBusy = snow.tick(time: now, dt: dt, pointerGlobal: mouse, stormFactor: engine.stormFactor(now), targets: engine.targets(for: screen), store: PileStore.shared)
             if !state.snowOn && snow.isEmpty { snow.setVisible(false); snowBusy = false }
         }
+        let snowOnly = snowBusy && !chainMoving && Engine.shared.stirStrength == 0 && !Engine.shared.air.isActive
         if snowBusy { level = max(level, 2) }
         if barDynamic { level = max(level, 1) }
-        let wantHeavy = level >= 2 && !state.energySaving
-        if heavy != wantHeavy {
-            heavy = wantHeavy
-            l.preferredFrameRateRange = wantHeavy ? CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120) : CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
+        // Rate nach Bedarf: Zeigerinteraktion und Federn bis 120 Hz, reiner Schneefall höchstens 60 Hz, Muster 30 Hz
+        let mode = state.energySaving ? 0 : (level >= 2 && !snowOnly ? 2 : (snowBusy || level >= 2 ? 1 : 0))
+        if rateMode != mode {
+            rateMode = mode
+            l.preferredFrameRateRange = mode == 2 ? CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
+                : mode == 1 ? CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60) : CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
         }
         if level == 0 { l.isPaused = true }
     }
