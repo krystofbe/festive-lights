@@ -142,20 +142,22 @@ final class ScreenOverlay {
             let menuH = MenuBar.info(for: screen)?.height ?? Double(NSStatusBar.system.thickness)
             let h0 = ChainLayout.bulbHeight(menuBarHeight: menuH, level: st.bulbLevel)
             let icon = Double(d.edge == .bottom ? d.rect.height : d.rect.width)
-            let h = max(8, min(h0, 0.25 * icon))
+            // Birnengröße gilt auch am Dock: höchster Regler = ein Viertel der Symbolhöhe, darunter proportional
+            let h = max(8, icon * 0.25 * Levels.value(Levels.bulbSize, st.bulbLevel) / 1.4)
+            _ = h0
             let pad = 6.0
             var spec: ChainSpec
             let sp = ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h * 0.45, liftSign: -1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h * 0.45, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h * 0.45, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             }
             dock.configure(spec: spec, style: style(), scale: scale, levelsKey: 0)
             dock.setVisible(true, layer: st.lightsLayer, intro: nil)
