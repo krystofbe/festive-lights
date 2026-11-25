@@ -51,7 +51,7 @@ Animation: Die beiden Birnen glimmen abwechselnd sanft etwas schwächer (Deckkra
 
 ## Stil "Tanne" (Ordner `Tanne/`)
 
-Zwei weitere Stile neben dem klassischen: **"Tanne bunt"** und **"Tanne warmgold"**. Zielbild ist `Tanne/garland-preview.png`. Statt des schlichten Kabels hängt eine natürliche Tannengirlande, das Kabel ist dunkelgrün und nur stellenweise zwischen den Zweigen zu sehen. Die Birnen sind schlanke Mini-Kerzenbirnen wie bei einer klassischen Innen-Lichterkette.
+Zwei weitere Stile neben dem klassischen: **"Tanne bunt"** und **"Tanne warmgold"**. Zielbild ist `Tanne/garland-preview.png`. Statt des schlichten Kabels hängt eine natürliche Tannengirlande, das Kabel ist dunkelgrün und nur stellenweise zwischen den Zweigen zu sehen. Die Birnen sind kleine, fast kugelrunde Tropfenbirnen mit dunkelgrüner Fassung.
 
 **Zweige** (PNG @2x, Leinwand 150 × 175 pt, Ansatzpunkt (40, 12), der Zweig wächst nach rechts unten; für die Gegenrichtung waagerecht spiegeln, leicht drehen erlaubt):
 
@@ -64,7 +64,7 @@ Zwei weitere Stile neben dem klassischen: **"Tanne bunt"** und **"Tanne warmgold
 
 Reihenfolge von hinten nach vorn: hintere Zweige, mittlere und hängende Zweige, Kabel, vordere Zweige, Birnen, Zapfen, Schleifen. Die Birnen liegen vor dem Grün, damit sie gut sichtbar bleiben. Zufällige, aber stabile Auswahl, Spiegelung und Drehung je Ansatzpunkt, damit sich nichts sichtbar wiederholt.
 
-**Mini-Birne** (8 × 28 pt, Aufhängepunkt Mitte oben (4, 0), Spitze unten):
+**Mini-Birne** (10 × 21 pt, Aufhängepunkt Mitte oben (5, 0)): fast kugelrunder Tropfen unter der Fassung, keine Spitze. Sie darf nicht schlanker oder spitzer dargestellt werden als in der Datei.
 
 | Datei | Inhalt | Darstellung |
 |---|---|---|
@@ -73,7 +73,7 @@ Reihenfolge von hinten nach vorn: hintere Zweige, mittlere und hängende Zweige,
 | `minibulb-outline.pdf` | Kontur | Birnenfarbe deutlich dunkler |
 | `minibulb-shine.pdf` | Glühfaden, Lichtverlauf, Glanzlinie | darüber, unverändert |
 
-Leuchten: weicher Schein in der Schein-Farbe, Mitte etwa 60 % der Birnenlänge unterhalb der Fassung, Radius etwa eine Birnenlänge.
+Leuchten: weicher Schein in der Schein-Farbe, Mitte in der Mitte des Glaskörpers, Radius etwa eineinhalb Birnenlängen.
 
 **Farben:**
 
