@@ -64,6 +64,9 @@ final class Settings: ObservableObject {
         }
     }
 
+    /// Veröffentlicht nur bei echter Änderung: `apply()` läuft zeitweise bildweise, jede Veröffentlichung layoutet das Einstellungsfenster neu.
+    func updatePowerActive(_ v: Bool) { if powerActive != v { powerActive = v } }
+
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",

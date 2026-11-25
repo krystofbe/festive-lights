@@ -19,7 +19,8 @@ final class AppController: NSObject {
     private var locked = false
     private var permission = Permission.granted
     private var reduceMotion = false
-    private var energySaving = false { didSet { settings.powerActive = energySaving } }
+    // nur bei echter Änderung veröffentlichen: apply() läuft beim Einblenden des Schnees bildweise, jede Veröffentlichung layoutet das Einstellungsfenster neu
+    private var energySaving = false { didSet { settings.updatePowerActive(energySaving) } }
     private var dark = true
     private var dockGeometry: DockGeometry?
     private var settingsWindow: NSWindow?

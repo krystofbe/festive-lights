@@ -1,4 +1,5 @@
 import XCTest
+import Combine
 
 final class PatternTests: XCTestCase {
     func testSteadyIsAlwaysOn() {
@@ -1380,5 +1381,21 @@ final class DockSizeTests: XCTestCase {
         let big = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 25 / Garland.dockRefBulbH, style: .firColor, dock: true)
         XCTAssertGreaterThan(small.branches.count, big.branches.count, "größere Büschel brauchen weniger Ansatzpunkte")
         XCTAssertTrue(small.branches.allSatisfy { $0.layer == .cluster })
+    }
+}
+
+
+final class SettingsViewStateTests: XCTestCase {
+    func testRepeatedLiveStatusDoesNotInvalidateTheSettingsView() {
+        let s = Settings.shared
+        s.updatePowerActive(false)
+        var changes = 0
+        let c = s.objectWillChange.sink { changes += 1 }
+        for _ in 0..<5000 { s.updatePowerActive(false) }   // wie apply() bei laufender Animation
+        XCTAssertEqual(changes, 0, "gleicher Wert löst kein Neuzeichnen des Fensters aus")
+        s.updatePowerActive(true); s.updatePowerActive(true)
+        XCTAssertEqual(changes, 1)
+        s.updatePowerActive(false)
+        c.cancel()
     }
 }
