@@ -20,22 +20,29 @@ enum Dodge {
     /// Deckkraft der Birnen bei Gewicht w: bis auf 30 %.
     static func opacity(forWeight w: Double) -> Double { 1 - 0.7 * min(max(w, 0), 1) }
 
-    struct Flow { var dx: Double; var fallScale: Double }
+    struct Push { var vx: Double; var dir: Double; var fallScale: Double }
 
-    /// Schnee weicht dem Zeiger seitlich aus: Flocken im Umkreis werden zur Seite verschoben, Flocken über dem
-    /// Zeiger fallen langsamer. Es gibt nie eine senkrechte Verschiebung, die Schwerkraft gewinnt immer.
-    /// Koordinaten mit y nach unten. `side` entscheidet bei genau senkrechter Lage, wohin die Flocke ausweicht.
-    static func flow(flake: CGPoint, pointer: CGPoint, radius R: Double, side: Double = 1) -> Flow {
+    /// Höchste Ausweichgeschwindigkeit einer Flocke in pt/s.
+    static let maxPush = 280.0
+
+    /// Schnee weicht dem Zeiger seitlich aus (Schwerkraft gewinnt immer): Die Flocke bekommt eine seitliche Geschwindigkeit weg vom
+    /// Zeiger, die ausläuft, sobald sie die freie Zone verlassen hat. Die Verschiebung bleibt, die Flocke kehrt nie von selbst zurück.
+    /// Flocken über dem Zeiger fallen langsamer. Nie senkrecht. Koordinaten mit y nach unten.
+    /// `prevDir` hält die Richtung fest, damit sie nicht umspringt, wenn der Zeiger an der Flocke vorbeifährt (Umkehr erst bei
+    /// deutlichem Seitenwechsel). Außerhalb des Radius ist `dir` 0.
+    static func push(flake: CGPoint, pointer: CGPoint, radius R: Double, prevDir: Double, side: Double = 1) -> Push {
         let hx = Double(flake.x - pointer.x), vy = Double(flake.y - pointer.y)
         let d = hypot(hx, vy)
-        guard R > 0, d < R else { return Flow(dx: 0, fallScale: 1) }
+        guard R > 0, d < R else { return Push(vx: 0, dir: 0, fallScale: 1) }
         let t = 1 - d / R
         let w = t * t * (3 - 2 * t)
-        let dir: Double = abs(hx) > 0.5 ? (hx > 0 ? 1 : -1) : (side >= 0 ? 1 : -1)
-        let above = vy < 0
-        return Flow(dx: dir * R * 0.55 * w, fallScale: above ? 1 - 0.65 * w : 1)
+        var dir = prevDir
+        if dir == 0 { dir = abs(hx) > 0.5 ? (hx > 0 ? 1 : -1) : (side >= 0 ? 1 : -1) }
+        else if abs(hx) > 10 && (hx > 0 ? 1.0 : -1.0) != dir { dir = hx > 0 ? 1 : -1 }
+        let hole = R * 0.55
+        let speed = maxPush * w * max(0, 1 - abs(hx) / hole)
+        return Push(vx: dir * speed, dir: dir, fallScale: vy < 0 ? 1 - 0.65 * w : 1)
     }
-
 }
 
 struct Spring {

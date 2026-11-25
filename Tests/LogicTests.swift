@@ -478,21 +478,65 @@ final class GravityTests: XCTestCase {
         let pointer = CGPoint(x: 500, y: 500)
         for x in stride(from: 380.0, through: 620, by: 7) {
             for y in stride(from: 380.0, through: 620, by: 7) {
-                let f = Dodge.flow(flake: CGPoint(x: x, y: y), pointer: pointer, radius: 120)
+                let f = Dodge.push(flake: CGPoint(x: x, y: y), pointer: pointer, radius: 120, prevDir: 0)
                 XCTAssertGreaterThan(f.fallScale, 0, "Fallen wird nur gebremst, nie umgekehrt")
                 XCTAssertLessThanOrEqual(f.fallScale, 1)
-                if x > 500.5 { XCTAssertGreaterThanOrEqual(f.dx, 0) }
-                if x < 499.5 { XCTAssertLessThanOrEqual(f.dx, 0) }
+                if x > 500.5 { XCTAssertGreaterThanOrEqual(f.vx, 0) }
+                if x < 499.5 { XCTAssertLessThanOrEqual(f.vx, 0) }
+                XCTAssertLessThanOrEqual(abs(f.vx), Dodge.maxPush + 1e-9)
                 if y > 500 { XCTAssertEqual(f.fallScale, 1, "unterhalb des Zeigers kein Bremsen") }
             }
         }
-        XCTAssertEqual(Dodge.flow(flake: CGPoint(x: 900, y: 500), pointer: pointer, radius: 120).dx, 0)
+        XCTAssertEqual(Dodge.push(flake: CGPoint(x: 900, y: 500), pointer: pointer, radius: 120, prevDir: 0).vx, 0)
     }
 
     func testFlakesAboveSlowDownAndMoveAside() {
-        let f = Dodge.flow(flake: CGPoint(x: 510, y: 460), pointer: CGPoint(x: 500, y: 500), radius: 120)
+        let f = Dodge.push(flake: CGPoint(x: 510, y: 460), pointer: CGPoint(x: 500, y: 500), radius: 120, prevDir: 0)
         XCTAssertLessThan(f.fallScale, 0.7)
-        XCTAssertGreaterThan(f.dx, 10)
+        XCTAssertGreaterThan(f.vx, 10)
+    }
+
+    /// Wie SnowField das Ausweichen anwendet: Geschwindigkeit läuft weich ein und aus, die Verschiebung der Flocke bleibt.
+    func simulate(flake x0: Double, y: Double, pointerPath: [(Double, Double)], dt: Double = 1.0 / 60) -> [Double] {
+        var x = x0, pvx = 0.0, dir = 0.0
+        var xs: [Double] = []
+        for (px, py) in pointerPath {
+            let r = Dodge.push(flake: CGPoint(x: x, y: y), pointer: CGPoint(x: px, y: py), radius: 120, prevDir: dir)
+            dir = r.dir
+            pvx += (r.vx - pvx) * (1 - exp(-dt / 0.1))
+            x += pvx * dt
+            xs.append(x)
+        }
+        return xs
+    }
+
+    func testPushedFlakeStaysWhereItIsAndDoesNotPingPong() {
+        var path: [(Double, Double)] = (0..<90).map { (560 - Double($0) * 3, 500) }   // Zeiger schiebt die Flocke bei 500 von rechts nach links
+        path += Array(repeating: (1500.0, 500.0), count: 120)                          // springt weit weg
+        let xs = simulate(flake: 500, y: 500, pointerPath: path)
+        XCTAssertLessThan(xs[89], 500 - 20, "die Flocke wurde nach links geschoben")
+        XCTAssertEqual(xs.last!, xs[110], accuracy: 0.5, "ohne Zeiger bleibt die Flocke stehen, sie kehrt nicht zurück")
+        XCTAssertLessThan(xs.last!, xs[89] + 6, "kein Zurückschnippen an die alte Stelle")
+    }
+
+    func testNoSuddenJumpWhenPointerPassesTheFlake() {
+        let path: [(Double, Double)] = (0..<120).map { (400 + Double($0) * 25, 500) }   // 1500 pt/s mitten durch die Flocke
+        let xs = simulate(flake: 600, y: 500, pointerPath: path)
+        var prev = 600.0
+        for x in xs {
+            XCTAssertLessThanOrEqual(abs(x - prev), Dodge.maxPush / 60 + 1e-9, "Sprung der Flocke")
+            prev = x
+        }
+    }
+
+    func testNoFlipWhenPointerComesVeryCloseAndCrossesCenter() {
+        var dir = 0.0
+        for px in stride(from: 440.0, through: 505, by: 1) {
+            dir = Dodge.push(flake: CGPoint(x: 500, y: 500), pointer: CGPoint(x: px, y: 500), radius: 120, prevDir: dir).dir
+            XCTAssertEqual(dir, 1, "Zeiger kommt von links, die Flocke weicht nach rechts, auch kurz hinter der Mitte")
+        }
+        XCTAssertEqual(Dodge.push(flake: CGPoint(x: 500, y: 500), pointer: CGPoint(x: 530, y: 500), radius: 120, prevDir: 1).dir, -1,
+                       "erst bei deutlichem Seitenwechsel kehrt sich die Richtung um")
     }
 
     func testNoUpwardMotionForHorizontallyMovingPointer() {

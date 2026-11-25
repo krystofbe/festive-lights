@@ -27,6 +27,7 @@ private struct Flake {
     var layer = 0
     var dying = false, debris = false
     var grav = 72.0
+    var pvx = 0.0, pushDir = 0.0
 }
 
 /// Schneefall auf einem Bildschirm. Koordinaten: Ursprung links oben, y nach unten.
@@ -258,16 +259,15 @@ final class SnowField {
                     continue
                 }
                 let sx = f.x + sway, sy = f.y
-                var tox = 0.0, tslow = 1.0
+                var tvx = 0.0, tslow = 1.0
                 if let p = pointerSmooth {
-                    let fl = Dodge.flow(flake: CGPoint(x: sx, y: sy), pointer: p, radius: R, side: f.phase < .pi ? 1 : -1)
-                    tox = fl.dx * dodge; tslow = 1 - (1 - fl.fallScale) * dodge
-                }
-                if tox != 0 || f.ox != 0 {
-                    let a = 1 - exp(-dt / 0.09)
-                    f.ox += (tox - f.ox) * a
-                    if abs(f.ox) < 0.05, tox == 0 { f.ox = 0 }
-                }
+                    let r = Dodge.push(flake: CGPoint(x: sx, y: sy), pointer: p, radius: R, prevDir: f.pushDir, side: f.phase < .pi ? 1 : -1)
+                    f.pushDir = r.dir
+                    tvx = r.vx * dodge; tslow = 1 - (1 - r.fallScale) * dodge
+                } else { f.pushDir = 0 }
+                // seitliche Geschwindigkeit läuft weich ein und aus, die Verschiebung der Flocke bleibt
+                f.pvx += (tvx - f.pvx) * (1 - exp(-dt / 0.1))
+                if abs(f.pvx) > 0.01 { f.x += f.pvx * dt } else { f.pvx = 0 }
                 f.slow += (tslow - f.slow) * (1 - exp(-dt / 0.12))
                 let l = layers[f.layer]
                 l.position = CGPoint(x: sx + f.ox, y: ScreenCoords.layerY(topDown: sy, height: H))
