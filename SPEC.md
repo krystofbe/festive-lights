@@ -74,6 +74,7 @@ Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
 ### F3 Ebene wählen
 
 Lichter und Schnee lassen sich jeweils "über allen Fenstern" oder "nur auf dem Schreibtisch" (hinter allen Fenstern) anzeigen.
+- Liegen Lichter und Schnee auf derselben Ebene, liegt die Kette (Kabel, Birnen, Schein, Girlande, Zapfen, Schleifen, Kugeln) immer vor dem Schnee: Fallende Flocken ziehen hinter der Kette vorbei, nie davor. Das gilt an der Menüleiste und am Dock.
 
 ### F4 Bildschirme, Spaces, Vollbild
 
