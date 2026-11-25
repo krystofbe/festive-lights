@@ -28,7 +28,11 @@ final class OverlayWindow: NSWindow {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    private var currentLayer: DisplayLayer?
+
     func setLayer(_ layer: DisplayLayer) {
+        guard layer != currentLayer else { return }
+        currentLayer = layer
         switch layer {
         case .above: level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) - 1)
         case .desktop: level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)) + 1)

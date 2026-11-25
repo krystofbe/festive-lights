@@ -32,7 +32,8 @@ enum MenuBar {
             for w in list {
                 guard (w[kCGWindowLayer as String] as? Int) == 24, (w[kCGWindowOwnerName as String] as? String) == "Window Server",
                       let bd = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: bd),
-                      r.height > 10, r.height < 80, r.width > screen.frame.width * 0.5 else { continue }
+                      r.height > 10, r.height < 80, r.width > screen.frame.width * 0.5,
+                      r.intersects(CGRect(origin: screen.cgOrigin, size: screen.frame.size)) else { continue }
                 let local = Double(r.maxY - screen.cgOrigin.y)
                 if local > 0 { shown = max(shown, min(local, nominal)) }
             }
@@ -51,6 +52,10 @@ final class ScreenOverlay {
     private var state = AppState()
     private var lastTick: Double?
     private var rateMode = -1
+    private var barShown = false
+    private var lastBarPoll = 0.0
+    private var lastBar: MenuBar.Info?
+    private var observers: [NSObjectProtocol] = []
     private var barDynamic = false
     private var dockContinuous: Bool?
     private var dockSwitchUntil = 0.0
@@ -62,11 +67,26 @@ final class ScreenOverlay {
         link = screen.displayLink(target: self, selector: #selector(tick(_:)))
         link?.add(to: .main, forMode: .common)
         link?.isPaused = true
+        // In Vollbild-Spaces und bei voll verdeckten Overlays wird nichts simuliert oder gezeichnet
+        for w in [menubar.window, dock.window, snow.window] {
+            observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didChangeOcclusionStateNotification, object: w, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                self.occluded = !self.anyOverlayVisible()
+                if !self.occluded { self.wake() }
+            })
+        }
+    }
+
+    private var occluded = false
+
+    private func anyOverlayVisible() -> Bool {
+        [menubar.window, dock.window, snow.window].contains { $0.isVisible && $0.occlusionState.contains(.visible) }
     }
 
     deinit { teardown() }
 
     func teardown() {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }; observers = []
         link?.invalidate(); link = nil
         Engine.shared.fields.removeAll { $0 === snow }
         menubar.setVisible(false, layer: .above, intro: nil)
@@ -95,7 +115,7 @@ final class ScreenOverlay {
     func wake() { if link?.isPaused == true { lastTick = nil; link?.isPaused = false } }
 
     func pointerMoved(_ p: CGPoint) {
-        guard link?.isPaused == true else { return }
+        guard link?.isPaused == true, !occluded else { return }
         let near = [menubar, dock].contains { $0.isShown && $0.window.frame.insetBy(dx: -90, dy: -90).contains(p) }
         if near { wake() }
     }
@@ -129,6 +149,8 @@ final class ScreenOverlay {
         let dockFir = st.dockKind.isFir
         if let bar = MenuBar.info(for: screen) {
             barDynamic = bar.dynamic
+            lastBar = bar
+            barShown = bar.dynamic && abs(bar.bottomY - Double(screen.frame.maxY)) > 0.5
             let h = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: st.bulbLevel)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
                                  length: Double(screen.frame.width), bulbH: h, sag: fir ? h * Garland.sag : h, liftSign: -1, liftToTop: true, liftMax: 0,
@@ -152,14 +174,11 @@ final class ScreenOverlay {
                 return
             }
             dockContinuous = d.continuous
-            let menuH = MenuBar.info(for: screen)?.height ?? Double(NSStatusBar.system.thickness)
-            let h0 = ChainLayout.bulbHeight(menuBarHeight: menuH, level: st.bulbLevel)
             // durchgehend: Dicke des Docks (ausgeblendet: Standardmaß), genau am Dock: Höhe der Symbolleiste
             let thickness = Double(d.edge == .bottom ? d.rect.height : d.rect.width)
             let icon = d.continuous && thickness < 20 ? 90 : thickness
             // Birnengröße gilt auch am Dock: höchster Regler = ein Viertel der Symbolhöhe, darunter proportional
             let h = max(8, icon * 0.25 * Levels.value(Levels.bulbSize, st.bulbLevel) / 1.4)
-            _ = h0
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
             let sp = ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel)
@@ -183,14 +202,23 @@ final class ScreenOverlay {
     }
 
     @objc private func tick(_ l: CADisplayLink) {
+        // Nichts sichtbar (Vollbild-App, ganz verdeckt): Bildschleife anhalten, die Benachrichtigung über die Sichtbarkeit weckt sie wieder
+        if !anyOverlayVisible() { occluded = true; l.isPaused = true; return }
+        occluded = false
         let now = l.timestamp
         let dt = min(max(now - (lastTick ?? now - 1.0 / 60), 0.001), 0.05)
         lastTick = now
         let engine = Engine.shared
         engine.sharedTick(now: now)
-        if barDynamic { configureChains() }
-
         let mouse = NSEvent.mouseLocation
+        // Automatisch ausgeblendete Menüleiste: Position nur abfragen, wenn der Zeiger am oberen Rand ist oder die Leiste gerade fährt, höchstens 10 Mal pro Sekunde
+        var barBusy = false
+        if barDynamic {
+            let atTop = mouse.y >= screen.frame.maxY - 6 && screen.frame.contains(mouse)
+            if (atTop || barShown) && now - lastBarPoll >= 0.1 { lastBarPoll = now; configureChains() }
+            barBusy = atTop || barShown
+        }
+
         let pointer: CGPoint? = screen.frame.contains(mouse) ? mouse : nil
         var level = max(menubar.update(time: now, dt: dt, pointer: pointer), dock.update(time: now, dt: dt, pointer: pointer))
         let chainMoving = level >= 2
@@ -201,7 +229,7 @@ final class ScreenOverlay {
         }
         let snowOnly = snowBusy && !chainMoving && Engine.shared.stirStrength == 0 && !Engine.shared.air.isActive
         if snowBusy { level = max(level, 2) }
-        if barDynamic { level = max(level, 1) }
+        if barBusy { level = max(level, 1) }
         // Rate nach Bedarf: Zeigerinteraktion und Federn bis 120 Hz, reiner Schneefall höchstens 60 Hz, Muster 30 Hz
         let mode = state.energySaving ? 0 : (level >= 2 && !snowOnly ? 2 : (snowBusy || level >= 2 ? 1 : 0))
         if rateMode != mode {

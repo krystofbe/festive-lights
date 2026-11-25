@@ -82,6 +82,9 @@ final class ChainRenderer {
     private var garlandSwaying = false
     private var lastMotion = true
     private var lastPatternTime = 0.0
+    /// Musterzeit, je Bild um Zeitschritt mal Tempo vorgerückt: Ein geändertes Tempo lässt das Muster nicht springen.
+    private var patternClock = 0.0
+    private var lastClockTime: Double?
     private var builtKey = ""
     private var introStart: Double?
     private var wantVisible = false
@@ -343,6 +346,8 @@ final class ChainRenderer {
     func update(time: Double, dt: Double, pointer: CGPoint?) -> Int {
         guard let sp = spec, !bulbs.isEmpty, wantVisible || window.rootLayer.presentation()?.opacity ?? 0 > 0.01 else { return 0 }
         let reduce = style.reduceMotion
+        if let lt = lastClockTime { patternClock += min(max(time - lt, 0), 0.25) * style.tempo }
+        lastClockTime = time
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
         let patternOn = style.pattern != .steady && !reduce
@@ -350,13 +355,13 @@ final class ChainRenderer {
         let pointerNear = pointer.map { window.frame.insetBy(dx: -80, dy: -80).contains($0) } ?? false
         if !lastMotion && !cableDirty && !introRunning && !pointerNear {
             guard patternOn else { return 0 }
-            if time - lastPatternTime < 0.045 { return 1 }
+            if time - lastPatternTime < 0.03 { return 1 }
             lastPatternTime = time
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             let n = bulbs.count
             for (i, b) in bulbs.enumerated() {
-                let bright = PatternSchedule.brightness(index: i, count: n, time: time, pattern: style.pattern, tempo: style.tempo)
+                let bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: style.pattern, tempo: 1)
                 b.lit.opacity = Float(bright)
                 b.glow.opacity = Float(bright * 0.9)
             }
@@ -436,7 +441,7 @@ final class ChainRenderer {
             } else { b.sway = Spring(value: target, velocity: 0) }
             b.container.transform = CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1)
 
-            var bright = PatternSchedule.brightness(index: i, count: n, time: time, pattern: reduce ? .steady : style.pattern, tempo: style.tempo)
+            var bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
             if intro < 1.8 {
                 let s = min(max((intro - Double(i) / Double(n) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
