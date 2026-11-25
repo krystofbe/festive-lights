@@ -11,11 +11,14 @@ final class OverlayWindow: NSWindow {
         isOpaque = false
         hasShadow = false
         ignoresMouseEvents = true
-        sharingType = UserDefaults.standard.bool(forKey: "debugCapture") ? .readOnly : .none
+        sharingType = .none
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugCapture") { sharingType = .readOnly }
+        #endif
         animationBehavior = .none
         canHide = false
         isExcludedFromWindowsMenu = true
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .transient]
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         let view = NSView(frame: NSRect(origin: .zero, size: frame.size))
         view.layer = rootLayer
         view.wantsLayer = true

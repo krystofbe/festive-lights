@@ -95,11 +95,6 @@ final class ScreenOverlay {
         menubar.window.orderOut(nil); dock.window.orderOut(nil)
     }
 
-    func updateScreen(_ s: NSScreen) {
-        screen = s
-        snow.place(s)
-    }
-
     /// Vergrößerte Dock-Symbole: absolute Spannen in Cocoa-Koordinaten, hier in u-Koordinaten der Dock-Kette umgerechnet.
     func setDockSpans(_ spans: [DockProfile.Span], edge: DockEdge) {
         guard let sp = dock.spec, dock.isShown, !(state.dock?.continuous ?? false) else { return }
@@ -153,10 +148,10 @@ final class ScreenOverlay {
             barShown = bar.dynamic && abs(bar.bottomY - Double(screen.frame.maxY)) > 0.5
             let h = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: st.bulbLevel)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(screen.frame.width), bulbH: h, sag: fir ? h * Garland.sag : h, liftSign: -1, liftToTop: true, liftMax: 0,
+                                 length: Double(screen.frame.width), bulbH: h, sag: fir ? h * Garland.sag : h, liftSign: -1, isMenuBar: true, liftMax: 0,
                                  spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel),
-                                 garlandDepth: fir ? 60 * (h / 24) * Garland.hangLength : 0)
-            menubar.configure(spec: spec, style: style(st.kind), scale: scale, levelsKey: 0)
+                                 garlandDepth: fir ? Garland.depthPer24 * (h / 24) * Garland.hangLength : 0)
+            menubar.configure(spec: spec, style: style(st.kind), scale: scale)
             menubar.setVisible(st.lightsOn, layer: st.lightsLayer, intro: CACurrentMediaTime())
         } else {
             barDynamic = false
@@ -185,15 +180,15 @@ final class ScreenOverlay {
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: dockFir ? h * 0.3 : h * 0.45, liftSign: -1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? 24 : 0)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag, liftSign: -1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth : 0)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockFir ? h * 0.3 : h * 0.45, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth : 0)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockFir ? h * 0.3 : h * 0.45, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth : 0)
             }
-            dock.configure(spec: spec, style: style(st.dockKind), scale: scale, levelsKey: 0)
+            dock.configure(spec: spec, style: style(st.dockKind), scale: scale)
             dock.setVisible(true, layer: st.lightsLayer, intro: nil)
         } else {
             dockContinuous = nil

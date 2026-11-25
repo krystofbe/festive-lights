@@ -11,8 +11,7 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 ## Lichterkette
 - Birnenhöhe in Mittelstellung = Menüleistenhöhe (mindestens 22 pt), Durchhang = eine Birnenhöhe, Birnenabstand 1,95 Birnenhöhen. Bogenzahl = Breite / (6 Birnen), Bogenlänge wird so angepasst, dass alle Bögen gleich sind.
 - Skalierung der Regler: Birnengröße 0,7 bis 1,4, Abstand 0,75 bis 1,45, Tempo 0,5 bis 2,2 (jeweils Mittelstellung 1,0).
-- Ausweichen: Gewicht über Abstand zu Kabel und oberem Birnenteil (smoothstep, Radius 60 pt). Zwei Federn: schnelles Heben (kritisch gedämpft, unter 0,1 s) und Senken in etwa 0,5 s mit leichtem Nachschwingen. Birnen pendeln über eine eigene schwach gedämpfte Feder.
-- Deckkraft von Birne samt Schein sinkt linear mit dem Gewicht bis 30 %.
+- Ausweichen: Nähe über Abstand zu Kabel und oberem Birnenteil (smoothstep, Radius 60 pt) steuert die Perlenkette (`BeadChain`, siehe unten): Die Birnen rutschen am Kabel zur Seite, nichts hebt sich, nichts wird durchsichtig. Birnen pendeln über eine eigene schwach gedämpfte Feder.
 - Menüleiste automatisch ausgeblendet: Position wird über die Fensterliste (Menüleisten-Fenster) verfolgt. Bildschirme ohne Menüleiste (zum Beispiel ohne getrennte Spaces) bekommen keine Kette.
 - Dunkel/hell richtet sich nach dem Erscheinungsbild des Systems. Die Fassungen bekommen im dunklen Modus eine feine helle Kante, die Gestaltung der Birnen kommt ausschließlich aus den PDF-Ebenen. Konturfarbe = dunklere Birnenfarbe, gedimmte Birne = stark abgedunkelte Farbe, Glanzlicht auf 30 %.
 - Die Schein-Größe beträgt 2 Birnenhöhen Durchmesser, Mitte auf dem Glaskörper.
@@ -22,7 +21,7 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 - Birnenhöhe am Dock höchstens ein Viertel der Symbolgröße.
 - Bei eingeschalteter Vergrößerung wird der Rahmen eingefroren, solange der Zeiger im Dock ist.
 - Ein neuer Rahmen wird übernommen, sobald er 0,15 s unverändert blieb (`DockFrameStabilizer`). Abfrage 5 Hz, nach Starten oder Beenden von Apps, Bildschirm- und Dock-Einstellungsänderungen 30 Hz für 2,5 s.
-- Seitliches Dock: Ausweichen hebt in Richtung Bildschirmmitte um 1,8 Birnenhöhen.
+- Seitliches Dock: Die Birnen rutschen wie an der Menüleiste am Kabel entlang.
 
 ## Schnee
 - Mengenstufen pro Bildschirm: 30, 55, 80, 170, 320 Flocken. Sturm: dreifach, höchstens 520 je Bildschirm.
@@ -140,3 +139,8 @@ Runde Tannen-Birnen (Commit 36e94c7): Die Ebenen `minibulb-*.pdf` (10 x 21 pt) w
 - Ruhezustand: keine laufende Abfrage, weder beim Treffer-Test noch bei den Bedienungshilfen (der frühere 5-Hz-Timer ist weg). Gemessen wird nur nach App-Start oder -Ende, Änderungen der Dock- oder Bildschirmeinstellungen, bei Auto-Hide beim Erreichen der Bildschirmkante und beim Verlassen der Dock-Zone, und während der Vergrößerung.
 - Die Dicke der Trefferfläche ist 99 pt gegen 93 pt der Bedienungshilfen. Für die Birnengröße am Dock wird sie um 6 pt vermindert.
 - Prüfung der Formwahl, der Rückfälle und der Suche in `DockShapeTests` und `DockProbeTests`.
+
+## Review-Befunde (review-36e94c7.md), Abarbeitung
+Behoben (jeweils am aktuellen Stand geprüft): 1 Energiesparen (`PowerPolicy`, `RuntimeState`, `apply()` rechnet neu, Test), 2 Menüleiste bei Auto-Ausblenden nur bei Zeiger am oberen Rand oder fahrender Leiste, höchstens 10 Mal pro Sekunde, Bildschleife pausiert wieder, 3 Dock-Abfrage nur ohne Pause und Sperre, 4 Bildschleife pausiert, wenn kein Overlay-Fenster sichtbar ist (Vollbild, ganz verdeckt, per `didChangeOcclusionState`), 5 Layer-Pool prüft aktive statt angelegte Layer, 6 Menüleistenkante je Bildschirm, 7 Dock-Symbolrahmen auf eigener Queue mit Abbruch bei erster Störung (erledigt sich für den Treffer-Test durch dessen Queue), 8 Menüleisten-Fenster muss den Bildschirm überdecken, 9 Wind bleibt bei reduzierter Bewegung ohne Böen, 10 und 11 Popover-Logik (Flag erst nach Erfolg, zweites Popover unabhängig vom ersten), 12 Anmeldeobjekt wird aufgefrischt, 13 Einstellungen schreiben nur den geänderten Schlüssel, 14 eigene Fenster der Ebene 0 verdecken Schnee, 15 `NSScreen.screens` aus der Flockenschleife, 16 Fensterabfrage beim Ziehen mit 60 Hz nur bei erkannter Bewegung, sonst 20 Hz, 17 Musterdrossel auf 30 ms, 18 Musterzeit wird je Bild mit dem Tempo vorgerückt (kein Sprung bei Tempo-Änderung), 19 Dock-Einstellungen werden gecacht, 20 `.transient` entfernt (Mission Control nicht gegengeprüft), 21 Berechtigungsabfrage jede Sekunde (schlimmster Fall 4,2 s), 22 Entwicklerschalter: `debugCapture`, Startargumente und alle `debug*`-Methoden liegen hinter `#if DEBUG`, im Release werden Startargumente ignoriert, 23 toter Code entfernt (Heben, Abblenden, ungenutzte Funktionen und Parameter, `liftToTop` heißt `isMenuBar`), 24 fünf Tests auf totem Code entfernt, Konstanten zentral (`Garland`, `ChainRenderer.introDuration`).
+Verworfen: Die Benachrichtigung `showSettings` bleibt: Sie öffnet nur das Einstellungsfenster, mehr geschieht nicht, und der zweite Start der App braucht sie.
+Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (Startargumente `-chainStyle`, `-debugCapture`, Debug-Auslöser). Für den Laptop und den Mini so bauen, das Release ignoriert Startargumente.

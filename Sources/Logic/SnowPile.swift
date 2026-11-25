@@ -46,8 +46,6 @@ struct SnowPile {
         return removed
     }
 
-    mutating func clear() { for i in columns.indices { columns[i] = 0 } }
-
     /// Passt das Profil einer geänderten Fensterbreite an.
     mutating func resize(width newWidth: Double) {
         let n = max(2, Int(ceil(newWidth / SnowPile.columnWidth)))

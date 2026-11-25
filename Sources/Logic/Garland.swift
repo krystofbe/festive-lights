@@ -57,6 +57,15 @@ enum Garland {
     /// Durchhang des Bandes in Birnenhöhen (Praxistest: ein bisschen mehr hängen lassen; vorher 0,2).
     static let sag = 0.45
     static let coneScale = 0.6
+    /// Durchhang am Dock in Birnenhöhen: Tanne und klassisch.
+    static let dockSag = 0.3
+    static let dockClassicSag = 0.45
+    /// Zweiggröße und Ansatzpunkt-Skalierung der schmalen Girlande am Dock.
+    static let dockBranchScale = 0.2
+    static let dockAnchorScale = 0.73
+    /// Tiefe der Girlande unter dem Kabel für die Fenstergröße: Menüleiste je 24 pt Birnenhöhe, Dock fest.
+    static let depthPer24 = 60.0
+    static let dockDepth = 24.0
     static let baubleScale = 0.6
     static let baublesPerArc = 4
     static let bowScale = 0.6
@@ -133,9 +142,7 @@ enum Garland {
             for a in 0..<max(arcCount, 1) {
                 plan.cones.append((Double(a) + 0.2 + 0.6 * stableRandom(a, 5, 17)) * arcLength)
             }
-            if style == .firGold {
-                for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) }
-            }
+            for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) }
         }
         return plan
     }

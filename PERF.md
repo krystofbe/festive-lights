@@ -18,9 +18,9 @@ Regel: Vor jedem Commit, der Zeichnen, Abfragen, Timer oder Physik betrifft, geg
 | 25.11.2026 | b2b1c1b | Tanne warmgold, Ruhezustand | 1,7 | 0,8 | gleich wie klassisch |
 | 25.11.2026 | b2b1c1b | Tanne bunt, Standard | 46,3 | 4,1 | |
 | 25.11.2026 | 6300502 | Ruhezustand, Menüleisten-Symbol als Vorlage | 1,4 | 0,7 | Symbol in 3 Stufen |
-| 26.11.2026 | dock-probe (dieser Commit) | ohne App | 0,1 | - | |
-| 26.11.2026 | dock-probe | Ruhezustand, mit Berechtigung (Bedienungshilfen, jetzt ereignisgetrieben) | 1,3 | 0,4 | vorher 1,4 / 0,7: keine 5-Hz-Abfrage mehr |
-| 26.11.2026 | dock-probe | Ruhezustand, ohne Berechtigung (Treffer-Test) | 1,2 | 0,4 | im Ruhezustand keine Abfrage |
-| 26.11.2026 | dock-probe | Standard (Funkeln, Schnee) | 46,9 | 4,1 | vorher 47,0 / 3,8, App +0,3 innerhalb der Schwankung |
+| 25.11.2026 | 9641b00 | ohne App | 0,1 | - | |
+| 25.11.2026 | 9641b00 | Ruhezustand, mit Berechtigung (Bedienungshilfen, jetzt ereignisgetrieben) | 1,3 | 0,4 | vorher 1,4 / 0,7: keine 5-Hz-Abfrage mehr |
+| 25.11.2026 | 9641b00 | Ruhezustand, ohne Berechtigung (Treffer-Test) | 1,2 | 0,4 | im Ruhezustand keine Abfrage |
+| 25.11.2026 | 9641b00 | Standard (Funkeln, Schnee) | 46,9 | 4,1 | vorher 47,0 / 3,8, App +0,3 innerhalb der Schwankung |
 
 Dock-Vergrößerung ohne Berechtigung (Treffer-Test, Debug-Build, Zeiger kreist 6 s über dem Dock): Haupt-Thread je Bild im Mittel 1,17 ms, höchstens 2,03 ms (Grenze 2 ms mittel, nie über 8 ms), Hintergrund je Messung im Mittel 4,9 ms, höchstens 23 ms. Die Messung der ruhenden Leiste (etwa 110 Aufrufe, 12 ms im Hintergrund) läuft nur bei Ereignissen.

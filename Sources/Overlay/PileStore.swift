@@ -63,7 +63,9 @@ final class PileStore {
     struct DebrisRequest { var x: Double; var y: Double; var count: Int; var vx = 0.0; var vy = Double.nan; var gravity = 72.0; var big = false }
     var debris: [DebrisRequest] = []
     var active = false
+    #if DEBUG
     var debugStirCalls = 0, debugStirHits = 0, debugEdges: [Double] = []
+    #endif
     private(set) var meltStart: Double?
     /// Zeitpunkt der letzten erkannten Fensterbewegung (steuert die Abfragerate beim Ziehen).
     private(set) var lastMoveTime = 0.0
@@ -105,12 +107,12 @@ final class PileStore {
                 e.version += 1
                 e.moving = moved > 0.5
                 if moved > 0.5 { lastMoveTime = time }
-                if moved > 2, active, e.pile.fill > 0.04 { fall(e, fraction: 0, scatter: min(5, Int(moved / 8) + 1)) }
+                if moved > 2, active, e.pile.fill > 0.04 { fall(e, scatter: min(5, Int(moved / 8) + 1)) }
                 if mouseDown, moved > 0.5, active {
                     let steps = e.detector.feed(time: time, position: w.frame.origin)
                     for _ in 0..<steps {
                         let removed = e.pile.remove(fraction: 1.0 / 3.0)
-                        fall(e, fraction: 0, scatter: min(40, Int(removed / 3) + 4))
+                        fall(e, scatter: min(40, Int(removed / 3) + 4))
                         e.version += 1
                     }
                 }
@@ -145,7 +147,7 @@ final class PileStore {
         }
     }
 
-    private func fall(_ e: Entry, fraction: Double, scatter: Int = 0) {
+    private func fall(_ e: Entry, scatter: Int = 0) {
         let n = scatter > 0 ? scatter : min(160, Int(Double(e.pile.columns.reduce(0, +)) / 2.5) + 6)
         for _ in 0..<n {
             guard let seg = e.segments.randomElement() else { return }
@@ -176,9 +178,13 @@ final class PileStore {
     /// Aufstöbern: schnelles Wischen über eine Schicht lässt eine Wolke aufstieben und hinterlässt eine Delle.
     /// Koordinaten global, y nach unten.
     func stir(from a: CGPoint, to b: CGPoint, velocity v: CGVector, strength: Double, time: Double) {
+        #if DEBUG
         debugStirCalls += 1
+        #endif
         guard active, strength > 0 else { return }
+        #if DEBUG
         debugEdges = entries.values.map { Double($0.frame.minY) }
+        #endif
         let samples = 12
         for (id, e) in entries {
             let edge = Double(e.frame.minY)
@@ -191,7 +197,9 @@ final class PileStore {
                 let h = Double(entries[id]!.pile.height(at: lx))
                 guard h > 1.0 else { continue }
                 lastX = x
+                #if DEBUG
                 debugStirHits += 1
+                #endif
                 entries[id]!.pile.remove(fraction: Float(0.4 + 0.3 * strength), from: lx - 14, to: lx + 14)
                 entries[id]!.version += 1
                 let n = Int(3 + 10 * strength)

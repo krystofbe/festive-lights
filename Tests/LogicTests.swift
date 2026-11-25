@@ -150,32 +150,11 @@ final class PileTests: XCTestCase {
 
 final class DodgeTests: XCTestCase {
     func testLiftWeightCurve() {
-        XCTAssertEqual(Dodge.liftWeight(distance: 0), 1, accuracy: 1e-9)
-        XCTAssertEqual(Dodge.liftWeight(distance: 60), 0)
-        XCTAssertEqual(Dodge.liftWeight(distance: 100), 0)
+        XCTAssertEqual(Dodge.proximity(distance: 0), 1, accuracy: 1e-9)
+        XCTAssertEqual(Dodge.proximity(distance: 60), 0)
+        XCTAssertEqual(Dodge.proximity(distance: 100), 0)
         var last = 2.0
-        for d in stride(from: 0.0, through: 60, by: 1) { let w = Dodge.liftWeight(distance: d); XCTAssertLessThanOrEqual(w, last); last = w }
-        XCTAssertEqual(Dodge.opacity(forWeight: 1), 0.3, accuracy: 1e-9)
-        XCTAssertEqual(Dodge.opacity(forWeight: 0), 1)
-    }
-
-    func testAttackReactsWithin100ms() {
-        var s = Spring()
-        for _ in 0..<6 { s.lift(target: 1, dt: 1.0 / 60) }
-        XCTAssertGreaterThan(s.value, 0.5)
-        for _ in 0..<12 { s.lift(target: 1, dt: 1.0 / 60) }
-        XCTAssertGreaterThan(s.value, 0.9)
-    }
-
-    func testReleaseReturnsWithinHalfSecondWithSmallOvershoot() {
-        var s = Spring(value: 1, velocity: 0)
-        var minValue = 1.0
-        for _ in 0..<30 { s.lift(target: 0, dt: 1.0 / 60); minValue = min(minValue, s.value) }
-        XCTAssertLessThan(abs(s.value), 0.08)
-        XCTAssertLessThan(minValue, 0)
-        XCTAssertGreaterThan(minValue, -0.25)
-        for _ in 0..<60 { s.lift(target: 0, dt: 1.0 / 60) }
-        XCTAssertTrue(s.isSettled(target: 0))
+        for d in stride(from: 0.0, through: 60, by: 1) { let w = Dodge.proximity(distance: d); XCTAssertLessThanOrEqual(w, last); last = w }
     }
 
     func testSegmentDistance() {
@@ -287,20 +266,6 @@ final class CoordinateTests: XCTestCase {
         XCTAssertLessThan(after, before, "Layer-y muss beim Fallen kleiner werden (nach unten)")
         XCTAssertEqual(ScreenCoords.layerY(topDown: 0, height: h), h, "Bildschirmoberkante liegt oben")
         XCTAssertEqual(ScreenCoords.layerY(topDown: h, height: h), 0, "Unterkante liegt unten")
-    }
-
-    func testPileSitsAboveWindowEdge() {
-        let edge = 300.0, h = 1080.0
-        let layerEdge = ScreenCoords.layerY(topDown: edge, height: h)
-        XCTAssertGreaterThan(ScreenCoords.pileTopLayerY(edgeTopDown: edge, height: 12, screenHeight: h), layerEdge)
-    }
-
-    func testWindowTopEdgeIsAboveItsBottomInCocoa() {
-        let primary = 1080.0
-        let top = ScreenCoords.cocoaY(fromCG: 200, rectHeight: 400, primaryHeight: primary) + 400
-        let bottom = ScreenCoords.cocoaY(fromCG: 200, rectHeight: 400, primaryHeight: primary)
-        XCTAssertGreaterThan(top, bottom)
-        XCTAssertEqual(top, primary - 200)
     }
 
     func testWindDirection() {

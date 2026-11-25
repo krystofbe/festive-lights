@@ -40,9 +40,11 @@ final class StatusController: NSObject, NSMenuDelegate {
         updateIcon()
     }
 
+    #if DEBUG
     var debugAppearance: String {
         "frame=\(item.button?.window?.frame ?? .zero) screens=\(NSScreen.screens.map(\.frame)) btn=\(item.button?.effectiveAppearance.name.rawValue ?? "-") win=\(item.button?.window?.effectiveAppearance.name.rawValue ?? "-") app=\(NSApp.effectiveAppearance.name.rawValue)"
     }
+    #endif
 
     func updateIcon() {
         guard let button = item.button else { return }

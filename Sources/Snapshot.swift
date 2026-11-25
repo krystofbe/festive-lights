@@ -27,11 +27,11 @@ enum Snapshot {
 
         func spec() -> ChainSpec {
             ChainSpec(p0: CGPoint(x: f.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: Double(f.width),
-                      bulbH: h, sag: h, liftSign: -1, liftToTop: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: h, level: 2))
+                      bulbH: h, sag: h, liftSign: -1, isMenuBar: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: h, level: 2))
         }
         for isDark in [true, false] {
             let r = ChainRenderer()
-            r.configure(spec: spec(), style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false), scale: 2, levelsKey: 0)
+            r.configure(spec: spec(), style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false), scale: 2)
             r.setVisible(true, layer: .above, intro: nil)
             r.window.rootLayer.opacity = 1
             r.update(time: 20, dt: 0.016, pointer: nil)
@@ -57,10 +57,10 @@ enum Snapshot {
             for isDark in [true, false] {
                 let fh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2)
                 let fspec = ChainSpec(p0: CGPoint(x: f.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: Double(f.width),
-                                      bulbH: fh, sag: fh * 0.3, liftSign: -1, liftToTop: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2),
-                                      garlandDepth: 60 * (fh / 24))
+                                      bulbH: fh, sag: fh * Garland.sag, liftSign: -1, isMenuBar: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2),
+                                      garlandDepth: Garland.depthPer24 * (fh / 24))
                 let fr = ChainRenderer()
-                fr.configure(spec: fspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false, kind: kind), scale: 2, levelsKey: 0)
+                fr.configure(spec: fspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false, kind: kind), scale: 2)
                 fr.setVisible(true, layer: .above, intro: nil); fr.window.rootLayer.opacity = 1
                 fr.update(time: 20, dt: 0.016, pointer: nil)
                 write(fr.window.rootLayer, size: fr.window.frame.size, background: isDark ? dark : light, to: "\(dir)/\(kind.rawValue)-\(isDark ? "dark" : "light").png")
@@ -73,7 +73,7 @@ enum Snapshot {
         }
         // Funkeln und Ausweichen
         let r = ChainRenderer()
-        r.configure(spec: spec(), style: ChainStyle(warm: false, pattern: .twinkle, tempo: 1, dark: true, reduceMotion: false), scale: 2, levelsKey: 0)
+        r.configure(spec: spec(), style: ChainStyle(warm: false, pattern: .twinkle, tempo: 1, dark: true, reduceMotion: false), scale: 2)
         r.setVisible(true, layer: .above, intro: nil)
         r.window.rootLayer.opacity = 1
         let ptr = CGPoint(x: f.width * 0.5, y: bar.bottomY - h * 1.6)
@@ -85,15 +85,15 @@ enum Snapshot {
         // Dock links
         let dl = ChainRenderer()
         let dspec = ChainSpec(p0: CGPoint(x: 90, y: 700), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0), length: 500, bulbH: 16, sag: 16,
-                              liftSign: 1, liftToTop: false, liftMax: 28, spacing: 31)
-        dl.configure(spec: dspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false), scale: 2, levelsKey: 0)
+                              liftSign: 1, isMenuBar: false, liftMax: 28, spacing: 31)
+        dl.configure(spec: dspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false), scale: 2)
         dl.setVisible(true, layer: .above, intro: nil); dl.window.rootLayer.opacity = 1
         dl.update(time: 20, dt: 0.016, pointer: nil)
         write(dl.window.rootLayer, size: dl.window.frame.size, background: dark, to: "\(dir)/chain-dock-left.png")
         let db = ChainRenderer()
         let bspec = ChainSpec(p0: CGPoint(x: 400, y: 90), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 700, bulbH: 14, sag: 14,
-                              liftSign: -1, liftToTop: false, liftMax: 25, spacing: 27)
-        db.configure(spec: bspec, style: ChainStyle(warm: true, pattern: .steady, tempo: 1, dark: false, reduceMotion: false), scale: 2, levelsKey: 0)
+                              liftSign: -1, isMenuBar: false, liftMax: 25, spacing: 27)
+        db.configure(spec: bspec, style: ChainStyle(warm: true, pattern: .steady, tempo: 1, dark: false, reduceMotion: false), scale: 2)
         db.setVisible(true, layer: .above, intro: nil); db.window.rootLayer.opacity = 1
         db.update(time: 20, dt: 0.016, pointer: nil)
         write(db.window.rootLayer, size: db.window.frame.size, background: light, to: "\(dir)/chain-dock-bottom-warm.png")

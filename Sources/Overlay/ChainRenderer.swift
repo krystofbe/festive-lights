@@ -8,11 +8,11 @@ struct ChainSpec: Equatable {
     var bulbH: Double
     var sag: Double
     var liftSign: Double     // -1: gegen die Hängerichtung heben, +1: in Hängerichtung
-    var liftToTop: Bool      // Menüleiste: Abschnitt hebt sich bis unter die Leiste
+    var isMenuBar: Bool      // Menüleiste: Abschnitt hebt sich bis unter die Leiste
     var liftMax: Double      // sonst: maximale Hubhöhe
     var spacing: Double
     var garlandDepth = 0.0   // Tiefe der Girlande unter dem Kabel, für die Fenstergröße
-    var isDock: Bool { !liftToTop }
+    var isDock: Bool { !isMenuBar }
 
     func point(u: Double, v: Double) -> CGPoint {
         CGPoint(x: p0.x + uDir.dx * u + hang.dx * v, y: p0.y + uDir.dy * u + hang.dy * v)
@@ -22,7 +22,7 @@ struct ChainSpec: Equatable {
 
     var windowFrame: NSRect {
         let glow = bulbH * 1.0
-        let vMin = liftSign < 0 && !liftToTop ? -liftMax - 4 : -2
+        let vMin = liftSign < 0 && !isMenuBar ? -liftMax - 4 : -2
         let vMax = sag + max(bulbH, garlandDepth) + glow + (liftSign > 0 ? liftMax : 0)
         let pts = [point(u: -glow, v: vMin), point(u: length + glow, v: vMin), point(u: -glow, v: vMax), point(u: length + glow, v: vMax)]
         let xs = pts.map(\.x), ys = pts.map(\.y)
@@ -90,6 +90,8 @@ final class ChainRenderer {
     private var wantVisible = false
     private var scale: CGFloat = 2
     private let du = 6.0
+    /// Dauer des Einschaltens der Birnen von links nach rechts beim Start.
+    static let introDuration = 1.8
 
     init() {
         content.masksToBounds = false
@@ -120,7 +122,7 @@ final class ChainRenderer {
         CATransaction.commit()
     }
 
-    func configure(spec new: ChainSpec, style newStyle: ChainStyle, scale s: CGFloat, levelsKey: Int) {
+    func configure(spec new: ChainSpec, style newStyle: ChainStyle, scale s: CGFloat) {
         let geometryChanged = spec != new
         let needsRebuild = geometryChanged || style != newStyle || scale != s
         spec = new
@@ -188,7 +190,7 @@ final class ChainRenderer {
         guard style.kind.isFir else { return }
         let fs = sp.bulbH / 24
         let dock = sp.isDock
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? 0.73 : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? Garland.dockAnchorScale : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -210,7 +212,7 @@ final class ChainRenderer {
         for br in sortedIdx.map({ plan.branches[$0] }) {
             if !frontStart && br.layer == .front { frontStart = true; content.addSublayer(cable) }
             let hang = br.layer == .hang
-            let k = dock ? 0.2 : (hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+            let k = dock ? Garland.dockBranchScale : (hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
             let z: CGFloat = br.layer == .back ? 0 : (br.layer == .front ? 3 : 1)
             branches.append(piece(FirSprites.branch(br.layer, br.sprite), size: FirSprites.branchCanvas, anchor: FirSprites.branchAnchor, z: z,
                                   u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
@@ -219,7 +221,7 @@ final class ChainRenderer {
         // Zweig-Ansatzpunkte rutschen wie die Birnen am Kabel, die Nadelspitzen dürfen nicht in die Lücke ragen
         var perLayer: [String: [(piece: Piece, e: (left: Double, right: Double))]] = [:]
         for (piece, br) in zip(branches, sortedIdx.map({ plan.branches[$0] })) {
-            let k = dock ? 0.2 : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+            let k = dock ? Garland.dockBranchScale : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
             let e = Garland.extent(layer: br.layer, sprite: br.sprite)
             let m = br.mirrored ? (left: e.right, right: e.left) : e
             piece.chainKey = br.layer.rawValue
@@ -292,7 +294,7 @@ final class ChainRenderer {
 
     /// Zweige, Zapfen und Schleifen sitzen am Kabel. Zweige biegen sich vom Zeiger weg, Zapfen rutschen wie die Birnen.
     /// Gibt zurück, ob noch etwas schwingt.
-    private func updateGarland(_ sp: ChainSpec, dt: Double, reduce: Bool, origin: CGPoint, pointerU: Double?, strength k: Double) -> Bool {
+    private func updateGarland(_ sp: ChainSpec, dt: Double, reduce: Bool, origin: CGPoint) -> Bool {
         var moving = false
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (j, c) in cones.enumerated() where j < coneBeads.pos.count { c.u = coneBeads.pos[j] }
@@ -351,7 +353,7 @@ final class ChainRenderer {
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
         let patternOn = style.pattern != .steady && !reduce
-        let introRunning = introStart.map { time - $0 < 1.8 } ?? false
+        let introRunning = introStart.map { time - $0 < Self.introDuration } ?? false
         let pointerNear = pointer.map { window.frame.insetBy(dx: -80, dy: -80).contains($0) } ?? false
         if !lastMotion && !cableDirty && !introRunning && !pointerNear {
             guard patternOn else { return 0 }
@@ -377,7 +379,7 @@ final class ChainRenderer {
             let rel = CGPoint(x: p.x - sp.p0.x, y: p.y - sp.p0.y)
             let u0 = Double(rel.x * sp.uDir.dx + rel.y * sp.uDir.dy)
             let pv = Double(rel.x * sp.hang.dx + rel.y * sp.hang.dy)
-            let inBar = sp.liftToTop && pv < -1
+            let inBar = sp.isMenuBar && pv < -1
             if !inBar, u0 > -80, u0 < sp.length + 80, abs(pv) < 200 {
                 var dmin = Double.infinity
                 let lo = max(0, Int((u0 - 70) / du)), hi = min(Int(sp.length / du), Int((u0 + 70) / du) + 1)
@@ -388,12 +390,12 @@ final class ChainRenderer {
                         dmin = min(dmin, Dodge.distance(from: CGPoint(x: u0, y: pv), toSegment: CGPoint(x: u, y: v), CGPoint(x: u, y: v + 0.6 * sp.bulbH)))
                     }
                 }
-                k = Dodge.liftWeight(distance: dmin)
+                k = Dodge.proximity(distance: dmin)
                 if k > 0 { pu = u0 }
             }
         }
         var branchesSettled = true
-        for (key, c) in branchChains where !c.isSettled() { _ = key; branchesSettled = false; break }
+        if branchChains.values.contains(where: { !$0.isSettled() }) { branchesSettled = false }
         if reduce { beads.snapToRest(); coneBeads.snapToRest(); for key in branchChains.keys { branchChains[key]!.snapToRest() } }
         else if k > 0 || !beads.isSettled() || !coneBeads.isSettled() || !branchesSettled {
             beads.step(dt: dt, pointer: pu, strength: k)
@@ -442,7 +444,7 @@ final class ChainRenderer {
             b.container.transform = CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1)
 
             var bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
-            if intro < 1.8 {
+            if intro < Self.introDuration {
                 let s = min(max((intro - Double(i) / Double(n) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
             }
@@ -450,13 +452,13 @@ final class ChainRenderer {
             b.glow.opacity = Float(bright * 0.9)
         }
         if moving || swayActive || cableDirtyForGarland || garlandSwaying {
-            garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin, pointerU: pu, strength: k)
+            garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin)
             if garlandSwaying { swayActive = true }
         }
         cableDirtyForGarland = false
         CATransaction.commit()
         moving = moving || swayActive
-        lastMotion = moving || intro < 1.8
+        lastMotion = moving || intro < Self.introDuration
         if lastMotion { return 2 }
         return (style.pattern != .steady && !reduce) ? 1 : 0
     }

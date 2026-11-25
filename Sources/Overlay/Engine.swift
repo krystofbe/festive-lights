@@ -13,7 +13,9 @@ final class Engine {
     /// Fenster können gleich verschwinden (Klick, App-Wechsel): kurz schnell abfragen, sonst genügen 2 Abfragen pro Sekunde.
     func requestBurst() { burstUntil = CACurrentMediaTime() + 2.0 }
     var reduceMotion = false
+    #if DEBUG
     var debugMaxSpeed = 0.0, debugStirred = 0, debugEvents = 0
+    #endif
     private var tracker = PointerVelocityTracker()
     private var lastSweepPos: CGPoint?
 
@@ -31,7 +33,12 @@ final class Engine {
     }()
     #endif
 
-    func pointerEvent(_ p: CGPoint, time: Double) { tracker.feed(time: time, position: p); debugEvents += 1; debugMaxSpeed = max(debugMaxSpeed, hypot(tracker.velocity.dx, tracker.velocity.dy)) }
+    func pointerEvent(_ p: CGPoint, time: Double) {
+        tracker.feed(time: time, position: p)
+        #if DEBUG
+        debugEvents += 1; debugMaxSpeed = max(debugMaxSpeed, hypot(tracker.velocity.dx, tracker.velocity.dy))
+        #endif
+    }
     private var lastShared = 0.0
 
     func stormFactor(_ now: Double) -> Double { storm?.factor(at: now) ?? 0 }
@@ -53,7 +60,9 @@ final class Engine {
             let from = cg(lastSweepPos ?? pos), to = cg(pos)
             let before = air.puffs.count
             air.feed(from: from, to: to, velocity: v)
+            #if DEBUG
             debugStirred += max(0, air.puffs.count - before)
+            #endif
             if NSEvent.pressedMouseButtons == 0 { store.stir(from: from, to: to, velocity: v, strength: stirStrength, time: now) }
         }
         #if DEBUG

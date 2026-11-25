@@ -26,8 +26,6 @@ struct PointerVelocityTracker {
         if idle > 0.12 { return 0 }
         return hypot(velocity.dx, velocity.dy)
     }
-
-    mutating func reset() { self = PointerVelocityTracker() }
 }
 
 /// Aufstöbern: Der Zeiger schiebt keine Flocken an, er bewegt die Luft (`AirField`).

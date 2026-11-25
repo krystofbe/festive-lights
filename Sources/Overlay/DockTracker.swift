@@ -38,7 +38,9 @@ final class DockTracker {
     private var tile = 64.0
     private var reading = false
     private let axQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockax", qos: .userInteractive)
+    #if DEBUG
     var debugItems = ""
+    #endif
     private var timer: Timer?
     private var stabilizer = DockFrameStabilizer()
     private var burstUntil = 0.0

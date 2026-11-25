@@ -22,7 +22,7 @@ private struct Flake {
     var fade = 0.0, fadeRate = 0.0
     var ttl = -1.0
     var vx = 0.0
-    var ox = 0.0, slow = 1.0
+    var slow = 1.0
     var drift = Stir.Drift()
     var layer = 0
     var dying = false, debris = false
@@ -61,8 +61,6 @@ final class SnowField {
     }
 
     var cgFrame: CGRect { CGRect(origin: screen.cgOrigin, size: screenSize) }
-
-    func place(_ s: NSScreen) { window.place(s.frame) }
 
     func configure(_ c: SnowConfig) {
         cfg = c
@@ -105,7 +103,7 @@ final class SnowField {
         return layers.count - 1
     }
 
-    private func spawn(prefill: Bool, speedMult: Double) {
+    private func spawn(prefill: Bool) {
         var f = Flake()
         f.z = pow(Double.random(in: 0...1), 1.25)
         f.crystal = f.z > 0.9 && Double.random(in: 0...1) < 0.7
@@ -166,7 +164,7 @@ final class SnowField {
         if alive < target {
             let n = min(target - alive, Int(Double(target - alive) * dt * 2.5) + 1)
             let prefill = alive < Int(Double(target) * 0.9)
-            for _ in 0..<n { spawn(prefill: prefill, speedMult: 1) }
+            for _ in 0..<n { spawn(prefill: prefill) }
             alive += n
         } else if alive > target {
             var extra = alive - target
@@ -224,13 +222,13 @@ final class SnowField {
                 let sway = swayOn ? sin(f.phase + time * f.freq) * f.amp : 0
                 let sink = f.speed * speedMult * f.slow
                 if airOn || !f.drift.isZero {
-                    let s = airOn ? air.sample(x: ox0 + f.x + sway + f.ox, y: oy0 + f.y) : AirField.Sample()
+                    let s = airOn ? air.sample(x: ox0 + f.x + sway, y: oy0 + f.y) : AirField.Sample()
                     let v = f.drift.step(air: s, sink: sink, tau: Stir.relaxation(depth: f.z), dt: dt)
                     f.x += Double(v.dx) * dt; f.y += Double(v.dy) * dt
                     f.rot += f.drift.spin * dt
                     #if DEBUG
                     if let log, !f.drift.isZero {
-                        log.write(String(format: "F,%.4f,%d,%.1f,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n", time, f.layer, ox0 + f.x + sway + f.ox, oy0 + f.y, f.z, sink,
+                        log.write(String(format: "F,%.4f,%d,%.1f,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n", time, f.layer, ox0 + f.x + sway, oy0 + f.y, f.z, sink,
                                          f.drift.vx, f.drift.vy + f.drift.lift, Double(v.dy), s.dx, Double(s.velocity.dy)).data(using: .utf8)!)
                     }
                     #endif
@@ -270,7 +268,7 @@ final class SnowField {
                 if abs(f.pvx) > 0.01 { f.x += f.pvx * dt } else { f.pvx = 0 }
                 f.slow += (tslow - f.slow) * (1 - exp(-dt / 0.12))
                 let l = layers[f.layer]
-                l.position = CGPoint(x: sx + f.ox, y: ScreenCoords.layerY(topDown: sy, height: H))
+                l.position = CGPoint(x: sx, y: ScreenCoords.layerY(topDown: sy, height: H))
                 if f.crystal { l.transform = CATransform3DMakeRotation(f.rot, 0, 0, 1) }
                 l.opacity = Float(f.alpha * max(0, min(1, f.fade)))
                 flakes[i] = f
@@ -290,7 +288,7 @@ final class SnowField {
             i += 1
         }
 
-        updatePiles(time: time, store: store, moving: false)
+        updatePiles(time: time, store: store)
         return !flakes.isEmpty || cfg.enabled || !piles.isEmpty
     }
 
@@ -302,7 +300,7 @@ final class SnowField {
         return Float(2.76 * refFlux / standardFlux)
     }
 
-    private func updatePiles(time: Double, store: PileStore, moving: Bool) {
+    private func updatePiles(time: Double, store: PileStore) {
         let originX = Double(screen.cgOrigin.x), originY = Double(screen.cgOrigin.y)
         var seen = Set<Int>()
         let melt = store.melt

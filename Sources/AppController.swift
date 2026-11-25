@@ -306,6 +306,7 @@ final class AppController: NSObject {
 
     var reduceMotionActive: Bool { reduceMotion }
 
+    #if DEBUG
     @objc private func debugStorm() { toggleStorm() }
     @objc private func debugPrompt() { status.showPermissionPrompt() }
     @objc private func debugWelcome() { status.showWelcome() }
@@ -362,6 +363,8 @@ final class AppController: NSObject {
             }
         }
     }
+    #endif
+
     @objc private func showSettingsRequested() { showSettings() }
 
     func showSettings() {
