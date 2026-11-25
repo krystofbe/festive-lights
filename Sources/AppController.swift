@@ -67,6 +67,10 @@ final class AppController: NSObject {
             self?.dockTracker.pointerMoved()
         } as Any)
 
+        monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { _ in Engine.shared.requestBurst() } as Any)
+        for n in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.didHideApplicationNotification, NSWorkspace.didTerminateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
+            ws.addObserver(forName: n, object: nil, queue: .main) { _ in Engine.shared.requestBurst() }
+        }
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         dockTracker.onChange = { [weak self] g in
             #if DEBUG
@@ -207,7 +211,7 @@ final class AppController: NSObject {
         updateDockTracking()
         var st = AppState()
         st.lightsOn = lightsOn
-        st.dockLightsOn = lightsOn && s.dockLights && permission && dockGeometry != nil
+        st.dockLightsOn = live && s.dockLights && permission && dockGeometry != nil
         st.snowOn = snowOn
         st.settle = settle
         st.lightsLayer = s.lightsLayer

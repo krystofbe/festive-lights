@@ -119,3 +119,9 @@ Das Symbol ist schwarzweiß und als Template gesetzt, das System färbt es passe
 
 ## Tanne bunt neu (SPEC Commit 0240440)
 Birnen reihum rot, gold, cremeweiß, gold. Statt Zapfen hängen rote und goldene Christbaumkugeln (bis zu 4 je Bogen). Jede Kugel ist ein Kind-Layer ihres Zweigs an dessen Aufhängepunkt nahe der Spitze (`Garland.tip`, 85 % des Wegs zur entferntesten Nadel, aus den Bildern gemessen, nur Zweige der Schichten hinten, Mitte, vorn), rutscht und biegt sich mit ihm und pendelt an ihrem Faden (Pendelfeder, hängt immer senkrecht). Die Platzierung hält zu jeder Birne mehr als eine Kugelbreite Abstand und zu anderen Kugeln das 1,6-fache. Am Dock gibt es keine Kugeln. "Tanne warmgold" bleibt mit Zapfen und Schleifen.
+
+## Fenster verschwindet: Schnee bricht sofort weg
+Die Schneeschicht reagierte erst nach 1,5 s (2 Abfragen pro Sekunde, drei fehlende Abfragen als Beweis). Jetzt: Klicks (Maustaste runter und hoch), App-Wechsel, Ausblenden, Beenden und Space-Wechsel lösen 2 s lang eine Abfrage mit 30 Hz aus, beim Ziehen bleibt es bei 60 Hz. Ein Fenster gilt nach zwei fehlenden schnellen Abfragen (etwa 70 ms) als weg, bei der langsamen Abfrage schon nach einer. Gemessen am Testrechner: Nach dem Klick auf den roten Knopf sind die Flocken rund 0,3 s später in der Luft. Die Schicht verschwindet sofort und bricht in bis zu 320 Flocken auseinander (jede achte ein Brocken), die aus der Form der Schicht mit eigener Schwerkraft (550 bis 950 pt/s²) unterschiedlich schnell nach unten fallen und ausblenden.
+
+## Lichter an der Menüleiste und am Dock sind getrennt
+Das Ausschalten der Menüleisten-Lichter blendete auch die Dock-Lichter aus, weil die Dock-Kette an `lightsOn` hing. Sie hängt jetzt nur noch an ihrem eigenen Schalter, der Pause, der Berechtigung und einem sichtbaren Dock.

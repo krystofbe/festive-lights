@@ -8,6 +8,10 @@ final class Engine {
     var onStormEnded: (() -> Void)?
     var settleActive = false
     private var lastPoll = 0.0
+    private var burstUntil = 0.0
+
+    /// Fenster können gleich verschwinden (Klick, App-Wechsel): kurz schnell abfragen, sonst genügen 2 Abfragen pro Sekunde.
+    func requestBurst() { burstUntil = CACurrentMediaTime() + 2.0 }
     var reduceMotion = false
     var debugMaxSpeed = 0.0, debugStirred = 0, debugEvents = 0
     private var tracker = PointerVelocityTracker()
@@ -60,16 +64,18 @@ final class Engine {
         lastSweepPos = pos
         store.advanceMelt(time: now)
         let down = NSEvent.pressedMouseButtons & 1 != 0
-        if settleActive, now - lastPoll >= (down ? 1.0 / 60 : 0.5) {
+        let pollGap = down ? 1.0 / 60 : (now < burstUntil ? 1.0 / 30 : 0.5)
+        if settleActive, now - lastPoll >= pollGap {
+            let interval = now - lastPoll
             lastPoll = now
             let bar = Double(NSStatusBar.system.thickness) + 2
-            store.update(windows: WindowTracker.poll(menuBarBottom: { _ in bar }), mouseDown: down, time: now)
+            store.update(windows: WindowTracker.poll(menuBarBottom: { _ in bar }), mouseDown: down, time: now, interval: interval)
         }
         if !store.debris.isEmpty {
             for d in store.debris {
                 for f in fields {
                     let r = f.cgFrame
-                    if r.contains(CGPoint(x: d.x, y: d.y)) { f.spawnDebris(at: CGPoint(x: d.x - r.minX, y: d.y - r.minY), count: d.count, vx: d.vx, vy: d.vy) }
+                    if r.contains(CGPoint(x: d.x, y: d.y)) { f.spawnDebris(at: CGPoint(x: d.x - r.minX, y: d.y - r.minY), count: d.count, vx: d.vx, vy: d.vy, gravity: d.gravity, big: d.big) }
                 }
             }
             store.debris.removeAll()

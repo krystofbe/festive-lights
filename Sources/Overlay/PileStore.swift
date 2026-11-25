@@ -49,7 +49,7 @@ final class PileStore {
 
     private(set) var entries: [Int: Entry] = [:]
     /// Wunsch nach herabfallendem Schnee: Punkt in globalen y-nach-unten-Koordinaten.
-    struct DebrisRequest { var x: Double; var y: Double; var count: Int; var vx = 0.0; var vy = Double.nan }
+    struct DebrisRequest { var x: Double; var y: Double; var count: Int; var vx = 0.0; var vy = Double.nan; var gravity = 72.0; var big = false }
     var debris: [DebrisRequest] = []
     var active = false
     var debugStirCalls = 0, debugStirHits = 0, debugEdges: [Double] = []
@@ -73,12 +73,13 @@ final class PileStore {
 
     var isIdle: Bool { entries.isEmpty }
 
-    func update(windows: [TrackedWindow], mouseDown: Bool, time: Double) {
+    /// `interval`: Abstand zur letzten Abfrage. Bei seltener Abfrage genügt ein fehlendes Fenster als Beweis, bei schneller sind es zwei Abfragen.
+    func update(windows: [TrackedWindow], mouseDown: Bool, time: Double, interval: Double = 0.1) {
         let seen = Set(windows.map(\.id))
         for id in entries.keys where !seen.contains(id) {
             entries[id]!.missing += 1
-            if entries[id]!.missing >= 3 {
-                if active { fall(entries[id]!, fraction: 1) }
+            if entries[id]!.missing >= (interval > 0.3 ? 1 : 2) {
+                if active { collapse(entries[id]!) }
                 entries[id] = nil
             }
         }
@@ -111,6 +112,23 @@ final class PileStore {
             e.frame = w.frame
             e.above = w.above
             entries[w.id] = e
+        }
+    }
+
+    /// Fenster weg: Die Schicht bricht sofort in feine Flocken und einzelne Brocken auseinander, die aus der Form der Schicht
+    /// beschleunigt nach unten fallen (unterschiedlich schnell, mit Schwerkraft), statt langsam zu rieseln.
+    private func collapse(_ e: Entry) {
+        guard !e.segments.isEmpty else { return }
+        let total = e.pile.columns.reduce(0, +)
+        let n = min(320, Int(Double(total) * 0.8) + 10)
+        for i in 0..<n {
+            guard let seg = e.segments.randomElement() else { return }
+            let x = Double.random(in: seg)
+            let h = Double(e.pile.height(at: x - Double(e.frame.minX)))
+            let big = i % 8 == 0
+            debris.append(DebrisRequest(x: x, y: Double(e.frame.minY) - h * Double.random(in: 0...1), count: 1,
+                                        vx: Double.random(in: -25...25), vy: Double.random(in: 0...25),
+                                        gravity: Double.random(in: 550...950), big: big))
         }
     }
 

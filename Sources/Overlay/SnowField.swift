@@ -26,6 +26,7 @@ private struct Flake {
     var drift = Stir.Drift()
     var layer = 0
     var dying = false, debris = false
+    var grav = 72.0
 }
 
 /// Schneefall auf einem Bildschirm. Koordinaten: Ursprung links oben, y nach unten.
@@ -126,17 +127,18 @@ final class SnowField {
         flakes.append(f)
     }
 
-    func spawnDebris(at p: CGPoint, count: Int, vx: Double = 0, vy: Double = .nan) {
+    func spawnDebris(at p: CGPoint, count: Int, vx: Double = 0, vy: Double = .nan, gravity: Double = 72, big: Bool = false) {
         guard layers.count < 1100 else { return }
         for _ in 0..<count {
             var f = Flake()
             f.debris = true
             f.x = Double(p.x) + Double.random(in: -3...3); f.y = Double(p.y)
-            f.size = Double.random(in: 1.4...3.2) * appliedSize
+            f.size = (big ? Double.random(in: 3.5...6) : Double.random(in: 1.4...3.2)) * appliedSize
+            f.grav = gravity
             f.speed = vy.isNaN ? Double.random(in: 25...200) : vy + Double.random(in: -30...30)
             f.vx = vx + Double.random(in: -22...22)
             f.alpha = Double.random(in: 0.6...1)
-            f.ttl = Double.random(in: 0.7...2.2)
+            f.ttl = gravity > 200 ? Double.random(in: 0.9...1.8) : Double.random(in: 0.7...2.2)
             f.fade = 1
             f.layer = newLayer()
             let d = f.size * 2.4
@@ -203,7 +205,7 @@ final class SnowField {
             let prevY = f.y
             if f.debris {
                 f.ttl -= dt
-                f.speed += 180 * dt * 0.4
+                f.speed += f.grav * dt
                 if airOn || !f.drift.isZero {
                     // feiner Pulverschnee folgt der Luft fast sofort
                     let s = airOn ? air.sample(x: ox0 + f.x, y: oy0 + f.y) : AirField.Sample()
