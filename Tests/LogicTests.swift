@@ -1293,3 +1293,27 @@ final class OverlayLevelTests: XCTestCase {
         XCTAssertLessThan(OverlayLevel.raw(.above, aboveSnow: true, mainMenu: 24, desktop: 0), 24, "unter der Menüleiste")
     }
 }
+
+
+final class DockSizeTests: XCTestCase {
+    func testBulbHeightIsAQuarterOfTheTileAtMidSettingAndRelativeToIt() {
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2), 16, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 100, bulbLevel: 2), 25, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 4), 16 * Levels.value(Levels.bulbSize, 4), accuracy: 1e-9)
+        XCTAssertLessThan(Garland.dockBulbHeight(tile: 64, bulbLevel: 0), Garland.dockBulbHeight(tile: 64, bulbLevel: 4))
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 16, bulbLevel: 0), 8, "nie unter 8 pt")
+    }
+
+    func testMagnificationGrowsWithTheLiftOfTheIcon() {
+        XCTAssertEqual(Garland.dockMagnification(lift: 0, tile: 64), 1)
+        XCTAssertEqual(Garland.dockMagnification(lift: 32, tile: 64), 1.5, accuracy: 1e-9)   // 96 statt 64
+        XCTAssertEqual(Garland.dockMagnification(lift: -5, tile: 64), 1)
+    }
+
+    func testBuntDockClustersFollowTheBulbSize() {
+        let small = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 12 / Garland.dockRefBulbH, style: .firColor, dock: true)
+        let big = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 25 / Garland.dockRefBulbH, style: .firColor, dock: true)
+        XCTAssertGreaterThan(small.branches.count, big.branches.count, "größere Büschel brauchen weniger Ansatzpunkte")
+        XCTAssertTrue(small.branches.allSatisfy { $0.layer == .cluster })
+    }
+}

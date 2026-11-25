@@ -12,6 +12,7 @@ struct ChainSpec: Equatable {
     var liftMax: Double      // sonst: maximale Hubhöhe
     var spacing: Double
     var garlandDepth = 0.0   // Tiefe der Girlande unter dem Kabel, für die Fenstergröße
+    var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
     var isDock: Bool { !isMenuBar }
 
     func point(u: Double, v: Double) -> CGPoint {
@@ -207,10 +208,11 @@ final class ChainRenderer {
         let bunt = self.bunt
         if bunt { content.addSublayer(strand) }
         func branchScale(_ br: GarlandBranch) -> Double {
-            if bunt { return dock ? Garland.tbDockScale : Garland.tbUnit * fs * br.scale }
-            return dock ? Garland.dockBranchScale : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
+            let dk = sp.bulbH / Garland.dockRefBulbH
+            if bunt { return dock ? Garland.tbDockScale * dk * br.scale : Garland.tbUnit * fs * br.scale }
+            return dock ? Garland.dockBranchScale * dk : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
         }
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? Garland.dockAnchorScale : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? (bunt ? sp.bulbH / Garland.dockRefBulbH : Garland.dockAnchorScale) : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -235,7 +237,7 @@ final class ChainRenderer {
             let z: CGFloat = br.layer == .back ? 0 : (br.layer == .front ? 3 : 1)
             if bunt {
                 let px = max(8, Int((FirSprites.clusterSize.height * Garland.tbUnit * 1.25 * fs * scale).rounded()))
-                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * 1.25 * scale)) : px),
+                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * 1.3 * 1.25 * scale)) : px),
                                       size: FirSprites.clusterSize, anchor: FirSprites.clusterAnchor, z: z, u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
                 continue
             }
@@ -327,6 +329,9 @@ final class ChainRenderer {
     }
 
     /// Abstand des Kabels von der Aufhängelinie. `wave`: bei "Tanne bunt" schlängelt sich das Kabel in eigenen Wellen durch das Grün.
+    /// Am Dock wachsen Birnen und Grün über vergrößerten Symbolen mit.
+    private func magnify(_ sp: ChainSpec, _ u: Double) -> Double { sp.isDock && sp.dockTile > 0 ? Garland.dockMagnification(lift: liftAt(u), tile: sp.dockTile) : 1 }
+
     private func cableV(_ sp: ChainSpec, _ u: Double, wave: Bool = true) -> Double {
         var v = sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
         if wave, bunt, sp.isMenuBar { v += 3.5 * sp.bulbH / Garland.tbRefBulbH * sin(2 * .pi * u / (layout.arcLength * 0.62) + 0.8) }
@@ -367,7 +372,8 @@ final class ChainRenderer {
                     if abs(piece.sway.value - target) < 0.0008 && abs(piece.sway.velocity) < 0.003 { piece.sway = Spring(value: target, velocity: 0) }
                 }
             } else { piece.sway = Spring(value: target, velocity: 0) }
-            piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + piece.sway.value, 0, 0, 1), piece.mirrored ? -1 : 1, 1, 1)
+            let grow = magnify(sp, u)
+            piece.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + piece.sway.value, 0, 0, 1), (piece.mirrored ? -1 : 1) * grow, grow, 1)
             if let bl = piece.bauble {
                 // Die Kugel hängt senkrecht an ihrem Faden und pendelt nach, wenn der Zweig rutscht
                 let vel = branchChains[piece.chainKey].map { piece.slot < $0.vel.count ? $0.vel[piece.slot] : 0 } ?? 0
@@ -491,7 +497,8 @@ final class ChainRenderer {
                 }
                 angle = b.sway.value
             } else { b.sway = Spring(value: target, velocity: 0) }
-            b.container.transform = CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1)
+            let grow = magnify(sp, u)
+            b.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1), grow, grow, 1)
 
             var bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
             if intro < Self.introDuration {

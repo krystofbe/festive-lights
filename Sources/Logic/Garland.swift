@@ -86,6 +86,13 @@ enum Garland {
     static let tbRotation = 22.0
     static let tbBaubleSizes: [(w: Double, h: Double, hangX: Double, hangY: Double)] = [(80, 89, 40, 0), (88, 111, 44, 14), (76, 85, 38, 0), (88, 111, 44, 14), (80, 89, 40, 0)]
 
+    /// Dock-Kette: Birnenhöhe bei Mittelstellung ein Viertel der Symbolhöhe (`tile`), der Regler wirkt relativ dazu, nie unter 8 pt.
+    static func dockBulbHeight(tile: Double, bulbLevel: Int) -> Double { max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel)) }
+    /// Birnenhöhe, auf die die Dock-Büschel und -Zweige bezogen sind (Symbolgröße 73 pt bei Mittelstellung).
+    static let dockRefBulbH = 73.0 * 0.25
+    /// Wachstum der Birnen und des Grüns über einem vergrößerten Symbol: Symbolgröße mit Vergrößerung geteilt durch Ruhegröße (`lift` ist die Anhebung der Oberkante).
+    static func dockMagnification(lift: Double, tile: Double) -> Double { 1 + max(lift, 0) / max(tile, 1) }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// x-Koordinate des Ansatzpunkts in der Leinwand des Zweigs oder Büschels.
@@ -152,7 +159,7 @@ enum Garland {
     private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double]) -> GarlandPlan {
         var plan = GarlandPlan()
         let unit = tbUnit * s
-        let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale : unit))))
+        let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale * s : unit))))
         let step = length / Double(n)
         for k in 0..<n {
             plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,
