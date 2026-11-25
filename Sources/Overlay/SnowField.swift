@@ -23,7 +23,7 @@ private struct Flake {
     var ttl = -1.0
     var vx = 0.0
     var ox = 0.0, slow = 1.0
-    var svx = 0.0, svy = 0.0, stirAge = 99.0, stirCool = 0.0, spin = 0.0
+    var drift = Stir.Drift()
     var layer = 0
     var dying = false, debris = false
 }
@@ -187,11 +187,14 @@ final class SnowField {
         } else { pointerSmooth = nil }
 
         let settleTargets = cfg.settle ? targets : []
-        var localSweep: (a: CGPoint, b: CGPoint, v: CGVector)?
-        if let sw = Engine.shared.sweep, !reduce {
-            func loc(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x - screen.frame.minX, y: screen.frame.height - (p.y - screen.frame.minY)) }
-            localSweep = (loc(sw.from), loc(sw.to), CGVector(dx: sw.velocity.dx, dy: -sw.velocity.dy))
-        }
+        let air = Engine.shared.air
+        let airOn = air.isActive
+        let ox0 = Double(screen.cgOrigin.x), oy0 = Double(screen.cgOrigin.y)
+        // bei schneller Fahrt übernimmt die Luftströmung, das Ausweichen blendet aus
+        let dodge = 1 - Engine.shared.stirStrength
+        #if DEBUG
+        let log = Engine.shared.stirLog
+        #endif
         let hitScale = pileHitAmount()
         var i = 0
         while i < flakes.count {
@@ -201,7 +204,12 @@ final class SnowField {
             if f.debris {
                 f.ttl -= dt
                 f.speed += 180 * dt * 0.4
-                f.y += f.speed * dt
+                if airOn || !f.drift.isZero {
+                    // feiner Pulverschnee folgt der Luft fast sofort
+                    let s = airOn ? air.sample(x: ox0 + f.x, y: oy0 + f.y) : AirField.Sample()
+                    let v = f.drift.step(air: s, sink: f.speed, tau: 0.08, dt: dt)
+                    f.x += Double(v.dx) * dt; f.y += Double(v.dy) * dt
+                } else { f.y += f.speed * dt }
                 f.x += f.vx * dt
                 let a = min(1, max(0, f.ttl / 0.5))
                 layers[f.layer].opacity = Float(f.alpha * a)
@@ -210,27 +218,24 @@ final class SnowField {
                 f.fade += (f.dying ? -1 : 1) * f.fadeRate * dt
                 if f.fade >= 1 { f.fade = 1; f.fadeRate = f.dying ? f.fadeRate : 0 }
                 if f.fade <= 0 { remove = true }
-                if let sw = localSweep, !f.dying, f.stirCool <= 0,
-                   let imp = Stir.impulse(flake: CGPoint(x: f.x, y: f.y), from: sw.a, to: sw.b, velocity: sw.v, jitter: Double.random(in: -1...1)) {
-                    f.svx = Double(imp.dx) * (0.6 + 0.6 * f.z); f.svy = Double(imp.dy) * (0.6 + 0.6 * f.z)
-                    Engine.shared.debugStirred += 1
-                    f.stirAge = 0; f.stirCool = 0.7; f.spin = Double.random(in: -9...9)
-                }
-                f.stirCool -= dt
-                var fallFactor = 1.0
-                if f.stirAge < 3 {
-                    f.stirAge += dt
-                    fallFactor = Stir.fallFactor(age: f.stirAge)
-                    let d = Stir.decayed(CGVector(dx: f.svx, dy: f.svy), dt: dt)
-                    f.svx = Double(d.dx); f.svy = Double(d.dy)
-                    f.x += f.svx * dt; f.y += f.svy * dt
-                    f.rot += f.spin * dt * max(0, 1 - f.stirAge / 1.8)
-                }
-                f.y += Stir.verticalVelocity(fall: f.speed * speedMult * f.slow, fallScale: fallFactor, stirVy: 0) * dt
+                let sway = swayOn ? sin(f.phase + time * f.freq) * f.amp : 0
+                let sink = f.speed * speedMult * f.slow
+                if airOn || !f.drift.isZero {
+                    let s = airOn ? air.sample(x: ox0 + f.x + sway + f.ox, y: oy0 + f.y) : AirField.Sample()
+                    let v = f.drift.step(air: s, sink: sink, tau: Stir.relaxation(depth: f.z), dt: dt)
+                    f.x += Double(v.dx) * dt; f.y += Double(v.dy) * dt
+                    f.rot += f.drift.spin * dt
+                    #if DEBUG
+                    if let log, !f.drift.isZero {
+                        log.write(String(format: "F,%.4f,%d,%.1f,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n", time, f.layer, ox0 + f.x + sway + f.ox, oy0 + f.y, f.z, sink,
+                                         f.drift.vx, f.drift.vy + f.drift.lift, Double(v.dy), s.dx, Double(s.velocity.dy)).data(using: .utf8)!)
+                    }
+                    #endif
+                } else { f.y += sink * dt }
                 f.x += windV * (0.35 + 0.65 * f.z) * dt
                 if f.crystal { f.rot += f.rotSpeed * dt * (reduce ? 0.5 : 1) }
                 if f.y > H + f.size * 2 {
-                    if f.dying { remove = true } else { f.y = -Double.random(in: 5...50); f.x = Double.random(in: -30...(W + 30)) }
+                    if f.dying { remove = true } else { f.y = -Double.random(in: 5...50); f.x = Double.random(in: -30...(W + 30)); f.drift = Stir.Drift() }
                 }
                 if f.x > W + 40 { f.x -= W + 80 } else if f.x < -40 { f.x += W + 80 }
                 if !settleTargets.isEmpty, !f.dying, f.z > 0.12 {
@@ -250,12 +255,11 @@ final class SnowField {
                     flakes.removeLast()
                     continue
                 }
-                var sx = f.x, sy = f.y
-                if swayOn { sx += sin(f.phase + time * f.freq) * f.amp }
+                let sx = f.x + sway, sy = f.y
                 var tox = 0.0, tslow = 1.0
                 if let p = pointerSmooth {
                     let fl = Dodge.flow(flake: CGPoint(x: sx, y: sy), pointer: p, radius: R, side: f.phase < .pi ? 1 : -1)
-                    tox = fl.dx; tslow = fl.fallScale
+                    tox = fl.dx * dodge; tslow = 1 - (1 - fl.fallScale) * dodge
                 }
                 if tox != 0 || f.ox != 0 {
                     let a = 1 - exp(-dt / 0.09)

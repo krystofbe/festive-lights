@@ -341,38 +341,116 @@ final class StirTests: XCTestCase {
         XCTAssertGreaterThan(t.velocity.dx, 0)
     }
 
-    func testSlowMovementDoesNotStir() {
-        XCTAssertEqual(Stir.strength(speed: 200), 0)
-        XCTAssertNil(Stir.impulse(flake: CGPoint(x: 5, y: 0), from: .zero, to: CGPoint(x: 10, y: 0), velocity: CGVector(dx: 200, dy: 0)))
-        XCTAssertEqual(Stir.strength(speed: 2000), 1)
-    }
-
-    func testFastMovementCarriesFlakesForward() {
-        let v = CGVector(dx: 1200, dy: 0)
-        let imp = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 80, y: 0), to: CGPoint(x: 120, y: 0), velocity: v)!
-        XCTAssertGreaterThan(imp.dx, 100, "in Bewegungsrichtung")
-        XCTAssertGreaterThanOrEqual(imp.dy, 0, "waagerechte Bewegung wirft nichts nach oben")
-    }
-
-    func testFasterStirsMoreFlakesAndHarder() {
-        XCTAssertGreaterThan(Stir.radius(strength: Stir.strength(speed: 1500)), Stir.radius(strength: Stir.strength(speed: 600)))
-        func hit(_ speed: Double) -> CGFloat {
-            Stir.impulse(flake: CGPoint(x: 0, y: 50), from: CGPoint(x: -20, y: 0), to: CGPoint(x: 20, y: 0), velocity: CGVector(dx: speed, dy: 0))?.dx ?? 0
+    /// Fährt den Zeiger mit 120 Bildern pro Sekunde von a nach b und lässt danach `rest` Sekunden verstreichen.
+    struct Probe { var p: CGPoint; var z = 0.3; var sink = 40.0; var drift = Stir.Drift(); var start = CGPoint.zero
+                   var maxAir = 0.0, maxRel = 0.0, minVy = Double.infinity, maxStep = 0.0 }
+    @discardableResult
+    static func run(_ air: inout AirField, _ probes: inout [Probe], from a: CGPoint, to b: CGPoint, speed: Double, rest: Double = 0, noise: Double = 0) -> Int {
+        let dt = 1.0 / 120, len = Double(hypot(b.x - a.x, b.y - a.y))
+        let ux = Double(b.x - a.x) / len, uy = Double(b.y - a.y) / len
+        let v = CGVector(dx: (ux - uy * noise) * speed, dy: (uy + ux * noise) * speed)
+        let moveSteps = Int(len / speed / dt), steps = moveSteps + Int(rest / dt)
+        var last = a
+        for i in probes.indices where probes[i].start == .zero { probes[i].start = probes[i].p }
+        for k in 1...max(steps, 1) {
+            air.step(dt: dt)
+            if k <= moveSteps {
+                let t = Double(k) / Double(moveSteps)
+                let p = CGPoint(x: Double(a.x) + ux * len * t, y: Double(a.y) + uy * len * t)
+                air.feed(from: last, to: p, velocity: v); last = p
+            }
+            for i in probes.indices {
+                let s = air.sample(x: Double(probes[i].p.x), y: Double(probes[i].p.y))
+                let before = probes[i].drift
+                let vel = probes[i].drift.step(air: s, sink: probes[i].sink, tau: Stir.relaxation(depth: probes[i].z), dt: dt)
+                probes[i].p.x += vel.dx * dt; probes[i].p.y += vel.dy * dt
+                let d = probes[i].drift
+                probes[i].maxAir = max(probes[i].maxAir, s.speed)
+                probes[i].maxRel = max(probes[i].maxRel, hypot(d.vx, d.vy + d.lift))
+                probes[i].minVy = min(probes[i].minVy, Double(vel.dy))
+                probes[i].maxStep = max(probes[i].maxStep, hypot(d.vx - before.vx, d.vy + d.lift - before.vy - before.lift))
+            }
         }
-        XCTAssertGreaterThan(hit(1500), hit(700))
+        return steps
+    }
+    static func grid(z: Double = 0.3, sink: Double = 40) -> [Probe] {
+        var out: [Probe] = []
+        for x in stride(from: 300.0, through: 900, by: 40) { for y in stride(from: 300.0, through: 700, by: 25) { out.append(Probe(p: CGPoint(x: x, y: y), z: z, sink: sink)) } }
+        return out
+    }
+    static let passes: [(CGPoint, CGPoint)] = [
+        (CGPoint(x: 200, y: 500), CGPoint(x: 1000, y: 500)), (CGPoint(x: 1000, y: 480), CGPoint(x: 200, y: 520)),
+        (CGPoint(x: 300, y: 250), CGPoint(x: 900, y: 750)), (CGPoint(x: 600, y: 800), CGPoint(x: 600, y: 200)), (CGPoint(x: 350, y: 750), CGPoint(x: 850, y: 250)),
+    ]
+
+    func testSlowMovementMakesNoAir() {
+        XCTAssertEqual(Stir.strength(speed: 200), 0)
+        XCTAssertEqual(Stir.strength(speed: 2000), 1)
+        var air = AirField(), probes = Self.grid()
+        Self.run(&air, &probes, from: CGPoint(x: 200, y: 500), to: CGPoint(x: 400, y: 500), speed: 200)
+        XCTAssertFalse(air.isActive)
+        XCTAssertTrue(probes.allSatisfy { $0.drift.isZero && $0.maxAir == 0 })
     }
 
-    func testFlakesOutsideRadiusUntouched() {
-        XCTAssertNil(Stir.impulse(flake: CGPoint(x: 0, y: 400), from: .zero, to: CGPoint(x: 50, y: 0), velocity: CGVector(dx: 1500, dy: 0)))
+    func testFlakeNeverFasterThanTheAirCarryingIt() {
+        for (a, b) in Self.passes { for speed in [600.0, 1200, 2500, 6000] {
+            var air = AirField(), probes = Self.grid(z: 0.05)
+            Self.run(&air, &probes, from: a, to: b, speed: speed, rest: 1)
+            for p in probes {
+                XCTAssertLessThanOrEqual(p.maxRel, p.maxAir + 1e-6, "Flocke schneller als die Luft")
+                XCTAssertLessThanOrEqual(p.maxAir, min(speed, Stir.maxAir) + 1e-6, "Luft schneller als der Zeiger")
+            }
+            XCTAssertGreaterThan(probes.map(\.maxRel).max()!, 0.08 * min(speed, 2000) * Stir.strength(speed: speed))
+        } }
     }
 
-    func testFallRecoversAfterTwoSeconds() {
-        XCTAssertLessThan(Stir.fallFactor(age: 0), 0.2)
-        XCTAssertEqual(Stir.fallFactor(age: 2.0), 1, accuracy: 1e-9)
-        var last = 0.0
-        for a in stride(from: 0.0, through: 2.0, by: 0.1) { let f = Stir.fallFactor(age: a); XCTAssertGreaterThanOrEqual(f, last); last = f }
-        let d = Stir.decayed(CGVector(dx: 1000, dy: -400), dt: 2.0)
-        XCTAssertLessThan(hypot(d.dx, d.dy), 40)
+    func testFlakesAreCarriedAlongWithoutJumps() {
+        // Abnahme 7: bei gut 1000 pt/s nach 0,3 s sichtbar in Bewegungsrichtung versetzt
+        var air = AirField(), probes = [Probe(p: CGPoint(x: 600, y: 505), z: 0.3), Probe(p: CGPoint(x: 600, y: 470), z: 0.6)]
+        Self.run(&air, &probes, from: CGPoint(x: 200, y: 500), to: CGPoint(x: 1000, y: 500), speed: 1200, rest: 0.3)
+        for p in probes {
+            XCTAssertGreaterThan(p.p.x - p.start.x, 15, "in Bewegungsrichtung mitgenommen")
+            XCTAssertLessThan(p.maxStep, 0.1 * 1200, "kein Sprung im Tempo von Bild zu Bild")
+        }
+    }
+
+    func testSmallFlakesReactMoreThanLargeOnes() {
+        XCTAssertLessThan(Stir.relaxation(depth: 0), Stir.relaxation(depth: 1))
+        var air = AirField(), probes = [Probe(p: CGPoint(x: 600, y: 510), z: 0.05), Probe(p: CGPoint(x: 600, y: 510), z: 0.95)]
+        Self.run(&air, &probes, from: CGPoint(x: 200, y: 500), to: CGPoint(x: 1000, y: 500), speed: 1500, rest: 0.4)
+        XCTAssertGreaterThan(probes[0].maxRel, probes[1].maxRel * 1.3)
+        XCTAssertGreaterThan(probes[0].p.x - 600, probes[1].p.x - 600)
+    }
+
+    func testEverythingIsCalmAgainAfterTwoSeconds() {
+        for (a, b) in Self.passes {
+            var air = AirField(), probes = Self.grid(z: 1)
+            Self.run(&air, &probes, from: a, to: b, speed: 3000, rest: 2)
+            XCTAssertFalse(air.isActive, "Nachlauf ist verschwunden")
+            for p in probes { XCTAssertLessThan(hypot(p.drift.vx, p.drift.vy + p.drift.lift), 2, "Flocke fällt wieder normal (Abweichung unter 2 pt/s)") }
+        }
+    }
+
+    func testWakeCalmsDownWithinAboutOneSecond() {
+        var air = AirField(), none: [Probe] = []
+        Self.run(&air, &none, from: CGPoint(x: 200, y: 500), to: CGPoint(x: 1000, y: 500), speed: 1500)
+        func peak() -> Double { stride(from: 200.0, through: 1000, by: 20).map { air.sample(x: $0, y: 500).speed }.max()! }
+        let fresh = peak()
+        XCTAssertGreaterThan(fresh, 300)
+        Self.run(&air, &none, from: CGPoint(x: 1000, y: 500), to: CGPoint(x: 1000.1, y: 500), speed: 100, rest: 1)
+        XCTAssertLessThan(peak(), 0.06 * fresh)
+    }
+
+    func testWakeHasSidewaysDisplacementBackflowAndCounterRotatingSwirls() {
+        var air = AirField(), none: [Probe] = []
+        Self.run(&air, &none, from: CGPoint(x: 200, y: 500), to: CGPoint(x: 1000, y: 500), speed: 1500)
+        XCTAssertGreaterThan(air.sample(x: 960, y: 500).dx, 300, "Luft wird in Bewegungsrichtung mitgerissen")
+        let flank = stride(from: 400.0, through: 800, by: 10).map { air.sample(x: $0, y: 395).dx }
+        XCTAssertLessThan(flank.min()!, -5, "Rückströmung an der Flanke")
+        let curls = stride(from: 400.0, through: 800, by: 10).flatMap { x in [440.0, 560].map { air.sample(x: x, y: $0).curl } }
+        XCTAssertLessThan(curls.min()!, -0.5); XCTAssertGreaterThan(curls.max()!, 0.5)
+        let ahead = air.sample(x: 1060, y: 540)
+        XCTAssertGreaterThan(ahead.velocity.dy, 0, "vor dem Zeiger weicht die Luft seitlich aus")
     }
 }
 
@@ -398,34 +476,36 @@ final class GravityTests: XCTestCase {
         XCTAssertGreaterThan(f.dx, 10)
     }
 
-    func testNoUpwardVelocityForRestingOrHorizontallyMovingPointer() {
-        let pointer = CGPoint(x: 500, y: 500)
-        for speed in [0.0, 400, 900, 1500, 3000] {
+    func testNoUpwardMotionForHorizontallyMovingPointer() {
+        for speed in [400.0, 900, 1500, 3000] {
             for noise in [-0.2, -0.1, 0, 0.1, 0.3] {  // leichtes Zittern der Maus senkrecht
-                let v = CGVector(dx: speed, dy: speed * noise)
-                for x in stride(from: 400.0, through: 700, by: 25) {
-                    for y in stride(from: 380.0, through: 640, by: 20) {
-                        let flake = CGPoint(x: x, y: y)
-                        let flow = Dodge.flow(flake: flake, pointer: pointer, radius: 120)
-                        let imp = Stir.impulse(flake: flake, from: CGPoint(x: 450, y: 500), to: CGPoint(x: 550, y: 500), velocity: v, jitter: 1)
-                        let vy = Stir.verticalVelocity(fall: 40, fallScale: flow.fallScale * Stir.fallFactor(age: 0.3), stirVy: Double(imp?.dy ?? 0))
-                        XCTAssertGreaterThanOrEqual(vy, 0, "Flocke darf sich nie nach oben bewegen (Tempo \(speed), Zittern \(noise))")
-                    }
+                for (a, b) in [(CGPoint(x: 200, y: 500), CGPoint(x: 1000, y: 500)), (CGPoint(x: 1000, y: 500), CGPoint(x: 200, y: 500))] {
+                    // langsamste Flocke, zusätzlich vom Ausweichen gebremst
+                    var air = AirField(), probes = StirTests.grid(z: 0, sink: 9 * 0.35)
+                    StirTests.run(&air, &probes, from: a, to: b, speed: speed, rest: 1.5, noise: noise)
+                    for p in probes { XCTAssertGreaterThanOrEqual(p.minVy, 0, "Flocke darf sich nie nach oben bewegen (Tempo \(speed), Zittern \(noise))") }
+                    XCTAssertGreaterThan(probes.map(\.maxRel).max()!, 0)
                 }
             }
         }
     }
 
-    func testUpwardOnlyWhenPointerMovesUpAndThenSmall() {
-        let imp = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 100, y: 200), to: CGPoint(x: 100, y: 0), velocity: CGVector(dx: 0, dy: -1500))!
-        XCTAssertLessThan(imp.dy, 0)
-        XCTAssertGreaterThan(imp.dy, -420)
-        let down = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 100, y: 0), to: CGPoint(x: 100, y: 200), velocity: CGVector(dx: 0, dy: 1500))!
-        XCTAssertGreaterThanOrEqual(down.dy, 0)
+    func testDownwardPassNeverLifts() {
+        var air = AirField(), probes = StirTests.grid(z: 0, sink: 9)
+        StirTests.run(&air, &probes, from: CGPoint(x: 300, y: 250), to: CGPoint(x: 900, y: 750), speed: 2000, rest: 1.5)
+        for p in probes { XCTAssertGreaterThanOrEqual(p.minVy, 0) }
     }
 
-    func testUpwardStirDecaysFast() {
-        let d = Stir.decayed(CGVector(dx: 0, dy: -300), dt: 0.5)
-        XCTAssertGreaterThan(d.dy, -30)
+    func testUpwardPassLiftsOnlyBrieflyAndDamped() {
+        var air = AirField(), probes = StirTests.grid(z: 0, sink: 30)
+        StirTests.run(&air, &probes, from: CGPoint(x: 600, y: 800), to: CGPoint(x: 600, y: 200), speed: 1500, rest: 0)
+        let minVy = probes.map(\.minVy).min()!
+        XCTAssertLessThan(minVy, -20, "aufwärts fahrender Zeiger nimmt Flocken mit nach oben")
+        XCTAssertGreaterThan(minVy, -Stir.liftDamping * 1500, "aber nur gedämpft")
+        XCTAssertLessThan(probes.map { $0.start.y - $0.p.y }.max()!, 120)
+        for i in probes.indices { probes[i].minVy = .infinity }
+        StirTests.run(&air, &probes, from: CGPoint(x: 600, y: 200), to: CGPoint(x: 600.1, y: 200), speed: 100, rest: 1.0)
+        let late = probes.map(\.drift.lift).min()!
+        XCTAssertGreaterThan(late, -3, "nach kurzer Zeit überwiegt die Schwerkraft")
     }
 }
