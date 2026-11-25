@@ -153,7 +153,11 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 - Name FestiveLights, Bundle-ID `ms.blckbox.FestiveLights` (Präfix so beabsichtigt), macOS 14 oder neuer, Apple Silicon und Intel.
 - Swift mit SwiftUI und AppKit, keine Fremdabhängigkeiten ohne Rücksprache.
 - Menüleisten-App ohne Dock-Symbol.
-- Vertrieb direkt (signiert und notarisiert), nicht über den App Store.
+- Kostenlos und Open Source unter der MIT-Lizenz (`LICENSE`). Das Repo ist öffentlich: keine Team-ID, keine Zertifikatsnamen, keine persönlichen Pfade im Repo, Signatur-Einstellungen nur in einer lokalen, nicht versionierten Datei.
+- Zwei Varianten aus demselben Code, umgeschaltet beim Bauen:
+  - **App Store:** App Sandbox, keine Bedienungshilfen-API, kein Berechtigungsbereich in den Einstellungen, kein Berechtigungs-Popover. Dock-Kette per Treffer-Test, Schnee auf Fenstern über die Fensterliste. Updates über den App Store. Datenschutz-Manifest, Kategorie, Verschlüsselungsangabe.
+  - **Download (GitHub Releases):** Developer ID, signiert, notarisiert, als DMG. Bedienungshilfen-Freigabe optional wie bisher. Eigener, schlanker Update-Hinweis (prüft höchstens einmal am Tag die neueste Version auf GitHub und bietet den Download an, ohne Fremdabhängigkeit).
+- Alles, was nur eine Variante kann, ist im Code klar gekapselt; die Unit-Tests laufen für beide Varianten.
 
 ## 10. Qualität und Energie
 
