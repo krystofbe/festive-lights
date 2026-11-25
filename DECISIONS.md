@@ -125,3 +125,5 @@ Die Schneeschicht reagierte erst nach 1,5 s (2 Abfragen pro Sekunde, drei fehlen
 
 ## Lichter an der Menüleiste und am Dock sind getrennt
 Das Ausschalten der Menüleisten-Lichter blendete auch die Dock-Lichter aus, weil die Dock-Kette an `lightsOn` hing. Sie hängt jetzt nur noch an ihrem eigenen Schalter, der Pause, der Berechtigung und einem sichtbaren Dock.
+
+Mini-Birnen: Die Glasröhre wird nicht mehr aus minibulb-glass.pdf und minibulb-outline.pdf gerendert (spitze Unterseite), sondern als Pfad mit gleichen Maßen (1,4 bis 6,55 pt breit, 8,5 bis 27 pt lang) und halbrundem Boden. Der Glühfaden-Verlauf (`minibulb-shine.pdf`) wird auf die runde Form beschnitten, die Fassung bleibt aus der PDF (Praxistest: Kerzen zu spitz).

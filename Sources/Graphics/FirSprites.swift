@@ -59,12 +59,30 @@ enum FirSprites {
         func layer(_ name: String, _ color: CGColor) {
             if let img = Art.tinted(name, color: color, width: w, height: h) { ctx.draw(img, in: full) }
         }
-        layer("minibulb-glass", lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.78))
-        layer("minibulb-outline", lit ? cgColor(c, amount: 0.45) : cgColor(c, mix: deep, amount: 0.9))
+        // Glasröhre mit rundem Boden statt der spitzen Form aus minibulb-glass.pdf (Praxistest: zu spitz). Maße wie in der PDF.
+        let sx = CGFloat(w) / 8, sy = CGFloat(h) / 28
+        func pt(_ x: Double, _ yTop: Double) -> CGPoint { CGPoint(x: CGFloat(x) * sx, y: (28 - CGFloat(yTop)) * sy) }
+        let radius = 2.575
+        let path = CGMutablePath()
+        path.move(to: pt(1.4, 8.5))
+        path.addLine(to: pt(1.4, 27 - radius))
+        path.addArc(center: pt(3.975, 27 - radius), radius: CGFloat(radius) * sx, startAngle: .pi, endAngle: 2 * .pi, clockwise: false)
+        path.addLine(to: pt(6.55, 8.5))
+        path.closeSubpath()
+        ctx.addPath(path)
+        ctx.setFillColor(lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.78))
+        ctx.fillPath()
+        ctx.saveGState()
+        ctx.addPath(path); ctx.clip()
         ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         ctx.setAlpha(lit ? 0.5 : 0.12)
         Art.draw("minibulb-shine", in: ctx, width: CGFloat(w), height: CGFloat(h))
         ctx.endTransparencyLayer()
+        ctx.restoreGState()
+        ctx.addPath(path)
+        ctx.setStrokeColor(lit ? cgColor(c, amount: 0.45) : cgColor(c, mix: deep, amount: 0.9))
+        ctx.setLineWidth(max(0.5 * sx, 0.8))
+        ctx.strokePath()
         Art.draw("minibulb-socket", in: ctx, width: CGFloat(w), height: CGFloat(h))
         let img = ctx.makeImage()!
         bulbCache[key] = img
