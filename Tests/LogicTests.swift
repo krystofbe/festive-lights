@@ -854,19 +854,9 @@ final class DockShapeTests: XCTestCase {
         for s in [ExactState.visible, .hidden, .unavailable] { XCTAssertEqual(DockForm.resolve(choice: .continuous, exact: s), .continuous) }
     }
 
-    func testSourceFollowsPermissionAndSwitchesAtRuntime() {
+    func testSourceChoice() {
         XCTAssertEqual(DockSource.choose(permission: true), .accessibility)
         XCTAssertEqual(DockSource.choose(permission: false), .probe)
-        var permission = true
-        var sources: [DockSource] = []
-        for step in 0..<6 {
-            if step == 2 { permission = false }
-            if step == 4 { permission = true }
-            sources.append(DockSource.choose(permission: permission))
-        }
-        XCTAssertEqual(sources, [.accessibility, .accessibility, .probe, .probe, .accessibility, .accessibility])
-        // Die Form bleibt "genau am Dock", solange eine der beiden Quellen ein Ergebnis hat: Entzug allein führt nicht zu "durchgehend"
-        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .visible), .exact)
     }
 
     let screens = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 99, width: 1920, height: 957)),
@@ -1102,5 +1092,141 @@ final class ResetTests: XCTestCase {
         XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertFalse(s.alwaysSaveEnergy)
         XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
         s.welcomeShown = false; s.permissionPromptShown = false; s.paused = false
+    }
+}
+
+
+private final class FakeRunner: DockSourceRunner {
+    let name: String
+    var log: [String]
+    init(_ n: String, log: [String] = []) { name = n; self.log = log }
+    func begin() { log.append("\(name).begin") }
+    func end() { log.append("\(name).end") }
+    func endQuiet() { log.append("\(name).quiet") }
+}
+
+final class DockSourceCoordinatorTests: XCTestCase {
+    func testSwitchesWithPermissionAtRuntimeWithoutReportingNil() {
+        let ax = FakeRunner("ax"), pr = FakeRunner("probe")
+        let c = DockSourceCoordinator(accessibility: ax, probe: pr)
+        c.update(wanted: true, permission: true)
+        XCTAssertEqual(ax.log.last, "ax.begin"); XCTAssertEqual(pr.log.last, "probe.quiet")
+        c.update(wanted: true, permission: false)   // Berechtigung entzogen
+        XCTAssertEqual(ax.log.last, "ax.quiet"); XCTAssertEqual(pr.log.last, "probe.begin")
+        c.update(wanted: true, permission: true)    // wieder erteilt
+        XCTAssertEqual(ax.log.last, "ax.begin"); XCTAssertEqual(pr.log.last, "probe.quiet")
+        XCTAssertFalse((ax.log + pr.log).contains { $0.hasSuffix(".end") })
+    }
+
+    func testPauseOrOffStopsBothQuietly() {
+        let ax = FakeRunner("ax"), pr = FakeRunner("probe")
+        let c = DockSourceCoordinator(accessibility: ax, probe: pr)
+        c.update(wanted: false, permission: true)
+        XCTAssertEqual(ax.log, ["ax.quiet"]); XCTAssertEqual(pr.log, ["probe.quiet"])
+    }
+}
+
+final class DockProbeCoreTests: XCTestCase {
+    private let screen = ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 99, width: 1920, height: 960))
+
+    private func snap(thick: Double, orientation: String = "bottom", autohide: Bool = false, screens: [ScreenInfo]? = nil) -> DockProbeCore.Snapshot {
+        let sc = screens ?? [ScreenInfo(frame: screen.frame, visible: CGRect(x: 0, y: thick, width: 1920, height: 1080 - thick - 25))]
+        return DockProbeCore.Snapshot(screens: sc, primaryHeight: 1080, orientation: orientation, autohide: autohide, tile: 64, large: 96, magnification: true)
+    }
+
+    /// Fake-Dock: Leiste bei u in [a, b], Dicke `thick`, auf Bildschirm `onScreen`.
+    private func fake(onScreen frame: CGRect, a: Double, b: Double, thick: Double) -> (CGRect, DockEdge, Double, Double) -> Bool {
+        { f, _, u, d in f == frame && u >= a && u < b && d < thick }
+    }
+
+    func testStaleSnapshotWouldFallBackAfterSizeChange() {
+        let dock = fake(onScreen: screen.frame, a: 400, b: 1500, thick: 99)
+        let stale = DockProbeCore.measure(snap(thick: 70), dockWindowsPresent: true, hit: dock)
+        XCTAssertFalse(stale.plausible)   // alte Dicke 70 gegen gemessene 99: genau der Fehler, den das Neulesen verhindert
+        let fresh = DockProbeCore.measure(snap(thick: 99), dockWindowsPresent: true, hit: dock)
+        XCTAssertTrue(fresh.plausible)
+        let r = DockProbeCore.evaluate(fresh, snap(thick: 99)) { _ in 1 }
+        guard case .visible = r.obs else { return XCTFail() }
+        XCTAssertEqual(r.geometry?.edgeLine ?? 0, 99, accuracy: 1)
+    }
+
+    func testSnapshotPolicyFollowsUpOnce() {
+        var p = SnapshotPolicy()
+        XCTAssertFalse(p.due(now: 0))
+        p.event(now: 10)
+        XCTAssertFalse(p.due(now: 10.2))
+        XCTAssertTrue(p.due(now: 10.4))
+        XCTAssertFalse(p.due(now: 10.5))
+    }
+
+    func testLeftAndRightGeometry() {
+        let l = DockProbeCore.Placed(screenIndex: 0, edge: .left, frame: screen.frame, bar: .init(a: 200, b: 800, thick: 80))
+        let g = DockProbeCore.evaluate(.init(placed: l, plausible: true), snap(thick: 80, orientation: "left")) { _ in 7 }.geometry
+        XCTAssertEqual(g?.edge, .left); XCTAssertEqual(g?.rect.width, 74); XCTAssertEqual(g?.rect.minY, 200); XCTAssertEqual(g?.screenID, 7)
+        let r = DockProbeCore.Placed(screenIndex: 0, edge: .right, frame: screen.frame, bar: .init(a: 200, b: 800, thick: 80))
+        let h = DockProbeCore.evaluate(.init(placed: r, plausible: true), snap(thick: 80, orientation: "right")) { _ in 7 }.geometry
+        XCTAssertEqual(h?.rect.maxX, 1920); XCTAssertEqual(h?.edgeLine, 1840)
+    }
+
+    func testHiddenOnlyWithAutohideAndNothingFound() {
+        let none = DockProbeCore.Measured(placed: nil, plausible: false)
+        XCTAssertEqual(DockProbeCore.evaluate(none, snap(thick: 0, autohide: true)) { _ in 0 }.obs, .hidden)
+        XCTAssertEqual(DockProbeCore.evaluate(none, snap(thick: 0)) { _ in 0 }.obs, .unavailable)
+        let odd = DockProbeCore.Measured(placed: .init(screenIndex: 0, edge: .bottom, frame: screen.frame, bar: .init(a: 0, b: 10, thick: 5)), plausible: false)
+        XCTAssertEqual(DockProbeCore.evaluate(odd, snap(thick: 0, autohide: true)) { _ in 0 }.obs, .unavailable)
+    }
+
+    func testFindsDockOnSecondScreen() {
+        let second = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+        let sc = [screen, ScreenInfo(frame: second, visible: CGRect(x: 1920, y: 99, width: 1920, height: 956))]
+        let m = DockProbeCore.measure(snap(thick: 99, screens: sc), dockWindowsPresent: true, hit: fake(onScreen: second, a: 300, b: 1300, thick: 99))
+        XCTAssertEqual(m.placed?.screenIndex, 1)
+        XCTAssertTrue(m.plausible)
+    }
+
+    func testEdgeStripsCoverAllScreensAndPickPointerScreen() {
+        let f1 = CGRect(x: 0, y: 0, width: 1920, height: 1080), f2 = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+        let strips = DockProbeCore.edgeStrips(screens: [f1, f2], orientation: "bottom")
+        XCTAssertEqual(strips.count, 2)
+        XCTAssertEqual(DockProbeCore.edgeStrip(at: CGPoint(x: 2500, y: 1), screens: [f1, f2], orientation: "bottom"), strips[1])
+        let r = DockProbeCore.edgeStrips(screens: [f1], orientation: "right")[0]
+        XCTAssertEqual(r.minX, 1917)
+        XCTAssertFalse(DockProbeCore.edgeStrips(screens: [f1], orientation: "left")[0].contains(CGPoint(x: 1000, y: 1)))
+    }
+
+    func testSchedulerAbandonsHangAndDiscardsStaleResult() {
+        var s = ProbeScheduler()
+        let g1 = s.begin()!
+        XCTAssertNil(s.begin())                                    // eine läuft
+        XCTAssertFalse(s.watchdog(now: 5, startedAt: nil))         // wartet noch in der Queue: kein Hänger
+        XCTAssertFalse(s.watchdog(now: 5.2, startedAt: 5.0))
+        XCTAssertTrue(s.watchdog(now: 5.5, startedAt: 5.0))        // Hänger aufgegeben
+        let g2 = s.begin()!
+        XCTAssertNotEqual(g1, g2)
+        XCTAssertFalse(s.finish(g1))                               // spätes Ergebnis des Hängers verworfen
+        XCTAssertNil(s.begin())                                    // die neue läuft noch
+        XCTAssertTrue(s.finish(g2))
+        XCTAssertNotNil(s.begin())
+    }
+
+    func testSchedulerLimitsPendingMeasurements() {
+        var s = ProbeScheduler()
+        let g1 = s.begin()!
+        XCTAssertTrue(s.watchdog(now: 1, startedAt: 0))
+        _ = s.begin()                                              // zweite wartet (Queue blockiert)
+        XCTAssertTrue(s.watchdog(now: 2, startedAt: 1.5))
+        XCTAssertNil(s.begin())                                    // höchstens eine wartende, danach keine weiteren
+        _ = s.finish(g1)
+        XCTAssertNotNil(s.begin())
+    }
+
+    func testLoopGateSupersedesOlderLoop() {
+        let gate = LoopGate()
+        let old = gate.start()
+        XCTAssertTrue(gate.isCurrent(old))
+        gate.cancel()                      // Watchdog gibt die Schleife auf
+        let new = gate.start()             // neue Schleife startet, die alte wacht später auf
+        XCTAssertFalse(gate.isCurrent(old))
+        XCTAssertTrue(gate.isCurrent(new))
     }
 }

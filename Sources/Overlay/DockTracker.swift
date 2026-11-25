@@ -1,14 +1,6 @@
 import AppKit
 import ApplicationServices
 
-struct DockGeometry: Equatable {
-    var screenID: CGDirectDisplayID
-    var edge: DockEdge
-    var rect: CGRect        // Symbolleiste des Docks, Cocoa-Koordinaten
-    var edgeLine: Double    // Innenkante des Docks: y bei unten, x bei links oder rechts
-    var continuous = false  // durchgehende Kette über die volle Bildschirmbreite statt genau am Dock
-}
-
 enum Permission {
     static var granted: Bool { AXIsProcessTrusted() }
 
@@ -34,6 +26,7 @@ final class DockTracker {
     private var started = false
     private var inZone = false
     private var autohide = false
+    private var orientation = "bottom"
     private var magnificationOn = false
     private var tile = 64.0
     private var reading = false
@@ -66,6 +59,8 @@ final class DockTracker {
         observers.forEach { NotificationCenter.default.removeObserver($0); NSWorkspace.shared.notificationCenter.removeObserver($0); DistributedNotificationCenter.default().removeObserver($0) }
         observers = []
         stabilizer = DockFrameStabilizer()
+        if spansActive, let c = current { onSpans?([], c.edge) }
+        stopMagnification()
         if current != nil { current = nil; if reportNil { onChange?(nil) } }
     }
 
@@ -74,6 +69,7 @@ final class DockTracker {
         burstUntil = CACurrentMediaTime() + 2.5
         autohide = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
         magnificationOn = Self.magnification
+        orientation = (CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String) ?? "bottom"
         tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
         schedule(1.0 / 30)
     }
@@ -164,7 +160,7 @@ final class DockTracker {
         if let c = current {
             let inside = c.rect.insetBy(dx: -20, dy: -20).contains(m)
             if inside != inZone { inZone = inside; if autohide { burst() } }
-        } else if autohide, let f = NSScreen.screens.first?.frame, m.y < f.minY + 3 || m.x < f.minX + 3 || m.x > f.maxX - 3 { burst() }
+        } else if autohide, DockProbeCore.edgeStrips(screens: NSScreen.screens.map(\.frame), orientation: orientation).contains(where: { $0.contains(m) }) { burst() }
     }
 
     private func stopMagnification() { magTimer?.invalidate(); magTimer = nil; spansActive = false }
@@ -244,4 +240,16 @@ final class DockTracker {
 
 extension CGRect {
     var area: CGFloat { isNull || isEmpty ? 0 : width * height }
+}
+
+extension DockTracker: DockSourceRunner {
+    func begin() { start() }
+    func end() { stop() }
+    func endQuiet() { stop(reportNil: false) }
+}
+
+extension DockProbe: DockSourceRunner {
+    func begin() { start() }
+    func end() { stop() }
+    func endQuiet() { stop() }
 }

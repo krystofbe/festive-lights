@@ -8,6 +8,7 @@ final class AppController: NSObject {
     private var status: StatusController!
     private let dockTracker = DockTracker()
     private let dockProbe = DockProbe()
+    private lazy var dockSources = DockSourceCoordinator(accessibility: dockTracker, probe: dockProbe)
     /// nil: noch nicht ermittelt, dann zeigt die Dock-Kette nichts (statt kurz in der falschen Form).
     private var exactResult: DockProbe.Result?
     private var bag = Set<AnyCancellable>()
@@ -142,11 +143,7 @@ final class AppController: NSObject {
 
     private func updateDockTracking() {
         let wanted = settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended
-        switch (wanted, DockSource.choose(permission: permission)) {
-        case (true, .accessibility): dockProbe.stop(); dockTracker.start()
-        case (true, .probe): dockTracker.stop(reportNil: false); dockProbe.start()   // Quellwechsel ohne Sprung der Kette
-        case (false, _): dockTracker.stop(); dockProbe.stop()
-        }
+        dockSources.update(wanted: wanted, permission: permission)
     }
 
     @objc private func dockPrefsChanged() { DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.scheduleApply() } }

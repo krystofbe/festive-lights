@@ -17,27 +17,9 @@ final class DockProbe {
     var onResult: ((Result) -> Void)?
     var onSpans: (([DockProfile.Span], DockEdge) -> Void)?
 
-    private struct Snapshot {
-        var screens: [ScreenInfo]
-        var primaryHeight: Double
-        var orientation: String
-        var autohide: Bool
-        var tile: Double
-        var large: Double
-        var magnification: Bool
-    }
-
-    private struct Placed {
-        var screenIndex: Int
-        var edge: DockEdge
-        var frame: CGRect
-        var bar: DockProbeLogic.Bar
-    }
-
-    private struct Measured {
-        var placed: Placed?
-        var plausible: Bool
-    }
+    private typealias Snapshot = DockProbeCore.Snapshot
+    private typealias Placed = DockProbeCore.Placed
+    private typealias Measured = DockProbeCore.Measured
 
     private let measureQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockprobe.measure", qos: .userInteractive)
     private let loopQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockprobe.loop", qos: .userInteractive)
@@ -49,9 +31,8 @@ final class DockProbe {
     private var watchdog: Timer?
     private var burstStart = 0.0
     private var burstUntil = 0.0
-    private var measuring = false
-    private var measureStarted = 0.0
-    private var generation = 0
+    private var sched = ProbeScheduler()
+    private var policy = SnapshotPolicy()
     private var loopRunning = false
     private var machine = DockStateMachine()
     private var placed: Placed?
@@ -61,7 +42,8 @@ final class DockProbe {
     private var pointerInside = false
 
     // zwischen den Threads
-    private let stopLoop = OSAllocatedUnfairLock(initialState: false)
+    private let loopGate = LoopGate()
+    private let measureStarted = OSAllocatedUnfairLock<Double?>(initialState: nil)
     private let heartbeat = OSAllocatedUnfairLock(initialState: 0.0)
     private let slot = OSAllocatedUnfairLock<(spans: [DockProfile.Span], edge: DockEdge)?>(initialState: nil)
 
@@ -91,25 +73,30 @@ final class DockProbe {
         running = false
         burstTimer?.invalidate(); burstTimer = nil
         watchdog?.invalidate(); watchdog = nil
-        stopLoop.withLock { $0 = true }
-        generation += 1
-        measuring = false
+        loopGate.cancel()
+        sched.stop()
         loopRunning = false
         observers.forEach { NotificationCenter.default.removeObserver($0); NSWorkspace.shared.notificationCenter.removeObserver($0); DistributedNotificationCenter.default().removeObserver($0) }
         observers = []
     }
 
     /// Nach einem Ereignis häufig messen, bis das Dock seinen Endzustand erreicht hat (längstens 6 s).
-    func burst(duration: Double = 1.5) {
+    /// `event`: Dock-, Bildschirm- oder App-Ereignis, liest die Einstellungen neu (und nochmal nach 0,4 s). Zeigerbewegungen am Rand
+    /// lesen nichts neu und messen nur beim Start eines Bursts, sonst nur der Timer mit 30 Hz.
+    func burst(duration: Double = 1.5, event: Bool = true) {
         guard running else { return }
         let now = CACurrentMediaTime()
-        if burstTimer == nil { burstStart = now; snapshot = takeSnapshot() }   // Einstellungen einmal je Burst lesen
+        let fresh = burstTimer == nil
+        if fresh { burstStart = now }
+        if event { policy.event(now: now) }
+        if event || snapshot == nil { snapshot = takeSnapshot() }
         burstUntil = max(burstUntil, now + duration)
-        measureNow()
+        if event || fresh { measureNow() }
         guard burstTimer == nil else { return }
         let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
             guard let self else { return }
             let t = CACurrentMediaTime()
+            if self.policy.due(now: t) { self.snapshot = self.takeSnapshot() }
             // solange der Zustand sich noch ändert (späte Dock-Animation), weitermessen
             if t > self.burstUntil, self.machine.isSettling, t - self.burstStart < 6 { self.burstUntil = t + 0.3 }
             if t > self.burstUntil { self.burstTimer?.invalidate(); self.burstTimer = nil; return }
@@ -128,22 +115,14 @@ final class DockProbe {
         let zone = placed.map { p in
             DockPointerLogic.barZone(a: p.bar.a, length: p.bar.b - p.bar.a, thick: p.bar.thick, grow: max(s.large - s.tile, 0) + 8, edge: p.edge, screen: p.frame)
         }
-        let strip = Self.edgeStrip(screen: (placed?.frame ?? s.screens.first?.frame), orientation: s.orientation)
-        let (action, inside) = DockPointerLogic.react(pointer: NSEvent.mouseLocation, barZone: zone, edgeStrip: strip, autohide: s.autohide,
+        let pointer = NSEvent.mouseLocation
+        let strip = DockProbeCore.edgeStrip(at: pointer, screens: s.screens.map(\.frame), orientation: s.orientation)
+        let (action, inside) = DockPointerLogic.react(pointer: pointer, barZone: zone, edgeStrip: strip, autohide: s.autohide,
                                                       magnification: s.magnification, loopRunning: loopRunning, wasInside: pointerInside)
         pointerInside = inside
         if action.startMagnificationLoop, let p = placed { startLoop(p, s) }
         // Auto-Hide: Das Dock fährt nach Verzögerung ein und aus, deshalb länger messen
-        if action.burst { burst(duration: s.autohide ? 3.5 : 1.5) }
-    }
-
-    private static func edgeStrip(screen: CGRect?, orientation: String) -> CGRect? {
-        guard let f = screen else { return nil }
-        switch ContinuousDock.edge(orientation: orientation) {
-        case .bottom: return CGRect(x: f.minX, y: f.minY, width: f.width, height: 3)
-        case .left: return CGRect(x: f.minX, y: f.minY, width: 3, height: f.height)
-        case .right: return CGRect(x: f.maxX - 3, y: f.minY, width: 3, height: f.height)
-        }
+        if action.burst { burst(duration: s.autohide ? 3.5 : 1.5, event: false) }
     }
 
     // MARK: Watchdog
@@ -153,12 +132,12 @@ final class DockProbe {
         let t = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
             guard let self else { return }
             let now = CACurrentMediaTime()
-            if self.measuring, now - self.measureStarted > 0.3 { self.generation += 1; self.measuring = false }   // Hänger aufgeben
+            _ = self.sched.watchdog(now: now, startedAt: self.measureStarted.withLock { $0 })   // Hänger aufgeben
             if self.loopRunning, now - self.heartbeat.withLock({ $0 }) > 0.5 {
-                self.stopLoop.withLock { $0 = true }
+                self.loopGate.cancel()
                 self.loopRunning = false
             }
-            if !self.measuring && !self.loopRunning && self.burstTimer == nil { self.watchdog?.invalidate(); self.watchdog = nil }
+            if !self.sched.measuring && !self.loopRunning && self.burstTimer == nil { self.watchdog?.invalidate(); self.watchdog = nil }
         }
         RunLoop.main.add(t, forMode: .common)
         watchdog = t
@@ -178,18 +157,16 @@ final class DockProbe {
     }
 
     private func measureNow() {
-        guard running, !measuring, let snap = snapshot else { return }
-        measuring = true
-        measureStarted = CACurrentMediaTime()
+        guard running, let snap = snapshot, let gen = sched.begin() else { return }
         startWatchdog()
-        let gen = generation
         measureQueue.async { [weak self] in
             let t0 = CACurrentMediaTime()
+            self?.measureStarted.withLock { $0 = t0 }   // Hänger zählen erst ab dem echten Start
             let m = Self.measure(snap)
             let ms = (CACurrentMediaTime() - t0) * 1000
+            self?.measureStarted.withLock { $0 = nil }
             DispatchQueue.main.async {
-                guard let self, gen == self.generation else { return }   // veraltete Ergebnisse nach Hänger oder Stopp verwerfen
-                self.measuring = false
+                guard let self, self.sched.finish(gen) else { return }   // veraltete Ergebnisse nach Hänger oder Stopp verwerfen
                 self.probeMsMax = max(self.probeMsMax, ms); self.probeMsSum += ms; self.probeRuns += 1
                 self.handle(m, snap)
             }
@@ -215,48 +192,17 @@ final class DockProbe {
         return ids
     }
 
-    /// Hintergrund: Leiste suchen und auf Plausibilität prüfen.
     private static func measure(_ s: Snapshot) -> Measured {
         let ids = dockWindowIDs()
-        guard !ids.isEmpty else { return Measured(placed: nil, plausible: false) }
-        let edge = ContinuousDock.edge(orientation: s.orientation)
-        for (i, sc) in s.screens.enumerated() {
-            let f = sc.frame
-            let len = edge == .bottom ? Double(f.width) : Double(f.height)
-            if let bar = DockProbeLogic.findBar(length: len, hit: { hit(ids, f, edge, $0, $1) }) {
-                let t: Double
-                switch edge {
-                case .bottom: t = Double(sc.visible.minY - sc.frame.minY)
-                case .left: t = Double(sc.visible.minX - sc.frame.minX)
-                case .right: t = Double(sc.frame.maxX - sc.visible.maxX)
-                }
-                let ok = DockProbeLogic.isPlausible(bar, tile: s.tile, screenLength: len, expectedThickness: s.autohide || t <= 1 ? nil : t)
-                return Measured(placed: Placed(screenIndex: i, edge: edge, frame: f, bar: bar), plausible: ok)
-            }
-        }
-        return Measured(placed: nil, plausible: false)
+        return DockProbeCore.measure(s, dockWindowsPresent: !ids.isEmpty) { hit(ids, $0, $1, $2, $3) }
     }
 
     private func handle(_ m: Measured, _ s: Snapshot) {
         guard running else { return }
-        let obs: DockObservation
-        if let p = m.placed, m.plausible {
-            placed = p
-            let f = p.frame, b = p.bar
-            let o = p.edge == .bottom ? Double(f.minX) : Double(f.minY)
-            let a = o + b.a, e = o + b.b, icon = max(b.thick - 6, 10)
-            let id = NSScreen.screens.first { $0.frame == f }?.displayID ?? 0
-            switch p.edge {
-            case .bottom: lastGeo = DockGeometry(screenID: id, edge: .bottom, rect: CGRect(x: a, y: f.minY, width: e - a, height: icon), edgeLine: Double(f.minY) + b.thick)
-            case .left: lastGeo = DockGeometry(screenID: id, edge: .left, rect: CGRect(x: f.minX, y: a, width: icon, height: e - a), edgeLine: Double(f.minX) + b.thick)
-            case .right: lastGeo = DockGeometry(screenID: id, edge: .right, rect: CGRect(x: f.maxX - icon, y: a, width: icon, height: e - a), edgeLine: Double(f.maxX) - b.thick)
-            }
-            obs = .visible(lastGeo!.rect)
-        } else {
-            placed = nil
-            obs = m.placed == nil && s.autohide ? .hidden : .unavailable
-        }
-        guard let emitted = machine.observe(obs, time: CACurrentMediaTime()) else { return }
+        let r = DockProbeCore.evaluate(m, s) { f in NSScreen.screens.first { $0.frame == f }?.displayID ?? 0 }
+        placed = r.geometry == nil ? nil : m.placed
+        if let g = r.geometry { lastGeo = g }
+        guard let emitted = machine.observe(r.obs, time: CACurrentMediaTime()) else { return }
         switch emitted {
         case .visible: if let g = lastGeo { onResult?(.visible(g)) }
         case .hidden: onResult?(.hidden)
@@ -279,7 +225,7 @@ final class DockProbe {
 
     private func startLoop(_ p: Placed, _ s: Snapshot) {
         loopRunning = true
-        stopLoop.withLock { $0 = false }
+        let token = loopGate.start()
         heartbeat.withLock { $0 = CACurrentMediaTime() }
         startWatchdog()
         loopQueue.async { [weak self] in
@@ -289,7 +235,7 @@ final class DockProbe {
             var lingerUntil = 0.0, lastU = 0.0
             while true {
                 let t0 = CACurrentMediaTime()
-                guard let me = self, !me.stopLoop.withLock({ $0 }) else { break }
+                guard let me = self, me.loopGate.isCurrent(token) else { break }
                 me.heartbeat.withLock { $0 = t0 }
                 // Zeiger über CGEvent (thread-sicher, Ursprung oben links) nach Cocoa umrechnen
                 let loc = CGEvent(source: nil)?.location ?? .zero
@@ -300,6 +246,7 @@ final class DockProbe {
                 let o = edge == .bottom ? Double(f.minX) : Double(f.minY)
                 let abs = spans.map { DockProfile.Span(a: $0.a + o, b: $0.b + o, lift: $0.lift) }
                 let ms = (CACurrentMediaTime() - t0) * 1000
+                guard me.loopGate.isCurrent(token) else { break }
                 let had = me.slot.withLock { cur -> Bool in let h = cur != nil; cur = (abs, edge); return h }
                 if !had { DispatchQueue.main.async { me.probeMsMax = max(me.probeMsMax, ms); me.probeMsSum += ms; me.probeRuns += 1; me.deliverLatest() } }
                 let elapsed = CACurrentMediaTime() - t0
@@ -307,7 +254,8 @@ final class DockProbe {
             }
             DispatchQueue.main.async {
                 guard let me = self else { return }
-                me.loopRunning = false
+                if me.loopGate.isCurrent(token) { me.loopRunning = false }
+                guard !me.loopRunning else { return }   // eine neuere Schleife läuft: nichts anrühren
                 me.slot.withLock { $0 = nil }
                 me.onSpans?([], edge)
             }
