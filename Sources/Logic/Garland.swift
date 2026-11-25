@@ -63,7 +63,7 @@ enum Garland {
     static let dockSag = 0.3
     static let dockClassicSag = 0.45
     /// Zweiggröße und Ansatzpunkt-Skalierung der schmalen Girlande am Dock.
-    static let dockBranchScale = 0.2
+    static let dockBranchScale = 0.3
     static let dockAnchorScale = 0.73
     /// Tiefe der Girlande unter dem Kabel für die Fenstergröße: Menüleiste je 24 pt Birnenhöhe, Dock fest.
     static let depthPer24 = 60.0
@@ -81,7 +81,8 @@ enum Garland {
     static let tbSpacingFactor = 30.0 / 58.5
     static let tbAnchorUnits = 70.0
     static let tbBaubleUnits = 170.0
-    static let tbDockScale = 0.14
+    /// Büschelgröße am Dock in pt je Einheit (Birnen sind am Dock so groß wie bei der klassischen Dock-Kette, das Grün gut sichtbar).
+    static let tbDockScale = 0.3
     static let tbRotation = 22.0
     static let tbBaubleSizes: [(w: Double, h: Double, hangX: Double, hangY: Double)] = [(80, 89, 40, 0), (88, 111, 44, 14), (76, 85, 38, 0), (88, 111, 44, 14), (80, 89, 40, 0)]
 
@@ -151,7 +152,7 @@ enum Garland {
     private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double]) -> GarlandPlan {
         var plan = GarlandPlan()
         let unit = tbUnit * s
-        let n = max(1, Int(length / (dock ? 16 : tbAnchorUnits * unit)))
+        let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale : unit))))
         let step = length / Double(n)
         for k in 0..<n {
             plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,

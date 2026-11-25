@@ -164,7 +164,8 @@ final class ChainRenderer {
         bulbs = (0..<layout.bulbCount).map { _ in Bulb() }
         let fir = style.kind.isFir
         let fs = unitScale(sp)
-        let bs = FirSprites.bulbSizePt(style.kind, fs: fs)
+        // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
+        let bs = sp.isDock ? CGSize(width: sp.bulbH * (bunt ? 12.0 / 22 : 10.0 / 21), height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
         let h = fir ? bs.height : sp.bulbH
         let w = fir ? bs.width : h * 0.6
         let px = max(8, Int((h * scale).rounded()))
