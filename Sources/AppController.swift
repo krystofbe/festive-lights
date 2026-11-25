@@ -246,7 +246,13 @@ final class AppController: NSObject {
         st.snowLayer = s.snowLayer
         st.warm = s.colorMode == .warm
         st.kind = s.chainStyle
-        st.dockKind = s.dockStyle.resolve(bar: s.chainStyle)
+        st.dockKind = s.dockStyle
+        st.dockLayer = s.dockLayer
+        st.dockWarm = s.dockColorMode == .warm
+        st.dockPattern = s.dockPattern
+        st.dockTempo = Levels.value(Levels.tempo, s.dockTempo)
+        st.dockBulbLevel = s.dockBulbSize
+        st.dockSpacingLevel = s.dockSpacing
         st.pattern = s.pattern
         st.tempo = Levels.value(Levels.tempo, s.lightsTempo)
         st.bulbLevel = s.bulbSize

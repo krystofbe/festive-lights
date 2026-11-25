@@ -3,13 +3,13 @@ import QuartzCore
 
 struct AppState: Equatable {
     var lightsOn = false, dockLightsOn = false, snowOn = false, settle = false
-    var lightsLayer = DisplayLayer.above, snowLayer = DisplayLayer.above
-    var warm = false
+    var lightsLayer = DisplayLayer.above, snowLayer = DisplayLayer.above, dockLayer = DisplayLayer.above
+    var warm = false, dockWarm = false
     var kind = ChainStyleKind.classic
     var dockKind = ChainStyleKind.classic
-    var pattern = LightPattern.twinkle
-    var tempo = 1.0
-    var bulbLevel = 2, spacingLevel = 2
+    var pattern = LightPattern.twinkle, dockPattern = LightPattern.twinkle
+    var tempo = 1.0, dockTempo = 1.0
+    var bulbLevel = 2, spacingLevel = 2, dockBulbLevel = 2, dockSpacingLevel = 2
     var amount = 80.0, sizeMult = 1.0, speedMult = 1.0
     var wind = Wind.off
     var avoid = 80.0
@@ -119,7 +119,7 @@ final class ScreenOverlay {
         state = st
         if st.suspended {
             menubar.setVisible(false, layer: st.lightsLayer, intro: nil)
-            dock.setVisible(false, layer: st.lightsLayer, intro: nil)
+            dock.setVisible(false, layer: st.dockLayer, intro: nil)
             snow.setVisible(false)
             link?.isPaused = true
             return
@@ -132,8 +132,8 @@ final class ScreenOverlay {
         wake()
     }
 
-    private func style(_ kind: ChainStyleKind) -> ChainStyle {
-        ChainStyle(warm: state.warm, pattern: state.pattern, tempo: state.tempo * (state.energySaving ? 0.7 : 1),
+    private func style(_ kind: ChainStyleKind, warm: Bool, pattern: LightPattern, tempo: Double) -> ChainStyle {
+        ChainStyle(warm: warm, pattern: pattern, tempo: tempo * (state.energySaving ? 0.7 : 1),
                    dark: state.dark, reduceMotion: state.reduceMotion, kind: kind)
     }
 
@@ -151,7 +151,7 @@ final class ScreenOverlay {
                                  length: Double(screen.frame.width), bulbH: h, sag: fir ? h * Garland.sag(st.kind) : h, liftSign: -1, isMenuBar: true, liftMax: 0,
                                  spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1),
                                  garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0)
-            menubar.configure(spec: spec, style: style(st.kind), scale: scale)
+            menubar.configure(spec: spec, style: style(st.kind, warm: st.warm, pattern: st.pattern, tempo: st.tempo), scale: scale)
             menubar.setVisible(st.lightsOn, layer: st.lightsLayer, intro: CACurrentMediaTime())
         } else {
             barDynamic = false
@@ -164,7 +164,7 @@ final class ScreenOverlay {
             if dock.isShown, let prev = dockContinuous, prev != d.continuous {
                 dockSwitchUntil = now + 0.35
                 dockContinuous = nil
-                dock.setVisible(false, layer: st.lightsLayer, intro: nil)
+                dock.setVisible(false, layer: st.dockLayer, intro: nil)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { [weak self] in self?.configureChains() }
                 return
             }
@@ -174,10 +174,10 @@ final class ScreenOverlay {
             let icon = d.continuous && thickness < 20 ? 90 : thickness
             // Dock-Kette nach der Symbolgröße: Mittelstellung = ein Viertel der Symbolhöhe, der Regler wirkt relativ dazu
             let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? max(icon - 20, 24)
-            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.bulbLevel)
+            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel)
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
-            let sp = ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel)
+            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
@@ -189,11 +189,11 @@ final class ScreenOverlay {
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
                                  length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile)
             }
-            dock.configure(spec: spec, style: style(st.dockKind), scale: scale)
-            dock.setVisible(true, layer: st.lightsLayer, intro: nil)
+            dock.configure(spec: spec, style: style(st.dockKind, warm: st.dockWarm, pattern: st.dockPattern, tempo: st.dockTempo), scale: scale)
+            dock.setVisible(true, layer: st.dockLayer, intro: nil)
         } else {
             dockContinuous = nil
-            dock.setVisible(false, layer: st.lightsLayer, intro: nil)
+            dock.setVisible(false, layer: st.dockLayer, intro: nil)
         }
     }
 

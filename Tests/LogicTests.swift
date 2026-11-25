@@ -836,22 +836,62 @@ final class BaubleTests: XCTestCase {
     }
 }
 
-final class DockStyleTests: XCTestCase {
-    func testLikeMenuBarFollowsTheBarStyle() {
-        for k in ChainStyleKind.allCases { XCTAssertEqual(DockStyle.sameAsBar.resolve(bar: k), k) }
+final class SeparateChainSettingsTests: XCTestCase {
+    private func suite() -> UserDefaults {
+        let d = UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")!
+        return d
     }
 
-    func testExplicitDockStyleIgnoresTheBarStyle() {
-        for k in ChainStyleKind.allCases {
-            XCTAssertEqual(DockStyle.classic.resolve(bar: k), .classic)
-            XCTAssertEqual(DockStyle.firColor.resolve(bar: k), .firColor)
-            XCTAssertEqual(DockStyle.firGold.resolve(bar: k), .firGold)
-        }
+    func testMigrationCopiesSharedValuesToTheDockAndResolvesSameAsBar() {
+        let d = suite()
+        d.set("firColor", forKey: "chainStyle"); d.set("warm", forKey: "colorMode"); d.set("chase", forKey: "pattern")
+        d.set(4, forKey: "lightsTempo"); d.set(0, forKey: "bulbSize"); d.set(3, forKey: "spacing"); d.set("desktop", forKey: "lightsLayer")
+        d.set("sameAsBar", forKey: "dockStyle")
+        Settings.migrate(d)
+        XCTAssertEqual(d.string(forKey: "dockStyle"), "firColor", "wie Menüleiste wird zum Stil der Menüleiste")
+        XCTAssertEqual(d.string(forKey: "dockColorMode"), "warm"); XCTAssertEqual(d.string(forKey: "dockPattern"), "chase")
+        XCTAssertEqual(d.integer(forKey: "dockTempo"), 4); XCTAssertEqual(d.integer(forKey: "dockBulbSize"), 0); XCTAssertEqual(d.integer(forKey: "dockSpacing"), 3)
+        XCTAssertEqual(d.string(forKey: "dockLayer"), "desktop")
     }
 
-    func testDefaultIsLikeMenuBar() {
-        XCTAssertEqual(DockStyle.allCases.first, .sameAsBar)
-        XCTAssertEqual(DockStyle(rawValue: "sameAsBar"), .sameAsBar)
+    func testMigrationKeepsAnOwnDockStyleAndRunsOnlyOnce() {
+        let d = suite()
+        d.set("firColor", forKey: "chainStyle"); d.set("firGold", forKey: "dockStyle")
+        Settings.migrate(d)
+        XCTAssertEqual(d.string(forKey: "dockStyle"), "firGold")
+        d.set("classic", forKey: "chainStyle"); d.set("steady", forKey: "dockPattern")
+        Settings.migrate(d)
+        XCTAssertEqual(d.string(forKey: "dockPattern"), "steady", "zweiter Lauf ändert nichts")
+    }
+
+    func testMigrationWithNothingStoredLeavesDefaults() {
+        let d = suite()
+        Settings.migrate(d)
+        XCTAssertNil(d.object(forKey: "dockStyle")); XCTAssertNil(d.object(forKey: "dockTempo"))
+    }
+
+    func testChainsHaveSeparateValuesAndSeparateStyles() {
+        let s = Settings.shared
+        defer { s.resetToDefaults() }
+        s.chainStyle = .firColor; s.dockStyle = .classic
+        s.pattern = .steady; s.dockPattern = .chase
+        s.bulbSize = 4; s.dockBulbSize = 0
+        s.lightsLayer = .desktop; s.dockLayer = .above
+        XCTAssertEqual(s.chainStyle, .firColor); XCTAssertEqual(s.dockStyle, .classic)
+        XCTAssertEqual(s.pattern, .steady); XCTAssertEqual(s.dockPattern, .chase)
+        XCTAssertEqual(s.bulbSize, 4); XCTAssertEqual(s.dockBulbSize, 0)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "dockPattern"), "chase")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "pattern"), "steady")
+        s.load()
+        XCTAssertEqual(s.dockStyle, .classic, "Neuladen vermischt die Ketten nicht")
+    }
+
+    func testResetRestoresTheDockValuesToo() {
+        let s = Settings.shared
+        s.dockStyle = .firGold; s.dockColorMode = .warm; s.dockPattern = .chase; s.dockTempo = 4; s.dockBulbSize = 4; s.dockSpacing = 4; s.dockLayer = .desktop
+        s.resetToDefaults()
+        XCTAssertEqual(s.dockStyle, .classic); XCTAssertEqual(s.dockColorMode, .multicolor); XCTAssertEqual(s.dockPattern, .twinkle)
+        XCTAssertEqual([s.dockTempo, s.dockBulbSize, s.dockSpacing], [2, 2, 2]); XCTAssertEqual(s.dockLayer, .above)
     }
 }
 
@@ -1110,7 +1150,7 @@ final class ResetTests: XCTestCase {
         s.resetToDefaults()
         XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .classic); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
         XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
-        XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .sameAsBar); XCTAssertEqual(s.dockShape, .exact)
+        XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .classic); XCTAssertEqual(s.dockShape, .exact)
         XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
         XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertFalse(s.alwaysSaveEnergy)
         XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")

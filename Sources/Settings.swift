@@ -20,7 +20,13 @@ final class Settings: ObservableObject {
     @Published var spacing = 2 { didSet { write("spacing", spacing) } }
     @Published var lightsLayer = DisplayLayer.above { didSet { write("lightsLayer", lightsLayer.rawValue) } }
     @Published var dockLights = true { didSet { write("dockLights", dockLights) } }
-    @Published var dockStyle = DockStyle.sameAsBar { didSet { write("dockStyle", dockStyle.rawValue) } }
+    @Published var dockStyle = ChainStyleKind.classic { didSet { write("dockStyle", dockStyle.rawValue) } }
+    @Published var dockColorMode = ColorMode.multicolor { didSet { write("dockColorMode", dockColorMode.rawValue) } }
+    @Published var dockPattern = LightPattern.twinkle { didSet { write("dockPattern", dockPattern.rawValue) } }
+    @Published var dockTempo = 2 { didSet { write("dockTempo", dockTempo) } }
+    @Published var dockBulbSize = 2 { didSet { write("dockBulbSize", dockBulbSize) } }
+    @Published var dockSpacing = 2 { didSet { write("dockSpacing", dockSpacing) } }
+    @Published var dockLayer = DisplayLayer.above { didSet { write("dockLayer", dockLayer.rawValue) } }
     @Published var dockShape = DockShape.exact { didSet { write("dockShape", dockShape.rawValue) } }
 
     @Published var snowEnabled = true { didSet { write("snowEnabled", snowEnabled) } }
@@ -47,6 +53,7 @@ final class Settings: ObservableObject {
         #else
         UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
         #endif
+        Settings.migrate(d)
         load()
         observer = DefaultsObserver(keys: Settings.keys) { [weak self] in
             DispatchQueue.main.async { if let self, !self.loading { self.load() } }
@@ -54,7 +61,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockShape",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "alwaysSaveEnergy", "paused", "welcomeShown", "permissionPromptShown"]
 
@@ -66,6 +73,20 @@ final class Settings: ObservableObject {
         d.string(forKey: key).flatMap(T.init(rawValue:)) ?? def
     }
     private func set<T: Equatable>(_ p: ReferenceWritableKeyPath<Settings, T>, _ v: T) { if self[keyPath: p] != v { self[keyPath: p] = v } }
+
+    /// Einmalig beim ersten Start mit getrennten Ketten: Die bisher gemeinsamen Werte gelten für beide, ein gespeicherter Dock-Stil
+    /// "sameAsBar" wird zum Stil der Menüleiste.
+    static func migrate(_ d: UserDefaults) {
+        guard d.object(forKey: "dockMigrated") == nil else { return }
+        for (bar, dock) in [("colorMode", "dockColorMode"), ("pattern", "dockPattern"), ("lightsTempo", "dockTempo"), ("bulbSize", "dockBulbSize"),
+                            ("spacing", "dockSpacing"), ("lightsLayer", "dockLayer")] {
+            if let v = d.object(forKey: bar) { d.set(v, forKey: dock) }
+        }
+        if let old = d.string(forKey: "dockStyle"), ChainStyleKind(rawValue: old) != nil {
+            // eigener Dock-Stil bleibt
+        } else if let v = d.object(forKey: "chainStyle") { d.set(v, forKey: "dockStyle") } else { d.removeObject(forKey: "dockStyle") }
+        d.set(true, forKey: "dockMigrated")
+    }
 
     /// Übernimmt Startargumente einmalig als gespeicherte Werte. Später hat die Oberfläche immer Vorrang.
     func adopt(_ args: [String: Any]) {
@@ -84,7 +105,13 @@ final class Settings: ObservableObject {
         set(\.spacing, level("spacing", 2))
         set(\.lightsLayer, raw("lightsLayer", .above))
         set(\.dockLights, bool("dockLights", true))
-        set(\.dockStyle, raw("dockStyle", .sameAsBar))
+        set(\.dockStyle, raw("dockStyle", .classic))
+        set(\.dockColorMode, raw("dockColorMode", .multicolor))
+        set(\.dockPattern, raw("dockPattern", .twinkle))
+        set(\.dockTempo, level("dockTempo", 2))
+        set(\.dockBulbSize, level("dockBulbSize", 2))
+        set(\.dockSpacing, level("dockSpacing", 2))
+        set(\.dockLayer, raw("dockLayer", .above))
         set(\.dockShape, raw("dockShape", .exact))
         set(\.snowEnabled, bool("snowEnabled", true))
         set(\.snowAmount, level("snowAmount", 2))
@@ -105,7 +132,8 @@ final class Settings: ObservableObject {
     func resetToDefaults() {
         lightsEnabled = true; chainStyle = .classic; colorMode = .multicolor; pattern = .twinkle
         lightsTempo = 2; bulbSize = 2; spacing = 2; lightsLayer = .above
-        dockLights = true; dockStyle = .sameAsBar; dockShape = .exact
+        dockLights = true; dockStyle = .classic; dockColorMode = .multicolor; dockPattern = .twinkle
+        dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
         alwaysSaveEnergy = false
     }

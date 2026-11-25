@@ -1,4 +1,6 @@
-"Lights" = "Lichter";
+"Menu bar" = "Menüleiste";
+"Dock" = "Dock";
+"Lights on the menu bar" = "Lichter an der Menüleiste";
 "Snow" = "Schnee";
 "General" = "Allgemein";
 "Colors" = "Farben";
@@ -56,8 +58,6 @@
 "Classic" = "Klassisch";
 "Fir, colorful" = "Tanne bunt";
 "Fir, warm gold" = "Tanne warmgold";
-"Dock style" = "Dock-Stil";
-"Like menu bar" = "Wie Menüleiste";
 "Length" = "Länge";
 "Dock width" = "Dock-Breite";
 "Full width" = "Bildschirmbreite";

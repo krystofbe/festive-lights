@@ -58,7 +58,8 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            lights.tabItem { Label("Lights", systemImage: "lightbulb") }
+            menuBar.tabItem { Label("Menu bar", systemImage: "menubar.rectangle") }
+            dock.tabItem { Label("Dock", systemImage: "dock.rectangle") }
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
@@ -67,50 +68,58 @@ struct SettingsView: View {
         .onDisappear { perm.stop() }
     }
 
-    private var lights: some View {
+    private var menuBar: some View {
         Form {
-            Picker("Style", selection: $s.chainStyle) {
-                Text("Classic").tag(ChainStyleKind.classic)
-                Text("Fir, colorful").tag(ChainStyleKind.firColor)
-                Text("Fir, warm gold").tag(ChainStyleKind.firGold)
-            }.pickerStyle(.segmented)
-            if s.chainStyle == .classic || (s.dockLights && s.dockStyle.resolve(bar: s.chainStyle) == .classic) {
-                Picker("Colors", selection: $s.colorMode) {
-                    Text("Multicolor").tag(ColorMode.multicolor)
-                    Text("Warm white").tag(ColorMode.warm)
+            Toggle("Lights on the menu bar", isOn: $s.lightsEnabled)
+            chainControls(style: $s.chainStyle, colors: $s.colorMode, pattern: $s.pattern, tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, layer: $s.lightsLayer)
+                .disabled(!s.lightsEnabled)
+        }
+        .formStyle(.grouped)
+    }
+
+    private var dock: some View {
+        Form {
+            Toggle("Lights on the Dock", isOn: $s.dockLights)
+            Group {
+                chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
+                let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
+                Picker("Length", selection: $s.dockShape) {
+                    Text(side ? "Dock height" : "Dock width").tag(DockShape.exact)
+                    Text(side ? "Full height" : "Full width").tag(DockShape.continuous)
                 }.pickerStyle(.segmented)
             }
-            Picker("Pattern", selection: $s.pattern) {
-                Text("Steady").tag(LightPattern.steady)
-                Text("Twinkle").tag(LightPattern.twinkle)
-                Text("Chase").tag(LightPattern.chase)
-            }.pickerStyle(.segmented)
-            LevelSlider(title: "Speed", value: $s.lightsTempo, low: "Slow", high: "Fast")
-            LevelSlider(title: "Size", value: $s.bulbSize, low: "Small", high: "Large")
-            LevelSlider(title: "Spacing", value: $s.spacing, low: "Tight", high: "Wide")
-            Picker("Layer", selection: $s.lightsLayer) {
-                Text("Above all windows").tag(DisplayLayer.above)
-                Text("Desktop only").tag(DisplayLayer.desktop)
-            }
-            Toggle("Lights on the Dock", isOn: $s.dockLights)
-            let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
-            Picker("Length", selection: $s.dockShape) {
-                Text(side ? "Dock height" : "Dock width").tag(DockShape.exact)
-                Text(side ? "Full height" : "Full width").tag(DockShape.continuous)
-            }
-            .pickerStyle(.segmented)
-            .padding(.leading, 16)
-            .disabled(!s.dockLights)
-            Picker("Dock style", selection: $s.dockStyle) {
-                Text("Like menu bar").tag(DockStyle.sameAsBar)
-                Text("Classic").tag(DockStyle.classic)
-                Text("Fir, colorful").tag(DockStyle.firColor)
-                Text("Fir, warm gold").tag(DockStyle.firGold)
-            }
-            .padding(.leading, 16)
             .disabled(!s.dockLights)
         }
         .formStyle(.grouped)
+    }
+
+    /// Gleicher Aufbau für Menüleiste und Dock, jede Kette mit eigenen Werten.
+    @ViewBuilder
+    private func chainControls(style: Binding<ChainStyleKind>, colors: Binding<ColorMode>, pattern: Binding<LightPattern>, tempo: Binding<Int>,
+                               size: Binding<Int>, spacing: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
+        Picker("Style", selection: style) {
+            Text("Classic").tag(ChainStyleKind.classic)
+            Text("Fir, colorful").tag(ChainStyleKind.firColor)
+            Text("Fir, warm gold").tag(ChainStyleKind.firGold)
+        }.pickerStyle(.segmented)
+        if style.wrappedValue == .classic {
+            Picker("Colors", selection: colors) {
+                Text("Multicolor").tag(ColorMode.multicolor)
+                Text("Warm white").tag(ColorMode.warm)
+            }.pickerStyle(.segmented)
+        }
+        Picker("Pattern", selection: pattern) {
+            Text("Steady").tag(LightPattern.steady)
+            Text("Twinkle").tag(LightPattern.twinkle)
+            Text("Chase").tag(LightPattern.chase)
+        }.pickerStyle(.segmented)
+        LevelSlider(title: "Speed", value: tempo, low: "Slow", high: "Fast")
+        LevelSlider(title: "Size", value: size, low: "Small", high: "Large")
+        LevelSlider(title: "Spacing", value: spacing, low: "Tight", high: "Wide")
+        Picker("Layer", selection: layer) {
+            Text("Above all windows").tag(DisplayLayer.above)
+            Text("Desktop only").tag(DisplayLayer.desktop)
+        }
     }
 
     private var snow: some View {

@@ -1,4 +1,6 @@
-"Lights" = "Lights";
+"Menu bar" = "Menu bar";
+"Dock" = "Dock";
+"Lights on the menu bar" = "Lights on the menu bar";
 "Snow" = "Snow";
 "General" = "General";
 "Colors" = "Colors";
@@ -56,8 +58,6 @@
 "Classic" = "Classic";
 "Fir, colorful" = "Fir, colorful";
 "Fir, warm gold" = "Fir, warm gold";
-"Dock style" = "Dock style";
-"Like menu bar" = "Like menu bar";
 "Length" = "Length";
 "Dock width" = "Dock width";
 "Full width" = "Full width";
