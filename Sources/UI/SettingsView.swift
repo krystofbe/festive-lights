@@ -105,9 +105,9 @@ struct SettingsView: View {
     private func chainControls(style: Binding<ChainStyleKind>, colors: Binding<ColorMode>, pattern: Binding<LightPattern>, tempo: Binding<Int>,
                                size: Binding<Int>, spacing: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
         Picker("Style", selection: style) {
-            Text("Classic").tag(ChainStyleKind.classic)
             Text("Fir, colorful").tag(ChainStyleKind.firColor)
             Text("Fir, warm gold").tag(ChainStyleKind.firGold)
+            Text("Classic").tag(ChainStyleKind.classic)
         }.pickerStyle(.segmented)
         if style.wrappedValue == .classic {
             Picker("Colors", selection: colors) {

@@ -14,7 +14,7 @@ final class Settings: ObservableObject {
     private var loading = false
 
     @Published var lightsEnabled = true { didSet { write("lightsEnabled", lightsEnabled) } }
-    @Published var chainStyle = ChainStyleKind.classic { didSet { write("chainStyle", chainStyle.rawValue) } }
+    @Published var chainStyle = ChainStyleKind.firColor { didSet { write("chainStyle", chainStyle.rawValue) } }
     @Published var colorMode = ColorMode.multicolor { didSet { write("colorMode", colorMode.rawValue) } }
     @Published var pattern = LightPattern.twinkle { didSet { write("pattern", pattern.rawValue) } }
     @Published var lightsTempo = 2 { didSet { write("lightsTempo", lightsTempo) } }
@@ -22,7 +22,7 @@ final class Settings: ObservableObject {
     @Published var spacing = 2 { didSet { write("spacing", spacing) } }
     @Published var lightsLayer = DisplayLayer.above { didSet { write("lightsLayer", lightsLayer.rawValue) } }
     @Published var dockLights = true { didSet { write("dockLights", dockLights) } }
-    @Published var dockStyle = ChainStyleKind.classic { didSet { write("dockStyle", dockStyle.rawValue) } }
+    @Published var dockStyle = ChainStyleKind.firColor { didSet { write("dockStyle", dockStyle.rawValue) } }
     @Published var dockColorMode = ColorMode.multicolor { didSet { write("dockColorMode", dockColorMode.rawValue) } }
     @Published var dockPattern = LightPattern.twinkle { didSet { write("dockPattern", dockPattern.rawValue) } }
     @Published var dockTempo = 2 { didSet { write("dockTempo", dockTempo) } }
@@ -109,7 +109,7 @@ final class Settings: ObservableObject {
         loading = true
         defer { loading = false }
         set(\.lightsEnabled, bool("lightsEnabled", true))
-        set(\.chainStyle, raw("chainStyle", .classic))
+        set(\.chainStyle, raw("chainStyle", .firColor))
         set(\.colorMode, raw("colorMode", .multicolor))
         set(\.pattern, raw("pattern", .twinkle))
         set(\.lightsTempo, level("lightsTempo", 2))
@@ -117,7 +117,7 @@ final class Settings: ObservableObject {
         set(\.spacing, level("spacing", 2))
         set(\.lightsLayer, raw("lightsLayer", .above))
         set(\.dockLights, bool("dockLights", true))
-        set(\.dockStyle, raw("dockStyle", .classic))
+        set(\.dockStyle, raw("dockStyle", .firColor))
         set(\.dockColorMode, raw("dockColorMode", .multicolor))
         set(\.dockPattern, raw("dockPattern", .twinkle))
         set(\.dockTempo, level("dockTempo", 2))
@@ -142,9 +142,9 @@ final class Settings: ObservableObject {
     /// Setzt alle Werte aus SPEC §3 zurück. Unverändert bleiben "schon gezeigt"-Flags und die Pause. "Beim Anmelden starten" und die
     /// Berechtigung liegen außerhalb dieser Klasse und sind nicht betroffen. Wirkt sofort, weil jeder Wert veröffentlicht wird.
     func resetToDefaults() {
-        lightsEnabled = true; chainStyle = .classic; colorMode = .multicolor; pattern = .twinkle
+        lightsEnabled = true; chainStyle = .firColor; colorMode = .multicolor; pattern = .twinkle
         lightsTempo = 2; bulbSize = 2; spacing = 2; lightsLayer = .above
-        dockLights = true; dockStyle = .classic; dockColorMode = .multicolor; dockPattern = .twinkle
+        dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
         dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
         powerMode = .automatic

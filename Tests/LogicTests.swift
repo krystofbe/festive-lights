@@ -865,6 +865,13 @@ final class SeparateChainSettingsTests: XCTestCase {
         XCTAssertEqual(d.string(forKey: "dockPattern"), "steady", "zweiter Lauf ändert nichts")
     }
 
+    func testStoredStylesOfExistingUsersSurviveTheNewDefault() {
+        let d = suite()
+        d.set("classic", forKey: "chainStyle"); d.set("classic", forKey: "dockStyle")
+        Settings.migrate(d)
+        XCTAssertEqual(d.string(forKey: "chainStyle"), "classic"); XCTAssertEqual(d.string(forKey: "dockStyle"), "classic")
+    }
+
     func testMigrationWithNothingStoredLeavesDefaults() {
         let d = suite()
         Settings.migrate(d)
@@ -891,7 +898,7 @@ final class SeparateChainSettingsTests: XCTestCase {
         let s = Settings.shared
         s.dockStyle = .firGold; s.dockColorMode = .warm; s.dockPattern = .chase; s.dockTempo = 4; s.dockBulbSize = 4; s.dockSpacing = 4; s.dockLayer = .desktop
         s.resetToDefaults()
-        XCTAssertEqual(s.dockStyle, .classic); XCTAssertEqual(s.dockColorMode, .multicolor); XCTAssertEqual(s.dockPattern, .twinkle)
+        XCTAssertEqual(s.dockStyle, .firColor); XCTAssertEqual(s.dockColorMode, .multicolor); XCTAssertEqual(s.dockPattern, .twinkle)
         XCTAssertEqual([s.dockTempo, s.dockBulbSize, s.dockSpacing], [2, 2, 2]); XCTAssertEqual(s.dockLayer, .above)
     }
 }
@@ -1174,9 +1181,9 @@ final class ResetTests: XCTestCase {
         // Ausnahmen
         s.welcomeShown = true; s.permissionPromptShown = true; s.paused = true
         s.resetToDefaults()
-        XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .classic); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
+        XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .firColor, "Standardstil ist Tanne bunt"); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
         XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
-        XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .classic); XCTAssertEqual(s.dockShape, .exact)
+        XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .firColor); XCTAssertEqual(s.dockShape, .exact)
         XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
         XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertEqual(s.powerMode, .automatic)
         XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
