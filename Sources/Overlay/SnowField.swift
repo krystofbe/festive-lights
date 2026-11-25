@@ -121,6 +121,7 @@ final class SnowField {
         resize(&f)
         let l = layers[f.layer]
         l.contents = f.crystal ? SnowSprites.crystal : SnowSprites.soft
+        l.transform = CATransform3DIdentity
         l.opacity = 0
         flakes.append(f)
     }
@@ -141,6 +142,7 @@ final class SnowField {
             let d = f.size * 2.4
             layers[f.layer].bounds = CGRect(x: 0, y: 0, width: d, height: d)
             layers[f.layer].contents = SnowSprites.soft
+            layers[f.layer].transform = CATransform3DIdentity
             layers[f.layer].opacity = Float(f.alpha)
             flakes.append(f)
         }
@@ -219,6 +221,13 @@ final class SnowField {
                             break
                         }
                     }
+                }
+                if remove {
+                    layers[f.layer].isHidden = true
+                    free.append(f.layer)
+                    flakes.swapAt(i, flakes.count - 1)
+                    flakes.removeLast()
+                    continue
                 }
                 var sx = f.x, sy = f.y
                 if swayOn { sx += sin(f.phase + time * f.freq) * f.amp }

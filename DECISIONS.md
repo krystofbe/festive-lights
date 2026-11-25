@@ -59,5 +59,5 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 
 ## Grafik
 - App-Icon: Größen 16 bis 1024 per `sips` aus `Art/AppIcon-1024.png`.
-- Menüleisten-Symbol: Ebenen aus `Art/`, 48 Bilder in 6 s, pro Birne ein sanfter Helligkeitsdurchgang. `menubar-icon.pdf` und die PNG-Vorschauen werden nicht verwendet.
+- Menüleisten-Symbol: Ebenen aus `Art/`, 24 Bilder in 6 s (4 Bilder pro Sekunde), pro Birne ein sanfter Helligkeitsdurchgang. `menubar-icon.pdf` und die PNG-Vorschauen werden nicht verwendet.
 - Flocken sind ein einziges weiches Sprite (weißer Kern, Schein, Schatten), Kristalle aus `snowflake-crystal.pdf`.

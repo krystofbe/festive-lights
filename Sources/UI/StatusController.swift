@@ -28,7 +28,7 @@ final class StatusController: NSObject, NSMenuDelegate {
         timer?.invalidate(); timer = nil
         shown = nil
         if on {
-            let t = Timer(timeInterval: 1.0 / 8, repeats: true) { [weak self] _ in
+            let t = Timer(timeInterval: 1.0 / 4, repeats: true) { [weak self] _ in
                 guard let self else { return }
                 self.frame = (self.frame + 1) % MenubarIcon.frameCount
                 self.updateIcon()

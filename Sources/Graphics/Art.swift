@@ -154,7 +154,7 @@ enum SnowSprites {
 }
 
 enum MenubarIcon {
-    static let frameCount = 48
+    static let frameCount = 24
     private static var cache: [Int: NSImage] = [:]
 
     /// Eine Animationsphase 0...1. Die drei Birnen glimmen nacheinander heller und dunkler.
