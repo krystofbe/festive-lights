@@ -74,3 +74,5 @@
 "Reset" = "Zurücksetzen";
 "Cancel" = "Abbrechen";
 "Start at login and the permission stay as they are." = "Beim Anmelden starten und die Berechtigung bleiben unverändert.";
+
+"settle.hint" = "Braucht die Berechtigung für die Bedienungshilfen.";

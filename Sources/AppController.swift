@@ -20,7 +20,7 @@ final class AppController: NSObject {
     private var permission = Permission.granted
     private var reduceMotion = false
     // nur bei echter Änderung veröffentlichen: apply() läuft beim Einblenden des Schnees bildweise, jede Veröffentlichung layoutet das Einstellungsfenster neu
-    private var energySaving = false { didSet { settings.updatePowerActive(energySaving) } }
+    private var energySaving = false { didSet { PowerStatus.shared.update(energySaving) } }
     private var dark = true
     private var dockGeometry: DockGeometry?
     private var settingsWindow: NSWindow?
@@ -28,6 +28,7 @@ final class AppController: NSObject {
     private var timers: [Timer] = []
     private let permissionModel = PermissionModel()
     private let loginModel = LoginModel()
+    private let settingsNav = SettingsNav()
     private var applyScheduled = false
     private var animating = false
 
@@ -375,15 +376,15 @@ final class AppController: NSObject {
 
     func showSettings() {
         if settingsWindow == nil {
-            let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, login: loginModel))
+            let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, login: loginModel, nav: settingsNav))
             let w = NSWindow(contentViewController: host)
             w.title = String(localized: "settings.title")
             w.styleMask = [.titled, .closable, .miniaturizable]
             w.isReleasedWhenClosed = false
-            w.setContentSize(NSSize(width: 470, height: 340))
             if let v = NSScreen.screens.first?.visibleFrame { w.setFrameTopLeftPoint(NSPoint(x: v.midX - 235, y: v.maxY - 200)) }
             settingsWindow = w
         }
+        if settingsWindow?.isVisible != true { settingsNav.tab = .general }
         permissionModel.refresh()
         loginModel.refresh()
         NSApp.activate(ignoringOtherApps: true)

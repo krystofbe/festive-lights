@@ -3,18 +3,16 @@ import ServiceManagement
 
 final class PermissionModel: ObservableObject {
     @Published var granted = Permission.granted
-    private var timer: Timer?
 
-    func start() {
-        refresh()
-        timer?.invalidate()
-        let t = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.refresh() }
-        RunLoop.main.add(t, forMode: .common)
-        timer = t
-    }
-
-    func stop() { timer?.invalidate(); timer = nil }
+    /// Aufgefrischt wird beim Öffnen und von `AppController.poll` (jede Sekunde), ein eigener Timer ist nicht nötig.
     func refresh() { let g = Permission.granted; if g != granted { granted = g } }
+}
+
+enum SettingsTab: Hashable { case general, menuBar, dock, snow }
+
+/// Gewählter Tab: Beim Öffnen des Fensters wird er auf "Allgemein" zurückgesetzt.
+final class SettingsNav: ObservableObject {
+    @Published var tab = SettingsTab.general
 }
 
 final class LoginModel: ObservableObject {
@@ -26,6 +24,8 @@ final class LoginModel: ObservableObject {
         do {
             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
         } catch {}
+        // Verlangt macOS eine Freigabe, führt der Weg in die Systemeinstellungen (Anmeldeobjekte)
+        if on, SMAppService.mainApp.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
         enabled = SMAppService.mainApp.status == .enabled
     }
 }
@@ -39,12 +39,12 @@ struct LevelSlider: View {
     var body: some View {
         LabeledContent(title) {
             HStack(spacing: 6) {
-                Text(low).font(.caption).foregroundStyle(.secondary).frame(width: 52, alignment: .trailing)
+                Text(low).font(.caption).foregroundStyle(.secondary).frame(width: 52, alignment: .trailing).accessibilityHidden(true)
                 Slider(value: Binding(get: { Double(value) }, set: { value = Int($0.rounded()) }), in: 0...4, step: 1)
                     .frame(width: 130)
                     .accessibilityLabel(Text(title))
                     .accessibilityValue(Text("\(value + 1) / 5"))
-                Text(high).font(.caption).foregroundStyle(.secondary).frame(width: 52, alignment: .leading)
+                Text(high).font(.caption).foregroundStyle(.secondary).frame(width: 52, alignment: .leading).accessibilityHidden(true)
             }
         }
     }
@@ -65,22 +65,47 @@ struct SettingsPane<Content: View>: View {
     }
 }
 
+/// Sparmodus mit Live-Status: Der Status liegt in einem eigenen Objekt, damit seine Änderungen nur diese Zeilen betreffen.
+struct PowerModeRows: View {
+    @ObservedObject var s: Settings
+    @ObservedObject var status: PowerStatus
+
+    var body: some View {
+        Picker(selection: $s.powerMode) {
+            Text("Automatic").tag(PowerMode.automatic)
+            Text("Always").tag(PowerMode.always)
+            Text("Off").tag(PowerMode.off)
+        } label: {
+            Text(LocalizedStringKey(status.active ? "Low Power Mode (active now)" : "Low Power Mode"))
+        }
+        .pickerStyle(.segmented)
+        Text(LocalizedStringKey(s.powerMode == .automatic ? "power.automatic" : s.powerMode == .always ? "power.always" : "power.off"))
+            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+    }
+}
+
 struct SettingsView: View {
     @ObservedObject var s: Settings
     @ObservedObject var perm: PermissionModel
     @ObservedObject var login: LoginModel
+    @ObservedObject var nav: SettingsNav
     @State private var confirmReset = false
+    @State private var dockOnSide = SettingsView.dockIsOnSide()
+
+    private static func dockIsOnSide() -> Bool {
+        ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
+    }
 
     var body: some View {
-        TabView {
-            general.tabItem { Label("General", systemImage: "gearshape") }
-            menuBar.tabItem { Label("Menu bar", systemImage: "menubar.rectangle") }
-            dock.tabItem { Label("Dock", systemImage: "dock.rectangle") }
-            snow.tabItem { Label("Snow", systemImage: "snowflake") }
+        TabView(selection: $nav.tab) {
+            general.tabItem { Label("General", systemImage: "gearshape") }.tag(SettingsTab.general)
+            menuBar.tabItem { Label("Menu bar", systemImage: "menubar.rectangle") }.tag(SettingsTab.menuBar)
+            dock.tabItem { Label("Dock", systemImage: "dock.rectangle") }.tag(SettingsTab.dock)
+            snow.tabItem { Label("Snow", systemImage: "snowflake") }.tag(SettingsTab.snow)
         }
         .frame(width: 470, height: 480)
-        .onAppear { perm.start() }
-        .onDisappear { perm.stop() }
+        .onAppear { perm.refresh() }
+        .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name("com.apple.dock.prefchanged"))) { _ in dockOnSide = Self.dockIsOnSide() }
     }
 
     private var menuBar: some View {
@@ -92,7 +117,7 @@ struct SettingsView: View {
     private var dock: some View {
         SettingsPane(title: "Lights on the Dock", isOn: $s.dockLights) {
             chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
-            let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
+            let side = dockOnSide
             Picker("Length", selection: $s.dockShape) {
                 Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
                 Text(LocalizedStringKey(side ? "Full height" : "Full width")).tag(DockShape.continuous)
@@ -140,7 +165,6 @@ struct SettingsView: View {
             LevelSlider(title: "Amount", value: $s.snowAmount, low: "Light", high: "Heavy")
             LevelSlider(title: "Flake size", value: $s.flakeSize, low: "Small", high: "Large")
             LevelSlider(title: "Speed", value: $s.snowSpeed, low: "Slow", high: "Fast")
-            LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
             LabeledContent("Wind") {
                 Picker("Wind", selection: $s.wind) {
                     Text("Off").tag(Wind.off)
@@ -148,25 +172,18 @@ struct SettingsView: View {
                     Text("Blowing right").tag(Wind.right)
                 }.pickerStyle(.segmented).labelsHidden().frame(width: 335)
             }
+            LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
             layerPicker($s.snowLayer)
             Toggle("Snow stays on windows", isOn: $s.settleSnow)
                 .disabled(!perm.granted)
+                .accessibilityHint(Text(perm.granted ? "" : "settle.hint"))
         }
     }
 
     private var general: some View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
-            Picker(selection: $s.powerMode) {
-                Text("Automatic").tag(PowerMode.automatic)
-                Text("Always").tag(PowerMode.always)
-                Text("Off").tag(PowerMode.off)
-            } label: {
-                Text(LocalizedStringKey(s.powerActive ? "Low Power Mode (active now)" : "Low Power Mode"))
-            }
-            .pickerStyle(.segmented)
-            Text(LocalizedStringKey(s.powerMode == .automatic ? "power.automatic" : s.powerMode == .always ? "power.always" : "power.off"))
-                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            PowerModeRows(s: s, status: PowerStatus.shared)
             Section("Permission") {
                 HStack(spacing: 6) {
                     Image(systemName: perm.granted ? "checkmark.circle.fill" : "exclamationmark.circle")

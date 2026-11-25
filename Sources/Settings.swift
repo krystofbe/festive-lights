@@ -6,6 +6,14 @@ enum DisplayLayer: String, CaseIterable { case above, desktop }
 /// Sparmodus: automatisch (Stromsparmodus, Akku unter 20 %), immer oder nie.
 enum PowerMode: String, CaseIterable { case automatic, always, off }
 
+/// Der Sparmodus greift gerade (Anzeige im Einstellungsfenster). Eigenes Objekt, nicht Teil von `Settings`: Änderungen von `Settings` lösen `apply()`
+/// aus, und `apply()` schreibt diesen Status, das darf nie eine Schleife bilden. Veröffentlicht wird nur bei echter Änderung.
+final class PowerStatus: ObservableObject {
+    static let shared = PowerStatus()
+    @Published private(set) var active = false
+    func update(_ v: Bool) { if active != v { active = v } }
+}
+
 /// Alle gespeicherten Einstellungen. Änderungen werden sofort in UserDefaults geschrieben,
 /// Änderungen von außen (zum Beispiel `defaults write`) werden live übernommen.
 final class Settings: ObservableObject {
@@ -41,8 +49,6 @@ final class Settings: ObservableObject {
     @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
     @Published var powerMode = PowerMode.automatic { didSet { write("powerMode", powerMode.rawValue) } }
-    /// Nicht gespeichert: Der Sparmodus greift gerade (für die Anzeige im Einstellungsfenster).
-    @Published var powerActive = false
     @Published var paused = false { didSet { write("paused", paused) } }
     @Published var welcomeShown = false { didSet { write("welcomeShown", welcomeShown) } }
     @Published var permissionPromptShown = false { didSet { write("permissionPromptShown", permissionPromptShown) } }
@@ -63,9 +69,6 @@ final class Settings: ObservableObject {
             DispatchQueue.main.async { if let self, !self.loading { self.load() } }
         }
     }
-
-    /// Veröffentlicht nur bei echter Änderung: `apply()` läuft zeitweise bildweise, jede Veröffentlichung layoutet das Einstellungsfenster neu.
-    func updatePowerActive(_ v: Bool) { if powerActive != v { powerActive = v } }
 
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",

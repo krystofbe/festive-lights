@@ -1393,16 +1393,18 @@ final class DockSizeTests: XCTestCase {
 
 
 final class SettingsViewStateTests: XCTestCase {
-    func testRepeatedLiveStatusDoesNotInvalidateTheSettingsView() {
-        let s = Settings.shared
-        s.updatePowerActive(false)
-        var changes = 0
-        let c = s.objectWillChange.sink { changes += 1 }
-        for _ in 0..<5000 { s.updatePowerActive(false) }   // wie apply() bei laufender Animation
-        XCTAssertEqual(changes, 0, "gleicher Wert löst kein Neuzeichnen des Fensters aus")
-        s.updatePowerActive(true); s.updatePowerActive(true)
-        XCTAssertEqual(changes, 1)
-        s.updatePowerActive(false)
-        c.cancel()
+    func testPowerStatusIsDecoupledFromSettingsAndPublishesOnlyOnChange() {
+        let s = Settings.shared, p = PowerStatus.shared
+        p.update(false)
+        var settingsChanges = 0, statusChanges = 0
+        let c1 = s.objectWillChange.sink { settingsChanges += 1 }
+        let c2 = p.objectWillChange.sink { statusChanges += 1 }
+        for _ in 0..<5000 { p.update(false) }   // wie apply() bei laufender Animation
+        XCTAssertEqual(statusChanges, 0, "gleicher Wert löst nichts aus")
+        p.update(true); p.update(true)
+        XCTAssertEqual(statusChanges, 1)
+        XCTAssertEqual(settingsChanges, 0, "der Status hängt nicht an Settings, und damit nicht an apply()")
+        p.update(false)
+        c1.cancel(); c2.cancel()
     }
 }

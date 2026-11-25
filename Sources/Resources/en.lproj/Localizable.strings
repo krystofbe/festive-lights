@@ -53,7 +53,7 @@
 "Lights on the Dock too, and snow that stays on windows?" = "Lights on the Dock too, and snow that stays on windows?";
 "For this FestiveLights sees where the Dock and your windows are. No contents, no input." = "For this FestiveLights sees where the Dock and your windows are. No contents, no input.";
 "menu.pause" = "Pause";
-"menu.lights" = "Lights on the Menu Bar";
+"menu.lights" = "Lights on the menu bar";
 "menu.dock" = "Lights on the Dock";
 "menu.snow" = "Snow";
 "menu.storm" = "Snowstorm";
@@ -74,3 +74,5 @@
 "Reset" = "Reset";
 "Cancel" = "Cancel";
 "Start at login and the permission stay as they are." = "Start at login and the permission stay as they are.";
+
+"settle.hint" = "Needs the Accessibility permission.";
