@@ -18,7 +18,7 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 
 ## Dock
 - Kabel über die Breite der Symbolleiste plus 6 pt je Seite. Kante: Innenkante aus `visibleFrame`, bei automatisch ausgeblendetem Dock aus dem Symbolleistenrahmen.
-- Birnenhöhe am Dock höchstens ein Viertel der Symbolgröße.
+- Birnenhöhe am Dock: bei Mittelstellung ein Viertel der Symbolgröße (`tilesize`), der Regler skaliert relativ dazu (0,7 bis 1,4, also bis etwa 35 %), nie unter 8 pt (`Garland.dockBulbHeight`).
 - Bei eingeschalteter Vergrößerung wird der Rahmen eingefroren, solange der Zeiger im Dock ist.
 - Ein neuer Rahmen wird übernommen, sobald er 0,15 s unverändert blieb (`DockFrameStabilizer`). Abfrage 5 Hz, nach Starten oder Beenden von Apps, Bildschirm- und Dock-Einstellungsänderungen 30 Hz für 2,5 s.
 - Seitliches Dock: Die Birnen rutschen wie an der Menüleiste am Kabel entlang.
@@ -63,7 +63,7 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 
 ## Grafik
 - App-Icon: Größen 16 bis 1024 per `sips` aus `Art/AppIcon-1024.png`.
-- Menüleisten-Symbol: Ebenen aus `Art/`, 24 Bilder in 6 s (4 Bilder pro Sekunde), pro Birne ein sanfter Helligkeitsdurchgang. `menubar-icon.pdf` und die PNG-Vorschauen werden nicht verwendet.
+- Menüleisten-Symbol: Ebenen aus `Art/`, 32 Bilder in 8 s (4 Bilder pro Sekunde), pro Birne ein sanfter Helligkeitsdurchgang. `menubar-icon.pdf` und die PNG-Vorschauen werden nicht verwendet.
 - Flocken sind ein einziges weiches Sprite (weißer Kern, Schein, Schatten), Kristalle aus `snowflake-crystal.pdf`.
 
 ## Performance (Messung am Testrechner, Release-Build, 60 s, Mac mini 1920x1080 mit 60 Hz)
@@ -88,10 +88,10 @@ Abgleich mit SPEC §10 (Stand 8c35142, WindowServer relativ zum Referenzprogramm
 NSPopover erschien auf macOS 26 etwa 230 pt unter dem Menüleisten-Symbol (Pfeil an richtiger x-Position). Statt dessen zeigt ein eigenes nichtaktivierendes Panel (`PopoverPanel`, Material "popover", 12 pt Ecken, Ebene "popUpMenu") den Hinweis direkt unter dem Symbol, bei Bedarf in den Bildschirm geschoben. Es nimmt keinen Fokus (geprüft: vorderste App unverändert), schließt nach 20 s bzw. 45 s oder bei Klick daneben.
 
 ## Stile "Tanne bunt" und "Tanne warmgold"
-- Einstellung `chainStyle` (klassisch, firColor, firGold), Standard klassisch. Der Farbmodus erscheint nur bei klassisch. Ein Startargument `-chainStyle firGold` überschreibt die Einstellung, ohne sie zu speichern.
+- Einstellung `chainStyle` (klassisch, firColor, firGold), Standard seit der Umstellung Tanne bunt. Der Farbmodus erscheint nur bei klassisch. Im Test-Build wird ein Startargument `-chainStyle firGold` beim Start einmal übernommen und dann wie eine gespeicherte Einstellung behandelt (`Settings.adopt`), die Oberfläche hat danach Vorrang. Im Release werden Startargumente ignoriert.
 - Platzierung (`Garland.plan`, getestet): Ansatzpunkte alle 22 pt mal Skalierung (Skalierung = Birnenhöhe / 24). Hintere Zweige an jedem Ansatzpunkt abwechselnd gespiegelt, mittlere an 75 %, hängende an jedem fünften, vordere an 22 %. Sprite, Spiegelung und Drehung kommen aus stabilem Pseudozufall. Ein Zapfen pro Bogen, Schleifen nur bei firGold an allen Bogenenden und Aufhängepunkten.
 - Zentrale Stellschrauben in `Garland`: `density` (Dichte des Grüns), `hangLength` (Länge der hängenden Zweige), `branchScale` und `hangScale`. Bei Mittelstellung ist das geschlossene Grün etwa 60 pt tief (Zweige mal 0,8) und die hängenden reichen etwa 150 pt herab (mal 0,9).
-- Der Durchhang ist bei Tanne 0,45 Birnenhöhen. Beim Ausweichen weichen Birnen, Zweige, Zapfen und Schleifen seitlich aus (kein Heben, kein Abblenden).
+- Der Durchhang ist bei Tanne warmgold 0,45 Birnenhöhen (Tanne bunt: Bogentiefe 0,6, `Garland.tbSag`). Beim Ausweichen weichen Birnen, Zweige, Zapfen und Schleifen seitlich aus (kein Heben, kein Abblenden).
 - Reihenfolge von hinten nach vorn über die Einfügereihenfolge der Layer: hinten, Mitte und hängend, Kabel, vorn, Birnen, Zapfen, Schleifen.
 - Mini-Birne: Glas in der Birnenfarbe, Kontur dunkler, die Ebene "shine" liegt mit 50 % Deckkraft darüber (bei voller Deckkraft verdeckt der weiße Verlauf die Farbe), gedimmt 12 %. Schein: Radius eine Birnenlänge, Mitte 60 % der Länge unterhalb der Fassung.
 - Dock: schmale Girlande mit hinteren, mittleren und vorderen Zweigen (Skalierung 0,2), ohne hängende Zweige, Zapfen und Schleifen. Die Birnen sind die kleinen Mini-Birnen im üblichen Dock-Maß.
@@ -117,7 +117,7 @@ Das Symbol ist schwarzweiß und als Template gesetzt, das System färbt es passe
 `DockTracker` liest nur, solange der Zeiger über dem Dock ist (Bereich 140 pt um die Symbolleiste) und die Vergrößerung an ist, die Rahmen aller Symbole über die Bedienungshilfen-Schnittstelle mit 60 Hz (`AXFrame` der Kinder der Dock-Liste). Die Ruherahmen werden bei jeder Übernahme eines stabilen Dock-Rahmens gelesen. Die sichtbare Symbolgröße ergibt sich aus der Größe des Eintrags (`DockProfile.visibleSize`, am Testrechner gemessen: Eintrag 77 pt entspricht Symbol 64 pt, Eintrag 99,9 pt entspricht 78 pt, Exponent 0,75). Die Anhebung ist die sichtbare Oberkante über der Dock-Linie. Die Kette folgt der oberen Hüllkurve der Symbole (nie im Symbol, daneben mit Steigung 1,2 abfallend). Ohne Zeiger über dem Dock kostet das nichts. Die Kette endet an den Rändern der Ruhe-Symbolleiste, auch wenn das vergrößerte Dock etwas breiter wird.
 
 ## Tanne bunt neu (SPEC Commit 0240440)
-Birnen reihum rot, gold, cremeweiß, gold. Statt Zapfen hängen rote und goldene Christbaumkugeln (bis zu 4 je Bogen). Jede Kugel ist ein Kind-Layer ihres Zweigs an dessen Aufhängepunkt nahe der Spitze (`Garland.tip`, 85 % des Wegs zur entferntesten Nadel, aus den Bildern gemessen, nur Zweige der Schichten hinten, Mitte, vorn), rutscht und biegt sich mit ihm und pendelt an ihrem Faden (Pendelfeder, hängt immer senkrecht). Die Platzierung hält zu jeder Birne mehr als eine Kugelbreite Abstand und zu anderen Kugeln das 1,6-fache. Am Dock gibt es keine Kugeln. "Tanne warmgold" bleibt mit Zapfen und Schleifen.
+(Überholt durch den Stil nach Vorlage, siehe Abschnitt "Tanne bunt nach Vorlage".) Birnen reihum cremeweiß, rot, gelb. Statt Zapfen hängen fünf gemusterte Kugeln an Goldfäden. Jede Kugel ist ein Kind-Layer ihres Büschels am festen Punkt (65, 52), rutscht und biegt sich mit ihm und pendelt an ihrem Faden (Pendelfeder, hängt immer senkrecht). Die Platzierung hält zu jeder Birne mehr als eine Kugelbreite Abstand und zu anderen Kugeln das 1,6-fache. Am Dock gibt es keine Kugeln. "Tanne warmgold" bleibt mit Zapfen und Schleifen.
 
 ## Fenster verschwindet: Schnee bricht sofort weg
 Die Schneeschicht reagierte erst nach 1,5 s (2 Abfragen pro Sekunde, drei fehlende Abfragen als Beweis). Jetzt: Klicks (Maustaste runter und hoch), App-Wechsel, Ausblenden, Beenden und Space-Wechsel lösen 2 s lang eine Abfrage mit 30 Hz aus, beim Ziehen bleibt es bei 60 Hz. Ein Fenster gilt nach zwei fehlenden schnellen Abfragen (etwa 70 ms) als weg, bei der langsamen Abfrage schon nach einer. Gemessen am Testrechner: Nach dem Klick auf den roten Knopf sind die Flocken rund 0,3 s später in der Luft. Die Schicht verschwindet sofort und bricht in bis zu 320 Flocken auseinander (jede achte ein Brocken), die aus der Form der Schicht mit eigener Schwerkraft (550 bis 950 pt/s²) unterschiedlich schnell nach unten fallen und ausblenden.
@@ -178,3 +178,19 @@ Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (
 - 5: `exactResult` wird bei Pause, Sperre und abgeschaltetem Dock auf nil gesetzt, `DockProbe.stop` setzt Leiste, Snapshot und Burst zurück. Bei reinem Quellwechsel bleibt der alte Rahmen bewusst stehen (kein Sprung der Kette).
 - 8: Im Bedienungshilfen-Pfad löst der Kantenstreifen nur einen Burst aus, wenn keiner läuft.
 - Test: `BurstPlannerTests` prüft die Verdrahtung von `burst(event:)` (Lesen bei Ereignis, Nachlesen im 0,4-s-Takt, Messen nur bei Ereignis oder Start, Ende nach Ablauf, Verlängerung bei unfertigem Zustand, Höchstlänge) mit der Uhr als Parameter. Timer und Queues selbst bleiben ungetestet.
+
+## Finales Review 1c937db
+- Sparmodus-Status (`PowerStatus`) ist ein eigenes ObservableObject, nicht Teil von `Settings`: `Settings`-Änderungen lösen `apply()` aus, und `apply()` schreibt den Status. Veröffentlicht wird nur bei Änderung. Test: Der Status löst kein `objectWillChange` von `Settings` aus.
+- Einstellungsfenster: Tab beim Öffnen immer "Allgemein" (`SettingsNav`), kein eigener Timer für die Berechtigung (aufgefrischt beim Öffnen und von `poll()`), Dock-Ausrichtung live über `com.apple.dock.prefchanged`, Anmeldeobjekt öffnet bei Freigabe die Systemeinstellungen, Randtexte der Regler für VoiceOver verborgen, Hinweis am ausgegrauten Schalter "Schnee bleibt".
+- `dark` ist Teil von `RuntimeState`: Ein Wechsel des Erscheinungsbilds löst `apply()` aus, auch wenn die Benachrichtigung vor dem Systemzustand kommt.
+- Dock-Kette: Sprites werden mit Reserve für die größte Vergrößerung (`largesize / tilesize`, höchstens 2,5) gerendert, Anhebung auf `liftMax` und Wachstum auf dieses Maximum geklemmt, die Fensterhöhe wird aus dem größten Wachstum abgeleitet. Fehlt `tilesize`, gilt 64.
+- Zwei gleichzeitig startende Instanzen: Es bleibt die ältere (Startzeit, dann Prozessnummer).
+- Pro Bild: Zweig-Ketten als Array nach Schicht indiziert, Teile einmal gesammelt (`allPieces`), "ruhig" einmal ausgewertet.
+- Entfernt: `Garland.tip` und `anchorX`, die Kugel-PDFs des alten Stils im Bundle, wirkungsloses `setContentSize`. `PowerPolicy` und `RuntimeState` liegen in `PowerPolicy.swift`.
+
+## Neue Abschnitte (Stand der Umbauten nach 0180607)
+- **Sparmodus:** `PowerMode` automatisch, immer, aus (`PowerPolicy.energySaving`). Migration: alter Schalter "Immer Energie sparen" an gleich "Immer", aus gleich "Automatisch". Anzeige "(gerade aktiv)" über `PowerStatus`.
+- **Vier Bereiche mit getrennten Ketten:** Menüleiste und Dock haben je eigene Werte für Stil, Farben, Muster, Tempo, Größe, Abstand und Ebene (Schlüssel `dock*`). Migration beim ersten Start (`Settings.migrate`, einmalig, Schlüssel `dockMigrated`): gemeinsame Werte für beide, Dock-Stil "sameAsBar" wird zum Menüleisten-Stil. Der gemeinsame Aufbau steckt in `SettingsPane`.
+- **Dock-Größe nach Symbolgröße:** `Garland.dockBulbHeight(tile:bulbLevel:)`, Wachstum je Position `Garland.dockMagnification(lift:tile:)` aus dem Vergrößerungsprofil.
+- **Ebenen:** `OverlayLevel`: Auf gleicher Ebene liegt die Kette eine Stufe über dem Schnee (Menüleisten-Ebene minus 1 gegenüber minus 2, Schreibtisch plus 2 gegenüber plus 1).
+- **Tanne bunt nach Vorlage:** Maße des Zielbilds (0,3 pt je Einheit bei Birnenhöhe 30 pt, `Garland.tbRefBulbH`), Bögen von 150 pt mit fünf Birnen im Abstand von 30 pt, Büschel als vorgerenderte Bitmaps, Kugeln an Goldfäden aus den Büscheln (`Garland.planBunt`), Kabel in eigenen Wellen, dunkler Grundstrang.
