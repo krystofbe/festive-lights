@@ -11,33 +11,37 @@ final class Settings: ObservableObject {
     private let d = UserDefaults.standard
     private var loading = false
 
-    @Published var lightsEnabled = true { didSet { save() } }
-    @Published var chainStyle = ChainStyleKind.classic { didSet { save() } }
-    @Published var colorMode = ColorMode.multicolor { didSet { save() } }
-    @Published var pattern = LightPattern.twinkle { didSet { save() } }
-    @Published var lightsTempo = 2 { didSet { save() } }
-    @Published var bulbSize = 2 { didSet { save() } }
-    @Published var spacing = 2 { didSet { save() } }
-    @Published var lightsLayer = DisplayLayer.above { didSet { save() } }
-    @Published var dockLights = true { didSet { save() } }
-    @Published var dockStyle = DockStyle.sameAsBar { didSet { save() } }
-    @Published var dockShape = DockShape.exact { didSet { save() } }
+    @Published var lightsEnabled = true { didSet { write("lightsEnabled", lightsEnabled) } }
+    @Published var chainStyle = ChainStyleKind.classic { didSet { write("chainStyle", chainStyle.rawValue) } }
+    @Published var colorMode = ColorMode.multicolor { didSet { write("colorMode", colorMode.rawValue) } }
+    @Published var pattern = LightPattern.twinkle { didSet { write("pattern", pattern.rawValue) } }
+    @Published var lightsTempo = 2 { didSet { write("lightsTempo", lightsTempo) } }
+    @Published var bulbSize = 2 { didSet { write("bulbSize", bulbSize) } }
+    @Published var spacing = 2 { didSet { write("spacing", spacing) } }
+    @Published var lightsLayer = DisplayLayer.above { didSet { write("lightsLayer", lightsLayer.rawValue) } }
+    @Published var dockLights = true { didSet { write("dockLights", dockLights) } }
+    @Published var dockStyle = DockStyle.sameAsBar { didSet { write("dockStyle", dockStyle.rawValue) } }
+    @Published var dockShape = DockShape.exact { didSet { write("dockShape", dockShape.rawValue) } }
 
-    @Published var snowEnabled = true { didSet { save() } }
-    @Published var snowAmount = 2 { didSet { save() } }
-    @Published var flakeSize = 2 { didSet { save() } }
-    @Published var snowSpeed = 2 { didSet { save() } }
-    @Published var wind = Wind.off { didSet { save() } }
-    @Published var snowAvoid = 2 { didSet { save() } }
-    @Published var snowLayer = DisplayLayer.above { didSet { save() } }
-    @Published var settleSnow = true { didSet { save() } }
+    @Published var snowEnabled = true { didSet { write("snowEnabled", snowEnabled) } }
+    @Published var snowAmount = 2 { didSet { write("snowAmount", snowAmount) } }
+    @Published var flakeSize = 2 { didSet { write("flakeSize", flakeSize) } }
+    @Published var snowSpeed = 2 { didSet { write("snowSpeed", snowSpeed) } }
+    @Published var wind = Wind.off { didSet { write("wind", wind.rawValue) } }
+    @Published var snowAvoid = 2 { didSet { write("snowAvoid", snowAvoid) } }
+    @Published var snowLayer = DisplayLayer.above { didSet { write("snowLayer", snowLayer.rawValue) } }
+    @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
-    @Published var alwaysSaveEnergy = false { didSet { save() } }
-    @Published var paused = false { didSet { save() } }
-    @Published var welcomeShown = false { didSet { save() } }
-    @Published var permissionPromptShown = false { didSet { save() } }
+    @Published var alwaysSaveEnergy = false { didSet { write("alwaysSaveEnergy", alwaysSaveEnergy) } }
+    @Published var paused = false { didSet { write("paused", paused) } }
+    @Published var welcomeShown = false { didSet { write("welcomeShown", welcomeShown) } }
+    @Published var permissionPromptShown = false { didSet { write("permissionPromptShown", permissionPromptShown) } }
 
     private init() {
+        #if !DEBUG
+        // Im Release wirken Startargumente (zum Beispiel -chainStyle) nicht, nur gespeicherte Einstellungen
+        UserDefaults.standard.removeVolatileDomain(forName: UserDefaults.argumentDomain)
+        #endif
         load()
         observer = DefaultsObserver(keys: Settings.keys) { [weak self] in
             DispatchQueue.main.async { if let self, !self.loading { self.load() } }
@@ -86,34 +90,14 @@ final class Settings: ObservableObject {
         set(\.permissionPromptShown, bool("permissionPromptShown", false))
     }
 
-    private func save() {
+    /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.
+    private func write(_ key: String, _ value: Any) {
         guard !loading else { return }
-        loading = true
-        defer { DispatchQueue.main.async { [self] in loading = false } }
-        d.set(lightsEnabled, forKey: "lightsEnabled")
+        #if DEBUG
         // Ein Startargument (-chainStyle ...) soll die gespeicherte Einstellung nicht überschreiben
-        if !CommandLine.arguments.contains("-chainStyle") { d.set(chainStyle.rawValue, forKey: "chainStyle") }
-        d.set(colorMode.rawValue, forKey: "colorMode")
-        d.set(pattern.rawValue, forKey: "pattern")
-        d.set(lightsTempo, forKey: "lightsTempo")
-        d.set(bulbSize, forKey: "bulbSize")
-        d.set(spacing, forKey: "spacing")
-        d.set(lightsLayer.rawValue, forKey: "lightsLayer")
-        d.set(dockLights, forKey: "dockLights")
-        d.set(dockStyle.rawValue, forKey: "dockStyle")
-        d.set(dockShape.rawValue, forKey: "dockShape")
-        d.set(snowEnabled, forKey: "snowEnabled")
-        d.set(snowAmount, forKey: "snowAmount")
-        d.set(flakeSize, forKey: "flakeSize")
-        d.set(snowSpeed, forKey: "snowSpeed")
-        d.set(wind.rawValue, forKey: "wind")
-        d.set(snowAvoid, forKey: "snowAvoid")
-        d.set(snowLayer.rawValue, forKey: "snowLayer")
-        d.set(settleSnow, forKey: "settleSnow")
-        d.set(alwaysSaveEnergy, forKey: "alwaysSaveEnergy")
-        d.set(paused, forKey: "paused")
-        d.set(welcomeShown, forKey: "welcomeShown")
-        d.set(permissionPromptShown, forKey: "permissionPromptShown")
+        if key == "chainStyle", CommandLine.arguments.contains("-chainStyle") { return }
+        #endif
+        d.set(value, forKey: key)
     }
 }
 
