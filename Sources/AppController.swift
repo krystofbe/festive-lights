@@ -116,10 +116,12 @@ final class AppController: NSObject {
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
         let wasSuspended = suspended
+        let wasReduce = reduceMotion
         refreshSystem()
         if suspended != wasSuspended { scheduleApply() }
         let e = computeEnergySaving()
         if e != energySaving { energySaving = e; scheduleApply() }
+        if reduceMotion != wasReduce { scheduleApply() }
         status.updateIcon()
     }
 
@@ -141,6 +143,9 @@ final class AppController: NSObject {
 
     private func refreshSystem() {
         reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugReduceMotion") { reduceMotion = true }
+        #endif
         energySaving = computeEnergySaving()
         dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         locked = (CGSessionCopyCurrentDictionary() as? [String: Any])?["CGSSessionScreenIsLocked"] as? Bool ?? false
