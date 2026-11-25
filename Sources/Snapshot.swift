@@ -37,6 +37,21 @@ enum Snapshot {
             r.update(time: 20, dt: 0.016, pointer: nil)
             write(r.window.rootLayer, size: r.window.frame.size, background: isDark ? dark : light, to: "\(dir)/chain-\(isDark ? "dark" : "light").png")
         }
+        // Menüleisten-Symbol als Vorlage, hell und dunkel eingefärbt
+        for (name, bg, fg) in [("menubar-light", light, CGColor(gray: 0.1, alpha: 1)), ("menubar-dark", CGColor(gray: 0.16, alpha: 1), CGColor(gray: 0.95, alpha: 1))] {
+            let ctx = Art.context(18 * 8 * 4, 18 * 8)
+            ctx.setFillColor(bg); ctx.fill(CGRect(x: 0, y: 0, width: ctx.width, height: ctx.height))
+            for (i, frame) in [0, 4, 12, 20].enumerated() {
+                let img = MenubarIcon.image(frame: frame, animated: true)
+                guard let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { continue }
+                let tint = Art.context(36, 36)
+                tint.draw(cg, in: CGRect(x: 0, y: 0, width: 36, height: 36))
+                tint.setBlendMode(.sourceIn); tint.setFillColor(fg); tint.fill(CGRect(x: 0, y: 0, width: 36, height: 36))
+                ctx.interpolationQuality = .high
+                ctx.draw(tint.makeImage()!, in: CGRect(x: i * 18 * 8, y: 0, width: 18 * 8, height: 18 * 8))
+            }
+            try? NSBitmapImageRep(cgImage: ctx.makeImage()!).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(dir)/\(name).png"))
+        }
         // Tannen-Stile
         for kind in [ChainStyleKind.firColor, .firGold] {
             for isDark in [true, false] {

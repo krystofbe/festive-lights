@@ -15,7 +15,7 @@ final class StatusController: NSObject, NSMenuDelegate {
     init(app: AppController) {
         self.app = app
         super.init()
-        item.button?.image = MenubarIcon.image(frame: 0, dark: false, animated: false)
+        item.button?.image = MenubarIcon.image(frame: 0, animated: false)
         item.button?.setAccessibilityLabel("FestiveLights")
         let menu = NSMenu()
         menu.delegate = self
@@ -46,10 +46,8 @@ final class StatusController: NSObject, NSMenuDelegate {
 
     func updateIcon() {
         guard let button = item.button else { return }
-        let dark = button.effectiveAppearance.name.rawValue.contains("Dark")
         let animated = timer != nil
-        let f = animated ? frame : 0
-        let img = MenubarIcon.image(frame: f, dark: dark, animated: animated)
+        let img = MenubarIcon.image(frame: animated ? frame : 0, animated: animated)
         if button.image !== img { button.image = img }
     }
 

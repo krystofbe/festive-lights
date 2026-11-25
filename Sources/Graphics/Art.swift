@@ -154,37 +154,35 @@ enum SnowSprites {
 }
 
 enum MenubarIcon {
-    static let frameCount = 36
+    static let frameCount = 32
     private static var cache: [Int: NSImage] = [:]
 
-    /// Eine Animationsphase 0...1. Die drei Birnen glimmen nacheinander heller und dunkler.
-    static func image(frame: Int, dark: Bool, animated: Bool) -> NSImage {
-        let f = animated ? frame % frameCount : -1
-        // Helligkeit je Birne in drei Stufen. Gleiche Stufen ergeben dasselbe Bild, dann wird nichts neu gezeichnet.
-        var levels: [CGFloat] = [1, 1, 1]
-        if f >= 0 {
-            for b in 0..<3 {
-                let phase = Double(f) / Double(frameCount) - Double(b) / 3.0
+    /// Schwarzweißes Vorlagenbild (Template): Kabelbogen mit zwei Birnen, die abwechselnd sanft bis auf etwa 55 % abdunkeln.
+    /// Drei Deckkraftstufen, gleiche Stufen ergeben dasselbe Bild, dann wird nichts neu gesetzt.
+    static func image(frame: Int, animated: Bool) -> NSImage {
+        var levels: [CGFloat] = [1, 1]
+        if animated {
+            let f = frame % frameCount
+            for b in 0..<2 {
+                let phase = Double(f) / Double(frameCount) - Double(b) * 0.5
                 let p = phase - floor(phase)
                 let pulse = p < 0.5 ? sin(p * 2 * .pi) : 0
-                levels[b] = pulse > 0.8 ? 1.0 : (pulse > 0.3 ? 0.8 : 0.62)
+                levels[b] = pulse > 0.8 ? 0.55 : (pulse > 0.3 ? 0.78 : 1.0)
             }
         }
-        let key = (levels.map { Int($0 * 100) }.reduce(0) { $0 * 1000 + $1 }) * 2 + (dark ? 1 : 0)
+        let key = Int(levels[0] * 100) * 1000 + Int(levels[1] * 100)
         if let i = cache[key] { return i }
-        let suffix = dark ? "dark" : "light"
         let ctx = Art.context(36, 36)
         ctx.scaleBy(x: 2, y: 2)
-        Art.draw("menubar-cable-\(suffix)", in: ctx, width: 18, height: 18)
-        for b in 0..<3 {
-            let alpha = levels[b]
+        Art.draw("menubar-cable", in: ctx, width: 18, height: 18)
+        for (b, name) in ["menubar-bulb-left", "menubar-bulb-right"].enumerated() {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-            ctx.setAlpha(alpha)
-            Art.draw("menubar-bulb\(b + 1)-\(suffix)", in: ctx, width: 18, height: 18)
+            ctx.setAlpha(levels[b])
+            Art.draw(name, in: ctx, width: 18, height: 18)
             ctx.endTransparencyLayer()
         }
         let img = NSImage(cgImage: ctx.makeImage()!, size: NSSize(width: 18, height: 18))
-        img.isTemplate = false
+        img.isTemplate = true
         cache[key] = img
         return img
     }

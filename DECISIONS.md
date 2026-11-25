@@ -110,3 +110,6 @@ Phasen von 6 s: In geraden Phasen dürfen nur Birnen mit gerader Nummer dimmen, 
 - Der Ruhezustand ist unverändert (Schnellpfad ohne Bewegung).
 
 Zweige rutschen mit (SPEC Commit 816f73b): Die Ansatzpunkte jeder Zweigschicht sind eine eigene `BeadChain` mit Mindestabstand 8 pt. Jede Perle hat eine Ausdehnung nach links und rechts (aus den Zweig-Bildern gemessen, `Garland.extent`, mal Skalierung mal 1,2, bei gespiegelten Zweigen vertauscht). Die Zielposition hält die Nadelspitzen aus der Lücke heraus, in der Lücke ist nur das Kabel zu sehen. Verschobene Zweige drängen sich an den Rändern dichter, neigen sich nach der Rutschgeschwindigkeit und federn beim Zurückrutschen nach. Schleifen bleiben stehen.
+
+## Menüleisten-Symbol als Vorlage (Commit d85cb19)
+Das Symbol ist schwarzweiß und als Template gesetzt, das System färbt es passend ein (am Testrechner auf dunkler Menüleiste hell). Das Kabel steht, die beiden Birnen dunkeln abwechselnd in drei Stufen (100, 78, 55 %) ab, ein Durchgang dauert 8 s (32 Bilder bei 4 pro Sekunde). Ein Bild wird nur gesetzt, wenn sich die Stufen ändern (etwa ein Wechsel pro Sekunde). Bei "Bewegung reduzieren" steht das Symbol still. Eine helle Menüleiste ließ sich am Testrechner nicht schalten, ohne die Systemeinstellungen zu ändern, die helle Darstellung ist deshalb nur offscreen eingefärbt gerendert (`--render-snapshots`).
