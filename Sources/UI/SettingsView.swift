@@ -59,17 +59,24 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
-        .frame(width: 470, height: 340)
+        .frame(width: 470, height: 370)
         .onAppear { perm.start() }
         .onDisappear { perm.stop() }
     }
 
     private var lights: some View {
         Form {
-            Picker("Colors", selection: $s.colorMode) {
-                Text("Multicolor").tag(ColorMode.multicolor)
-                Text("Warm white").tag(ColorMode.warm)
+            Picker("Style", selection: $s.chainStyle) {
+                Text("Classic").tag(ChainStyleKind.classic)
+                Text("Fir, colorful").tag(ChainStyleKind.firColor)
+                Text("Fir, warm gold").tag(ChainStyleKind.firGold)
             }.pickerStyle(.segmented)
+            if s.chainStyle == .classic {
+                Picker("Colors", selection: $s.colorMode) {
+                    Text("Multicolor").tag(ColorMode.multicolor)
+                    Text("Warm white").tag(ColorMode.warm)
+                }.pickerStyle(.segmented)
+            }
             Picker("Pattern", selection: $s.pattern) {
                 Text("Steady").tag(LightPattern.steady)
                 Text("Twinkle").tag(LightPattern.twinkle)

@@ -12,6 +12,7 @@ final class Settings: ObservableObject {
     private var loading = false
 
     @Published var lightsEnabled = true { didSet { save() } }
+    @Published var chainStyle = ChainStyleKind.classic { didSet { save() } }
     @Published var colorMode = ColorMode.multicolor { didSet { save() } }
     @Published var pattern = LightPattern.twinkle { didSet { save() } }
     @Published var lightsTempo = 2 { didSet { save() } }
@@ -42,7 +43,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "alwaysSaveEnergy", "paused", "welcomeShown", "permissionPromptShown"]
 
@@ -59,6 +60,7 @@ final class Settings: ObservableObject {
         loading = true
         defer { loading = false }
         set(\.lightsEnabled, bool("lightsEnabled", true))
+        set(\.chainStyle, raw("chainStyle", .classic))
         set(\.colorMode, raw("colorMode", .multicolor))
         set(\.pattern, raw("pattern", .twinkle))
         set(\.lightsTempo, level("lightsTempo", 2))
@@ -85,6 +87,8 @@ final class Settings: ObservableObject {
         loading = true
         defer { DispatchQueue.main.async { [self] in loading = false } }
         d.set(lightsEnabled, forKey: "lightsEnabled")
+        // Ein Startargument (-chainStyle ...) soll die gespeicherte Einstellung nicht überschreiben
+        if !CommandLine.arguments.contains("-chainStyle") { d.set(chainStyle.rawValue, forKey: "chainStyle") }
         d.set(colorMode.rawValue, forKey: "colorMode")
         d.set(pattern.rawValue, forKey: "pattern")
         d.set(lightsTempo, forKey: "lightsTempo")

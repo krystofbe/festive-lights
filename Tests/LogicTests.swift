@@ -516,3 +516,74 @@ final class GravityTests: XCTestCase {
         XCTAssertGreaterThan(late, -3, "nach kurzer Zeit überwiegt die Schwerkraft")
     }
 }
+
+final class GarlandTests: XCTestCase {
+    func plan(_ style: ChainStyleKind, dock: Bool = false) -> GarlandPlan {
+        Garland.plan(length: 1920, arcLength: 274, arcCount: 7, scale: 1, style: style, dock: dock)
+    }
+
+    func testClassicHasNoGarland() {
+        XCTAssertEqual(plan(.classic), GarlandPlan())
+    }
+
+    func testPlacementIsStable() {
+        XCTAssertEqual(plan(.firColor), plan(.firColor))
+        XCTAssertEqual(plan(.firGold).branches, plan(.firColor).branches, "Zweige hängen nicht vom Farbstil ab")
+    }
+
+    func testBackBranchesAlongWholeGarlandAlternatingAndInRange() {
+        let p = plan(.firColor)
+        let back = p.branches.filter { $0.layer == .back }
+        XCTAssertGreaterThan(back.count, 60)
+        for (i, b) in back.enumerated() {
+            XCTAssertEqual(b.mirrored, i % 2 == 1)
+            XCTAssertTrue((1...4).contains(b.sprite))
+            XCTAssertGreaterThan(b.u, 0); XCTAssertLessThan(b.u, 1920)
+            XCTAssertLessThanOrEqual(abs(b.rotation), 12)
+        }
+        for b in p.branches { XCTAssertTrue((1...(Garland.spriteCounts[b.layer]!)).contains(b.sprite)) }
+        XCTAssertEqual(Set(back.map(\.sprite)).count, 4, "alle Sprites kommen vor, nichts wiederholt sich starr")
+    }
+
+    func testHangingBranchesAboutEveryFifthAnchor() {
+        let p = plan(.firColor)
+        let back = p.branches.filter { $0.layer == .back }.count
+        let hang = p.branches.filter { $0.layer == .hang }.count
+        XCTAssertEqual(Double(hang), Double(back) / 5, accuracy: 1.5)
+    }
+
+    func testFrontAndMidAreSparserThanBack() {
+        let p = plan(.firColor)
+        let c = { (l: BranchLayer) in p.branches.filter { $0.layer == l }.count }
+        XCTAssertLessThan(c(.mid), c(.back)); XCTAssertLessThan(c(.front), c(.mid))
+    }
+
+    func testOneConePerArcInBothFirStyles() {
+        for s in [ChainStyleKind.firColor, .firGold] {
+            let cones = plan(s).cones
+            XCTAssertEqual(cones.count, 7)
+            for (a, u) in cones.enumerated() { XCTAssertGreaterThan(u, Double(a) * 274); XCTAssertLessThan(u, Double(a + 1) * 274) }
+        }
+    }
+
+    func testBowsOnlyForWarmGoldAtArcJoints() {
+        XCTAssertTrue(plan(.firColor).bows.isEmpty)
+        let bows = plan(.firGold).bows
+        XCTAssertEqual(bows.count, 8)
+        XCTAssertEqual(bows.first, 0); XCTAssertEqual(bows.last!, 7 * 274, accuracy: 1e-9)
+    }
+
+    func testDockHasNoHangingBranchesNoConesNoBows() {
+        for s in [ChainStyleKind.firColor, .firGold] {
+            let p = plan(s, dock: true)
+            XCTAssertFalse(p.branches.isEmpty)
+            XCTAssertTrue(p.branches.allSatisfy { $0.layer != .hang })
+            XCTAssertTrue(p.cones.isEmpty); XCTAssertTrue(p.bows.isEmpty)
+        }
+    }
+
+    func testDensityScalesBranchCount() {
+        XCTAssertGreaterThan(Garland.plan(length: 1000, arcLength: 250, arcCount: 4, scale: 0.5, style: .firColor, dock: false).branches.count,
+                             Garland.plan(length: 1000, arcLength: 250, arcCount: 4, scale: 1.0, style: .firColor, dock: false).branches.count)
+    }
+}

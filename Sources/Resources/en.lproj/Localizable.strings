@@ -54,3 +54,7 @@
 "menu.settings" = "Settings…";
 "menu.quit" = "Quit FestiveLights";
 "settings.title" = "FestiveLights Settings";
+"Style" = "Style";
+"Classic" = "Classic";
+"Fir, colorful" = "Fir, colorful";
+"Fir, warm gold" = "Fir, warm gold";

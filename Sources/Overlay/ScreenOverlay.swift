@@ -5,6 +5,7 @@ struct AppState: Equatable {
     var lightsOn = false, dockLightsOn = false, snowOn = false, settle = false
     var lightsLayer = DisplayLayer.above, snowLayer = DisplayLayer.above
     var warm = false
+    var kind = ChainStyleKind.classic
     var pattern = LightPattern.twinkle
     var tempo = 1.0
     var bulbLevel = 2, spacingLevel = 2
@@ -103,18 +104,20 @@ final class ScreenOverlay {
 
     private func style() -> ChainStyle {
         ChainStyle(warm: state.warm, pattern: state.pattern, tempo: state.tempo * (state.energySaving ? 0.7 : 1),
-                   dark: state.dark, reduceMotion: state.reduceMotion)
+                   dark: state.dark, reduceMotion: state.reduceMotion, kind: state.kind)
     }
 
     private func configureChains() {
         let st = state
         let scale = screen.backingScaleFactor
+        let fir = st.kind.isFir
         if let bar = MenuBar.info(for: screen) {
             barDynamic = bar.dynamic
             let h = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: st.bulbLevel)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(screen.frame.width), bulbH: h, sag: h, liftSign: -1, liftToTop: true, liftMax: 0,
-                                 spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel))
+                                 length: Double(screen.frame.width), bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: true, liftMax: 0,
+                                 spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel),
+                                 garlandDepth: fir ? 150 * (h / 24) * Garland.hangLength : 0)
             menubar.configure(spec: spec, style: style(), scale: scale, levelsKey: 0)
             menubar.setVisible(st.lightsOn, layer: st.lightsLayer, intro: CACurrentMediaTime())
         } else {
@@ -132,13 +135,13 @@ final class ScreenOverlay {
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: h, liftSign: -1, liftToTop: false, liftMax: h * 1.8, spacing: sp)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
             }
             dock.configure(spec: spec, style: style(), scale: scale, levelsKey: 0)
             dock.setVisible(true, layer: st.lightsLayer, intro: nil)

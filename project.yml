@@ -21,6 +21,8 @@ targets:
       - path: Art
         includes: ["*.pdf"]
         excludes: ["menubar-icon.pdf"]
+      - path: Art/Tanne
+        includes: ["*.pdf", "fir-*.png"]
     info:
       path: Sources/Resources/Info.plist
       properties:

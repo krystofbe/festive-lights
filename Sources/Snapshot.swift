@@ -37,6 +37,25 @@ enum Snapshot {
             r.update(time: 20, dt: 0.016, pointer: nil)
             write(r.window.rootLayer, size: r.window.frame.size, background: isDark ? dark : light, to: "\(dir)/chain-\(isDark ? "dark" : "light").png")
         }
+        // Tannen-Stile
+        for kind in [ChainStyleKind.firColor, .firGold] {
+            for isDark in [true, false] {
+                let fh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2)
+                let fspec = ChainSpec(p0: CGPoint(x: f.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: Double(f.width),
+                                      bulbH: fh, sag: fh * 0.3, liftSign: -1, liftToTop: true, liftMax: 0, spacing: ChainLayout.spacing(bulbHeight: fh, level: 2),
+                                      garlandDepth: 150 * (fh / 24))
+                let fr = ChainRenderer()
+                fr.configure(spec: fspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: isDark, reduceMotion: false, kind: kind), scale: 2, levelsKey: 0)
+                fr.setVisible(true, layer: .above, intro: nil); fr.window.rootLayer.opacity = 1
+                fr.update(time: 20, dt: 0.016, pointer: nil)
+                write(fr.window.rootLayer, size: fr.window.frame.size, background: isDark ? dark : light, to: "\(dir)/\(kind.rawValue)-\(isDark ? "dark" : "light").png")
+                if kind == .firGold && isDark {
+                    let p = CGPoint(x: f.width * 0.5, y: bar.bottomY - fh * 1.6)
+                    for i in 0..<40 { fr.update(time: 20 + Double(i) / 60, dt: 1.0 / 60, pointer: p) }
+                    write(fr.window.rootLayer, size: fr.window.frame.size, background: dark, to: "\(dir)/\(kind.rawValue)-dodge.png")
+                }
+            }
+        }
         // Funkeln und Ausweichen
         let r = ChainRenderer()
         r.configure(spec: spec(), style: ChainStyle(warm: false, pattern: .twinkle, tempo: 1, dark: true, reduceMotion: false), scale: 2, levelsKey: 0)
