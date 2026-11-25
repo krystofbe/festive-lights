@@ -1005,16 +1005,41 @@ final class DockProbeTests: XCTestCase {
 }
 
 final class PowerPolicyTests: XCTestCase {
-    func testAlwaysSaveEnergySwitchesOnImmediately() {
-        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: true, lowPowerMode: false, onBattery: false, batteryFraction: nil))
-        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: false, batteryFraction: nil))
+    func energy(_ m: PowerMode, low: Bool = false, battery: Bool = false, fraction: Double? = nil) -> Bool {
+        PowerPolicy.energySaving(mode: m, lowPowerMode: low, onBattery: battery, batteryFraction: fraction)
     }
 
-    func testLowPowerModeAndLowBattery() {
-        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: true, onBattery: false, batteryFraction: nil))
-        XCTAssertTrue(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: true, batteryFraction: 0.19))
-        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: true, batteryFraction: 0.2))
-        XCTAssertFalse(PowerPolicy.energySaving(alwaysSave: false, lowPowerMode: false, onBattery: false, batteryFraction: 0.05), "am Netzteil nie wegen des Akkustands")
+    func testAlwaysSavesEvenOnPowerAdapter() {
+        XCTAssertTrue(energy(.always)); XCTAssertTrue(energy(.always, battery: true, fraction: 1))
+    }
+
+    func testOffNeverSavesNotEvenInLowPowerModeOrOnLowBattery() {
+        XCTAssertFalse(energy(.off, low: true)); XCTAssertFalse(energy(.off, battery: true, fraction: 0.05)); XCTAssertFalse(energy(.off))
+    }
+
+    func testAutomaticFollowsLowPowerModeAndBatteryBelowTwentyPercent() {
+        XCTAssertFalse(energy(.automatic))
+        XCTAssertTrue(energy(.automatic, low: true))
+        XCTAssertTrue(energy(.automatic, battery: true, fraction: 0.19))
+        XCTAssertFalse(energy(.automatic, battery: true, fraction: 0.2))
+        XCTAssertFalse(energy(.automatic, battery: false, fraction: 0.05), "am Netzteil nie wegen des Akkustands")
+    }
+
+    func testMigrationOfTheOldSwitch() {
+        func run(_ old: Bool?) -> String? {
+            let d = UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")!
+            if let old { d.set(old, forKey: "alwaysSaveEnergy") }
+            Settings.migrate(d)
+            XCTAssertNil(d.object(forKey: "alwaysSaveEnergy"))
+            return d.string(forKey: "powerMode")
+        }
+        XCTAssertEqual(run(true), "always"); XCTAssertEqual(run(false), "automatic"); XCTAssertNil(run(nil))
+    }
+
+    func testResetGoesBackToAutomatic() {
+        let s = Settings.shared
+        s.powerMode = .off; s.resetToDefaults()
+        XCTAssertEqual(s.powerMode, .automatic)
     }
 }
 
@@ -1144,7 +1169,7 @@ final class ResetTests: XCTestCase {
         s.lightsEnabled = false; s.chainStyle = .firGold; s.colorMode = .warm; s.pattern = .chase; s.lightsTempo = 4; s.bulbSize = 0; s.spacing = 4
         s.lightsLayer = .desktop; s.dockLights = false; s.dockStyle = .firColor; s.dockShape = .continuous
         s.snowEnabled = false; s.snowAmount = 4; s.flakeSize = 0; s.snowSpeed = 4; s.wind = .left; s.snowAvoid = 0; s.snowLayer = .desktop; s.settleSnow = false
-        s.alwaysSaveEnergy = true
+        s.powerMode = .always
         // Ausnahmen
         s.welcomeShown = true; s.permissionPromptShown = true; s.paused = true
         s.resetToDefaults()
@@ -1152,7 +1177,7 @@ final class ResetTests: XCTestCase {
         XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
         XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .classic); XCTAssertEqual(s.dockShape, .exact)
         XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
-        XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertFalse(s.alwaysSaveEnergy)
+        XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertEqual(s.powerMode, .automatic)
         XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
         s.welcomeShown = false; s.permissionPromptShown = false; s.paused = false
     }

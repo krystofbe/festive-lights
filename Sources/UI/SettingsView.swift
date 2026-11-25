@@ -84,8 +84,8 @@ struct SettingsView: View {
                 chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
                 let side = ["left", "right"].contains(CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom")
                 Picker("Length", selection: $s.dockShape) {
-                    Text(side ? "Dock height" : "Dock width").tag(DockShape.exact)
-                    Text(side ? "Full height" : "Full width").tag(DockShape.continuous)
+                    Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
+                    Text(LocalizedStringKey(side ? "Full height" : "Full width")).tag(DockShape.continuous)
                 }.pickerStyle(.segmented)
             }
             .disabled(!s.dockLights)
@@ -146,7 +146,15 @@ struct SettingsView: View {
     private var general: some View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
-            Toggle("Always save energy", isOn: $s.alwaysSaveEnergy)
+            Picker(selection: $s.powerMode) {
+                Text("Automatic").tag(PowerMode.automatic)
+                Text("Always").tag(PowerMode.always)
+                Text("Off").tag(PowerMode.off)
+            } label: {
+                Text(LocalizedStringKey(s.powerActive ? "Low Power Mode (active now)" : "Low Power Mode"))
+            }
+            Text(LocalizedStringKey(s.powerMode == .automatic ? "power.automatic" : s.powerMode == .always ? "power.always" : "power.off"))
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Section("Permission") {
                 HStack(spacing: 6) {
                     Image(systemName: perm.granted ? "checkmark.circle.fill" : "exclamationmark.circle")

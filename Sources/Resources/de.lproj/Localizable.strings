@@ -36,7 +36,13 @@
 "Blowing right" = "Weht nach rechts";
 "Snow stays on windows" = "Schnee bleibt auf Fenstern liegen";
 "Start at login" = "Beim Anmelden starten";
-"Always save energy" = "Immer Energie sparen";
+"Automatic" = "Automatisch";
+"Always" = "Immer";
+"Low Power Mode" = "Sparmodus";
+"Low Power Mode (active now)" = "Sparmodus (gerade aktiv)";
+"power.automatic" = "Weniger Schnee und ruhigere Animation im Stromsparmodus und bei Akkustand unter 20 %.";
+"power.always" = "Weniger Schnee und ruhigere Animation, auch am Netzteil.";
+"power.off" = "Volle Darstellung, auch im Akkubetrieb.";
 "Permission" = "Berechtigung";
 "Permission granted" = "Berechtigung erteilt";
 "Permission not granted" = "Berechtigung nicht erteilt";

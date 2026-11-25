@@ -36,7 +36,13 @@
 "Blowing right" = "Blowing right";
 "Snow stays on windows" = "Snow stays on windows";
 "Start at login" = "Start at login";
-"Always save energy" = "Always save energy";
+"Automatic" = "Automatic";
+"Always" = "Always";
+"Low Power Mode" = "Low Power Mode";
+"Low Power Mode (active now)" = "Low Power Mode (active now)";
+"power.automatic" = "Fewer flakes and calmer animation in macOS Low Power Mode and below 20 % battery.";
+"power.always" = "Fewer flakes and calmer animation, even on the power adapter.";
+"power.off" = "Full display, even on battery.";
 "Permission" = "Permission";
 "Permission granted" = "Permission granted";
 "Permission not granted" = "Permission not granted";

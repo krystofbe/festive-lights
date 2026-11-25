@@ -77,8 +77,13 @@ enum ContinuousDock {
 
 /// Energiesparen: Einstellung, Stromsparmodus oder Akku unter 20 % ohne Netzteil.
 enum PowerPolicy {
-    static func energySaving(alwaysSave: Bool, lowPowerMode: Bool, onBattery: Bool, batteryFraction: Double?) -> Bool {
-        if alwaysSave || lowPowerMode { return true }
+    static func energySaving(mode: PowerMode, lowPowerMode: Bool, onBattery: Bool, batteryFraction: Double?) -> Bool {
+        switch mode {
+        case .always: return true
+        case .off: return false
+        case .automatic: break
+        }
+        if lowPowerMode { return true }
         guard onBattery, let f = batteryFraction else { return false }
         return f < 0.2
     }

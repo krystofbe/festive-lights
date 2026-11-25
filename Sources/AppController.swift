@@ -19,7 +19,7 @@ final class AppController: NSObject {
     private var locked = false
     private var permission = Permission.granted
     private var reduceMotion = false
-    private var energySaving = false
+    private var energySaving = false { didSet { settings.powerActive = energySaving } }
     private var dark = true
     private var dockGeometry: DockGeometry?
     private var settingsWindow: NSWindow?
@@ -191,7 +191,7 @@ final class AppController: NSObject {
                 fraction = Double(cur) / Double(max)
             }
         }
-        return PowerPolicy.energySaving(alwaysSave: settings.alwaysSaveEnergy, lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
+        return PowerPolicy.energySaving(mode: settings.powerMode, lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled,
                                         onBattery: onBattery, batteryFraction: fraction)
     }
 

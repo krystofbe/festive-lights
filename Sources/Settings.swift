@@ -3,6 +3,8 @@ import Combine
 
 enum ColorMode: String, CaseIterable { case multicolor, warm }
 enum DisplayLayer: String, CaseIterable { case above, desktop }
+/// Sparmodus: automatisch (Stromsparmodus, Akku unter 20 %), immer oder nie.
+enum PowerMode: String, CaseIterable { case automatic, always, off }
 
 /// Alle gespeicherten Einstellungen. Änderungen werden sofort in UserDefaults geschrieben,
 /// Änderungen von außen (zum Beispiel `defaults write`) werden live übernommen.
@@ -38,7 +40,9 @@ final class Settings: ObservableObject {
     @Published var snowLayer = DisplayLayer.above { didSet { write("snowLayer", snowLayer.rawValue) } }
     @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
-    @Published var alwaysSaveEnergy = false { didSet { write("alwaysSaveEnergy", alwaysSaveEnergy) } }
+    @Published var powerMode = PowerMode.automatic { didSet { write("powerMode", powerMode.rawValue) } }
+    /// Nicht gespeichert: Der Sparmodus greift gerade (für die Anzeige im Einstellungsfenster).
+    @Published var powerActive = false
     @Published var paused = false { didSet { write("paused", paused) } }
     @Published var welcomeShown = false { didSet { write("welcomeShown", welcomeShown) } }
     @Published var permissionPromptShown = false { didSet { write("permissionPromptShown", permissionPromptShown) } }
@@ -63,7 +67,7 @@ final class Settings: ObservableObject {
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
-                       "alwaysSaveEnergy", "paused", "welcomeShown", "permissionPromptShown"]
+                       "powerMode", "paused", "welcomeShown", "permissionPromptShown"]
 
     private func level(_ key: String, _ def: Int) -> Int {
         d.object(forKey: key) == nil ? def : min(max(d.integer(forKey: key), 0), 4)
@@ -77,6 +81,11 @@ final class Settings: ObservableObject {
     /// Einmalig beim ersten Start mit getrennten Ketten: Die bisher gemeinsamen Werte gelten für beide, ein gespeicherter Dock-Stil
     /// "sameAsBar" wird zum Stil der Menüleiste.
     static func migrate(_ d: UserDefaults) {
+        // "Immer Energie sparen" an wird zu "Immer", aus zu "Automatisch"
+        if d.object(forKey: "powerMode") == nil, let old = d.object(forKey: "alwaysSaveEnergy") as? Bool {
+            d.set(old ? PowerMode.always.rawValue : PowerMode.automatic.rawValue, forKey: "powerMode")
+            d.removeObject(forKey: "alwaysSaveEnergy")
+        }
         guard d.object(forKey: "dockMigrated") == nil else { return }
         for (bar, dock) in [("colorMode", "dockColorMode"), ("pattern", "dockPattern"), ("lightsTempo", "dockTempo"), ("bulbSize", "dockBulbSize"),
                             ("spacing", "dockSpacing"), ("lightsLayer", "dockLayer")] {
@@ -121,7 +130,7 @@ final class Settings: ObservableObject {
         set(\.snowAvoid, level("snowAvoid", 2))
         set(\.snowLayer, raw("snowLayer", .above))
         set(\.settleSnow, bool("settleSnow", true))
-        set(\.alwaysSaveEnergy, bool("alwaysSaveEnergy", false))
+        set(\.powerMode, raw("powerMode", .automatic))
         set(\.paused, bool("paused", false))
         set(\.welcomeShown, bool("welcomeShown", false))
         set(\.permissionPromptShown, bool("permissionPromptShown", false))
@@ -135,7 +144,7 @@ final class Settings: ObservableObject {
         dockLights = true; dockStyle = .classic; dockColorMode = .multicolor; dockPattern = .twinkle
         dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
-        alwaysSaveEnergy = false
+        powerMode = .automatic
     }
 
     /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.
