@@ -36,12 +36,15 @@ final class Settings: ObservableObject {
 
     private init() {
         load()
-        NotificationCenter.default.addObserver(self, selector: #selector(defaultsChanged), name: UserDefaults.didChangeNotification, object: nil)
+        observer = DefaultsObserver(keys: Settings.keys) { [weak self] in
+            DispatchQueue.main.async { if let self, !self.loading { self.load() } }
+        }
     }
 
-    @objc private func defaultsChanged() {
-        DispatchQueue.main.async { [self] in if !loading { load() } }
-    }
+    private var observer: DefaultsObserver?
+    static let keys = ["lightsEnabled", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights",
+                       "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
+                       "alwaysSaveEnergy", "paused", "welcomeShown", "permissionPromptShown"]
 
     private func level(_ key: String, _ def: Int) -> Int {
         d.object(forKey: key) == nil ? def : min(max(d.integer(forKey: key), 0), 4)
@@ -101,5 +104,24 @@ final class Settings: ObservableObject {
         d.set(paused, forKey: "paused")
         d.set(welcomeShown, forKey: "welcomeShown")
         d.set(permissionPromptShown, forKey: "permissionPromptShown")
+    }
+}
+
+/// Meldet Änderungen an UserDefaults, auch von außen (zum Beispiel `defaults write`).
+final class DefaultsObserver: NSObject {
+    private let keys: [String]
+    private let onChange: () -> Void
+
+    init(keys: [String], onChange: @escaping () -> Void) {
+        self.keys = keys
+        self.onChange = onChange
+        super.init()
+        keys.forEach { UserDefaults.standard.addObserver(self, forKeyPath: $0, options: [], context: nil) }
+    }
+
+    deinit { keys.forEach { UserDefaults.standard.removeObserver(self, forKeyPath: $0) } }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+        onChange()
     }
 }

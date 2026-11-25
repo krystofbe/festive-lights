@@ -50,6 +50,9 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(lockChanged(_:)), name: NSNotification.Name("com.apple.screenIsLocked"), object: nil)
         dn.addObserver(self, selector: #selector(lockChanged(_:)), name: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil)
         dn.addObserver(self, selector: #selector(systemChanged), name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
+        #if DEBUG
+        dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.storm"), object: nil)
+        #endif
         dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil)
 
         monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
@@ -125,6 +128,9 @@ final class AppController: NSObject {
         energySaving = computeEnergySaving()
         dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         locked = (CGSessionCopyCurrentDictionary() as? [String: Any])?["CGSSessionScreenIsLocked"] as? Bool ?? false
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "debugIgnoreLock") { locked = false }
+        #endif
         suspended = screensAsleep || locked
         let anim = !reduceMotion && !suspended
         if anim != animating { animating = anim; status?.setAnimating(anim) }
@@ -221,6 +227,7 @@ final class AppController: NSObject {
 
     var reduceMotionActive: Bool { reduceMotion }
 
+    @objc private func debugStorm() { toggleStorm() }
     @objc private func showSettingsRequested() { showSettings() }
 
     func showSettings() {

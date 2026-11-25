@@ -163,24 +163,23 @@ enum MenubarIcon {
         let key = (f + 1) * 2 + (dark ? 1 : 0)
         if let i = cache[key] { return i }
         let suffix = dark ? "dark" : "light"
-        let img = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
-            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
-            Art.draw("menubar-cable-\(suffix)", in: ctx, width: 18, height: 18)
-            for b in 0..<3 {
-                var alpha: CGFloat = 1
-                if f >= 0 {
-                    let phase = Double(f) / Double(frameCount) - Double(b) / 3.0
-                    let p = phase - floor(phase)
-                    let pulse = p < 0.5 ? sin(p * 2 * .pi) : 0
-                    alpha = 0.6 + 0.4 * CGFloat(pulse)
-                }
-                ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-                ctx.setAlpha(alpha)
-                Art.draw("menubar-bulb\(b + 1)-\(suffix)", in: ctx, width: 18, height: 18)
-                ctx.endTransparencyLayer()
+        let ctx = Art.context(36, 36)
+        ctx.scaleBy(x: 2, y: 2)
+        Art.draw("menubar-cable-\(suffix)", in: ctx, width: 18, height: 18)
+        for b in 0..<3 {
+            var alpha: CGFloat = 1
+            if f >= 0 {
+                let phase = Double(f) / Double(frameCount) - Double(b) / 3.0
+                let p = phase - floor(phase)
+                let pulse = p < 0.5 ? sin(p * 2 * .pi) : 0
+                alpha = 0.6 + 0.4 * CGFloat(pulse)
             }
-            return true
+            ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+            ctx.setAlpha(alpha)
+            Art.draw("menubar-bulb\(b + 1)-\(suffix)", in: ctx, width: 18, height: 18)
+            ctx.endTransparencyLayer()
         }
+        let img = NSImage(cgImage: ctx.makeImage()!, size: NSSize(width: 18, height: 18))
         img.isTemplate = false
         cache[key] = img
         return img
