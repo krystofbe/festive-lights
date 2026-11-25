@@ -38,6 +38,8 @@ final class AppController: NSObject {
     private var timers: [Timer] = []
     private let loginModel = LoginModel()
     private let settingsNav = SettingsNav()
+    private lazy var onboarding = OnboardingController(settings: settings, login: loginModel, startStorm: { [weak self] in self?.startStorm() })
+    func showOnboarding() { onboarding.show() }
     #if DIRECT
     private let updates = UpdateController()
     func checkForUpdates() { updates.checkForUpdates() }
@@ -74,9 +76,6 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.shake"), object: nil)
         dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.hit"), object: nil)
         dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blackbox.festivelights.debug.welcome"), object: nil)
-        #if DIRECT
-        dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blackbox.festivelights.debug.prompt"), object: nil)
-        #endif
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.swipe"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(dockPrefsChanged), name: NSNotification.Name("com.apple.dock.prefchanged"), object: nil)
@@ -136,15 +135,13 @@ final class AppController: NSObject {
             self.snowStarted = true
             self.snowRampStart = CACurrentMediaTime()
             self.apply()
-            if !self.settings.welcomeShown, self.status.showWelcome() { self.settings.welcomeShown = true }
         }
-        #if DIRECT
-        // Einmalig und frühestens 60 s später: Hinweis auf die Berechtigung, unabhängig davon, ob das Willkommens-Popover noch kam
-        after(65) { [weak self] in
-            guard let self, !self.settings.permissionPromptShown, !Permission.granted else { return }
-            if self.status.showPermissionPrompt() { self.settings.permissionPromptShown = true }
+        // Einführung: einmalig beim allerersten Start, nach 1,5 s
+        after(1.5) { [weak self] in
+            guard let self, !self.settings.welcomeShown else { return }
+            self.settings.welcomeShown = true
+            self.onboarding.show()
         }
-        #endif
     }
 
     private func after(_ s: Double, _ f: @escaping () -> Void) {
@@ -352,10 +349,7 @@ final class AppController: NSObject {
 
     #if DEBUG
     @objc private func debugStorm() { toggleStorm() }
-    #if DIRECT
-    @objc private func debugPrompt() { status.showPermissionPrompt() }
-    #endif
-    @objc private func debugWelcome() { status.showWelcome() }
+    @objc private func debugWelcome() { showOnboarding() }
 
     /// Entwicklerhilfe: welche App liegt an einem Punkt (Durchklick-Prüfung)? Objekt "x,y;x,y;..." in globalen Koordinaten oben links.
     @objc private func debugHit(_ n: Notification) {

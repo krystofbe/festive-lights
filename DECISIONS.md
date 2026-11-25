@@ -202,3 +202,9 @@ Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (
 - Signatur nur über die lokale `Local.xcconfig` (Vorlage `Local.xcconfig.example`, in `.gitignore`), über `Config/Base.xcconfig` mit `#include?`. Kein Update-Mechanismus, kein Sparkle.
 - Die Dock-Kette funkelt mit halber Rate (Musterdrossel 60 ms statt 30 ms).
 - Offen: Sandbox-Laufzeittest auf dem Mini (Ausweichen, Schütteln, Anmeldeobjekt, Dock-Größe) nach dem 8-Stunden-Lauf, Skript `sandbox-test.sh` liegt vor. Am Laptop läuft die signierte Sandbox-Fassung.
+
+## Einführung (SPEC §6)
+- Ein eigenes Fenster (`OnboardingController`, 560 x 440 pt, nicht modal, Stil fest warm hell: `OnbStyle`) ersetzt das Schneesturm-Popover und das Berechtigungs-Popover (beides samt Popover-Code entfernt). Schritte (`OnbStep`): Willkommen mit Stilwahl, Immer erreichbar, Schnee mit Schneesturm-Button, nur Direkt (`DIRECT`) die Freigabe mit Live-Status, Fertig mit Anmelde-Schalter. Der Zustand "schon gezeigt" bleibt in `welcomeShown`, Zurücksetzen ändert ihn nicht. Erscheint 1,5 s nach dem allerersten Start, Menüpunkt "Einführung…" öffnet sie erneut.
+- Die Stilwahl setzt Menüleiste und Dock zugleich (`applyOnboardingStyle`). Schriften (Poppins, Mountains of Christmas) liegen mit ihren Lizenzen in `Art/fonts` im Bundle und werden beim Start für den Prozess registriert (`CTFontManagerRegisterFontsForURL`). Grafiken aus `Art/onboarding`.
+- Bedienung: Return löst den Hauptbutton aus, Esc und "Überspringen" schließen, alle Bedienelemente haben Beschriftungen (Fortschrittspunkte als ein Element mit Wert "n / m", Stilkarten mit Auswahl-Eigenschaft), Dekoration ist für VoiceOver verborgen. Schnee der Einführung ist im Sparmodus und bei "Bewegung reduzieren" statisch.
+- Bilder ohne Bildschirm: `FestiveLights --render-onboarding <Ordner> -AppleLanguages "(de)"` (nur Test-Build), für Store und Direkt.

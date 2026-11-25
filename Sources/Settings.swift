@@ -51,7 +51,6 @@ final class Settings: ObservableObject {
     @Published var powerMode = PowerMode.automatic { didSet { write("powerMode", powerMode.rawValue) } }
     @Published var paused = false { didSet { write("paused", paused) } }
     @Published var welcomeShown = false { didSet { write("welcomeShown", welcomeShown) } }
-    @Published var permissionPromptShown = false { didSet { write("permissionPromptShown", permissionPromptShown) } }
 
     private init() {
         // Startargumente (zum Beispiel -chainStyle) gelten höchstens einmal beim Start, danach ist die Argument-Domain leer
@@ -73,7 +72,7 @@ final class Settings: ObservableObject {
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
-                       "powerMode", "paused", "welcomeShown", "permissionPromptShown"]
+                       "powerMode", "paused", "welcomeShown"]
 
     private func level(_ key: String, _ def: Int) -> Int {
         d.object(forKey: key) == nil ? def : min(max(d.integer(forKey: key), 0), 4)
@@ -139,7 +138,6 @@ final class Settings: ObservableObject {
         set(\.powerMode, raw("powerMode", .automatic))
         set(\.paused, bool("paused", false))
         set(\.welcomeShown, bool("welcomeShown", false))
-        set(\.permissionPromptShown, bool("permissionPromptShown", false))
     }
 
     /// Setzt alle Werte aus SPEC §3 zurück. Unverändert bleiben "schon gezeigt"-Flags und die Pause. "Beim Anmelden starten" und die

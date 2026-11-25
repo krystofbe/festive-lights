@@ -1180,15 +1180,15 @@ final class ResetTests: XCTestCase {
         s.snowEnabled = false; s.snowAmount = 4; s.flakeSize = 0; s.snowSpeed = 4; s.wind = .left; s.snowAvoid = 0; s.snowLayer = .desktop; s.settleSnow = false
         s.powerMode = .always
         // Ausnahmen
-        s.welcomeShown = true; s.permissionPromptShown = true; s.paused = true
+        s.welcomeShown = true; s.paused = true
         s.resetToDefaults()
         XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .firColor, "Standardstil ist Tanne bunt"); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
         XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
         XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .firColor); XCTAssertEqual(s.dockShape, .exact)
         XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
         XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertEqual(s.powerMode, .automatic)
-        XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
-        s.welcomeShown = false; s.permissionPromptShown = false; s.paused = false
+        XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
+        s.welcomeShown = false; s.paused = false
     }
 }
 
@@ -1424,4 +1424,47 @@ final class AppVariantTests: XCTestCase {
     }
 
     func testDefaultBuildIsTheStoreVariant() { XCTAssertTrue(AppVariant.isStore) }
+}
+
+final class OnboardingTests: XCTestCase {
+    func testStepsDependOnTheVariant() {
+        XCTAssertEqual(OnbStep.all.contains(.access), !AppVariant.isStore, "Freigabe-Schritt nur in der Direkt-Variante")
+        XCTAssertEqual(OnbStep.all.first, .welcome); XCTAssertEqual(OnbStep.all.last, .done)
+    }
+
+    func testNavigationStaysInRange() {
+        let m = OnboardingModel()
+        m.back(); XCTAssertEqual(m.index, 0)
+        for _ in 0..<20 { m.next() }
+        XCTAssertTrue(m.isLast); XCTAssertEqual(m.step, .done)
+        m.back(); XCTAssertFalse(m.isLast)
+    }
+
+    func testStyleChoiceAppliesToBothChains() {
+        let s = Settings.shared
+        defer { s.resetToDefaults() }
+        for k in [ChainStyleKind.classic, .firGold, .firColor] {
+            applyOnboardingStyle(k, to: s)
+            XCTAssertEqual(s.chainStyle, k); XCTAssertEqual(s.dockStyle, k)
+        }
+    }
+
+    func testResetKeepsTheIntroShownFlag() {
+        let s = Settings.shared
+        let old = s.welcomeShown
+        s.welcomeShown = true; s.resetToDefaults()
+        XCTAssertTrue(s.welcomeShown, "Zurücksetzen lässt die Einführung als gezeigt stehen")
+        s.welcomeShown = old
+    }
+
+    func testAllOnboardingAndMenuStringsExistInGermanAndEnglish() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/Resources")
+        let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
+                    "onb.welcome.title", "onb.welcome.body", "onb.reach.title", "onb.reach.body", "onb.snow.title", "onb.snow.body",
+                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body"]
+        for lang in ["de", "en"] {
+            let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)
+            for k in keys { XCTAssertTrue(text.contains("\"\(k)\" ="), "\(k) fehlt in \(lang)") }
+        }
+    }
 }

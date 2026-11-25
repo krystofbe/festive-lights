@@ -8,9 +8,6 @@ final class StatusController: NSObject, NSMenuDelegate {
     private var frame = 0
     private var shown: (Int, Bool)?
     private let app: AppController
-    private var popover: NSPanel?
-    private var closeTimer: Timer?
-    private var outsideMonitor: Any?
 
     init(app: AppController) {
         self.app = app
@@ -75,6 +72,7 @@ final class StatusController: NSObject, NSMenuDelegate {
         #if DIRECT
         add("menu.updates", #selector(checkUpdates))
         #endif
+        add("menu.welcome", #selector(openWelcome))
         add("menu.settings", #selector(openSettings), key: ",")
         add("menu.quit", #selector(quit), key: "q")
     }
@@ -82,6 +80,7 @@ final class StatusController: NSObject, NSMenuDelegate {
     #if DIRECT
     @objc private func checkUpdates() { app.checkForUpdates() }
     #endif
+    @objc private func openWelcome() { app.showOnboarding() }
     @objc private func pause() { Settings.shared.paused.toggle() }
     @objc private func toggleLights() { Settings.shared.lightsEnabled.toggle() }
     @objc private func toggleDock() { Settings.shared.dockLights.toggle() }
@@ -89,64 +88,4 @@ final class StatusController: NSObject, NSMenuDelegate {
     @objc private func storm() { app.toggleStorm() }
     @objc private func openSettings() { app.showSettings() }
     @objc private func quit() { NSApp.terminate(nil) }
-
-    /// Zeigt ein Popover unter dem Symbol, ohne den Fokus zu nehmen. Schließt nach `seconds` oder bei Klick daneben.
-    /// Eigenes Panel statt NSPopover: NSPopover saß auf macOS 26 etwa 230 pt zu tief.
-    @discardableResult
-    func showPopover(_ content: some View, seconds: Double) -> Bool {
-        guard let button = item.button, let win = button.window, win.isVisible,
-              let screen = NSScreen.screens.first(where: { $0.frame.intersects(win.frame) }) else { return false }
-        closePopover()
-        let host = NSHostingView(rootView: content)
-        let size = host.fittingSize
-        let effect = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
-        effect.material = .popover
-        effect.state = .active
-        effect.wantsLayer = true
-        effect.layer?.cornerRadius = 12
-        effect.layer?.masksToBounds = true
-        host.frame = effect.bounds
-        host.autoresizingMask = [.width, .height]
-        effect.addSubview(host)
-        let panel = PopoverPanel(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.level = .popUpMenu
-        panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
-        panel.contentView = effect
-        var x = win.frame.midX - size.width / 2
-        x = min(max(x, screen.frame.minX + 8), screen.frame.maxX - size.width - 8)
-        panel.setFrameOrigin(NSPoint(x: x, y: win.frame.minY - size.height - 6))
-        panel.orderFrontRegardless()
-        popover = panel
-        closeTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in self?.closePopover() }
-        outsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in self?.closePopover() }
-        return true
-    }
-
-    func closePopover() {
-        closeTimer?.invalidate(); closeTimer = nil
-        if let m = outsideMonitor { NSEvent.removeMonitor(m); outsideMonitor = nil }
-        popover?.orderOut(nil); popover = nil
-    }
-
-    @discardableResult
-    func showWelcome() -> Bool {
-        showPopover(WelcomeView { [weak self] in self?.closePopover(); self?.app.startStorm() }, seconds: 20)
-    }
-
-    #if DIRECT
-    @discardableResult
-    func showPermissionPrompt() -> Bool {
-        showPopover(PermissionPromptView { [weak self] in
-            self?.closePopover(); Permission.request(); Permission.openSystemSettings()
-        }, seconds: 45)
-    }
-    #endif
-}
-
-final class PopoverPanel: NSPanel {
-    override var canBecomeKey: Bool { true }
 }

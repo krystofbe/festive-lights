@@ -220,29 +220,3 @@ struct SettingsView: View {
         .formStyle(.grouped)
     }
 }
-
-struct WelcomeView: View {
-    let startStorm: () -> Void
-    var body: some View {
-        VStack(spacing: 10) {
-            Text("Happy holidays! ❄️ Fancy a snowstorm?").font(.headline).multilineTextAlignment(.center)
-            Button("Start snowstorm", action: startStorm).buttonStyle(.borderedProminent)
-        }
-        .padding(16).frame(width: 250)
-    }
-}
-
-#if DIRECT
-struct PermissionPromptView: View {
-    let open: () -> Void
-    var body: some View {
-        VStack(spacing: 10) {
-            Text("Lights on the Dock too, and snow that stays on windows?").font(.headline).multilineTextAlignment(.center)
-            Text("For this FestiveLights sees where the Dock and your windows are. No contents, no input.")
-                .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
-            Button("Open System Settings", action: open).buttonStyle(.borderedProminent)
-        }
-        .padding(16).frame(width: 280)
-    }
-}
-#endif

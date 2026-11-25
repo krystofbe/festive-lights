@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum Main {
     static func main() {
         #if DEBUG
+        if let i = CommandLine.arguments.firstIndex(of: "--render-onboarding"), i + 1 < CommandLine.arguments.count {
+            OnboardingSnapshot.run(dir: CommandLine.arguments[i + 1]); return
+        }
         if let i = CommandLine.arguments.firstIndex(of: "--render-snapshots"), i + 1 < CommandLine.arguments.count {
             Snapshot.run(dir: CommandLine.arguments[i + 1]); return
         }
