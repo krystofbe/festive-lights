@@ -15,10 +15,7 @@ final class OverlayWindow: NSWindow {
         isOpaque = false
         hasShadow = false
         ignoresMouseEvents = true
-        sharingType = .none
-        #if DEBUG
-        if UserDefaults.standard.bool(forKey: "debugCapture") { sharingType = .readOnly }
-        #endif
+        sharingType = .readOnly   // Lichter und Schnee sind wie normaler Bildschirminhalt in Aufnahmen und Freigaben sichtbar
         animationBehavior = .none
         canHide = false
         isExcludedFromWindowsMenu = true

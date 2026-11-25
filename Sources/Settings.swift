@@ -58,7 +58,7 @@ final class Settings: ObservableObject {
         let args = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
         #if DEBUG
         adopt(args)
-        // Entwicklerschalter (-debugCapture und andere, keine Einstellungen) bleiben für die Debug-Auslöser lesbar
+        // Entwicklerschalter (zum Beispiel -debugIgnoreLock, keine Einstellungen) bleiben für die Debug-Auslöser lesbar
         UserDefaults.standard.setVolatileDomain(args.filter { !Settings.keys.contains($0.key) }, forName: UserDefaults.argumentDomain)
         #else
         UserDefaults.standard.setVolatileDomain([:], forName: UserDefaults.argumentDomain)
