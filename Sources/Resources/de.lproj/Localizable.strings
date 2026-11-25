@@ -61,3 +61,8 @@
 "Dock shape" = "Form am Dock";
 "Continuous" = "Durchgehend";
 "Exactly at the Dock" = "Genau am Dock";
+"Reset to defaults" = "Auf Standard zurücksetzen";
+"Reset all settings to their defaults?" = "Alle Einstellungen auf Standard zurücksetzen?";
+"Reset" = "Zurücksetzen";
+"Cancel" = "Abbrechen";
+"Start at login and the permission stay as they are." = "Beim Anmelden starten und die Berechtigung bleiben unverändert.";

@@ -24,3 +24,10 @@ Regel: Vor jedem Commit, der Zeichnen, Abfragen, Timer oder Physik betrifft, geg
 | 25.11.2026 | 9641b00 | Standard (Funkeln, Schnee) | 46,9 | 4,1 | vorher 47,0 / 3,8, App +0,3 innerhalb der Schwankung |
 
 Dock-Vergrößerung ohne Berechtigung (Treffer-Test, Debug-Build, Zeiger kreist 6 s über dem Dock): Haupt-Thread je Bild im Mittel 1,17 ms, höchstens 2,03 ms (Grenze 2 ms mittel, nie über 8 ms), Hintergrund je Messung im Mittel 4,9 ms, höchstens 23 ms. Die Messung der ruhenden Leiste (etwa 110 Aufrufe, 12 ms im Hintergrund) läuft nur bei Ereignissen.
+| 25.11.2026 | ca4b6c4 | Ruhezustand | 1,3 | 0,4 | Review-Befunde 1 bis 24 |
+| 25.11.2026 | ca4b6c4 | Standard | 46,8 | 3,7 | vorher 46,9 / 4,1 |
+| 25.11.2026 | c85a896 | Ruhezustand, mit Berechtigung | 1,3 | 0,4 | Dock-Review: Zustandsautomat, zwei Queues, Bedienungshilfen auf Queue |
+| 25.11.2026 | c85a896 | Ruhezustand, ohne Berechtigung (Treffer-Test) | 1,3 | 0,4 | ein früherer Lauf zeigte 2,0 / 0,5, der Wiederholungslauf mit Referenz (ohne App 0,1) 1,3 / 0,4, also Ausreißer durch Fremdlast am Testrechner |
+| 25.11.2026 | c85a896 | Standard | 47,0 | 3,7 | Referenz Vollbild-Animation 43,8, Differenz +3,2 |
+
+Dock-Vergrößerung ohne Berechtigung nach dem Review (c85a896, Test-Build, 8 s Zeigerkreisen über dem Dock): Haupt-Thread je Bild im Mittel 0,011 ms, höchstens 0,044 ms (Grenze 2 ms mittel, nie über 8 ms), Hintergrund je Messung im Mittel 4,5 ms, höchstens 22,6 ms.

@@ -90,6 +90,16 @@ final class Settings: ObservableObject {
         set(\.permissionPromptShown, bool("permissionPromptShown", false))
     }
 
+    /// Setzt alle Werte aus SPEC §3 zurück. Unverändert bleiben "schon gezeigt"-Flags und die Pause. "Beim Anmelden starten" und die
+    /// Berechtigung liegen außerhalb dieser Klasse und sind nicht betroffen. Wirkt sofort, weil jeder Wert veröffentlicht wird.
+    func resetToDefaults() {
+        lightsEnabled = true; chainStyle = .classic; colorMode = .multicolor; pattern = .twinkle
+        lightsTempo = 2; bulbSize = 2; spacing = 2; lightsLayer = .above
+        dockLights = true; dockStyle = .sameAsBar; dockShape = .exact
+        snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
+        alwaysSaveEnergy = false
+    }
+
     /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.
     private func write(_ key: String, _ value: Any) {
         guard !loading else { return }

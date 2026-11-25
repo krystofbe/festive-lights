@@ -1083,3 +1083,24 @@ final class DockPointerLogicTests: XCTestCase {
         XCTAssertEqual(r.0, DockPointerLogic.Action(), "Ruhezustand: Mausbewegung fern vom Dock löst nichts aus")
     }
 }
+
+final class ResetTests: XCTestCase {
+    func testResetRestoresTheTableFromSection3AndKeepsTheExceptions() {
+        let s = Settings.shared
+        // alles verstellen
+        s.lightsEnabled = false; s.chainStyle = .firGold; s.colorMode = .warm; s.pattern = .chase; s.lightsTempo = 4; s.bulbSize = 0; s.spacing = 4
+        s.lightsLayer = .desktop; s.dockLights = false; s.dockStyle = .firColor; s.dockShape = .continuous
+        s.snowEnabled = false; s.snowAmount = 4; s.flakeSize = 0; s.snowSpeed = 4; s.wind = .left; s.snowAvoid = 0; s.snowLayer = .desktop; s.settleSnow = false
+        s.alwaysSaveEnergy = true
+        // Ausnahmen
+        s.welcomeShown = true; s.permissionPromptShown = true; s.paused = true
+        s.resetToDefaults()
+        XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .classic); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
+        XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
+        XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .sameAsBar); XCTAssertEqual(s.dockShape, .exact)
+        XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
+        XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertFalse(s.alwaysSaveEnergy)
+        XCTAssertTrue(s.welcomeShown, "schon gezeigt bleibt"); XCTAssertTrue(s.permissionPromptShown); XCTAssertTrue(s.paused, "Pause ist kein Wert aus Abschnitt 3")
+        s.welcomeShown = false; s.permissionPromptShown = false; s.paused = false
+    }
+}

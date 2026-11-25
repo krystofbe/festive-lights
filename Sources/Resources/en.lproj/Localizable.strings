@@ -61,3 +61,8 @@
 "Dock shape" = "Dock shape";
 "Continuous" = "Continuous";
 "Exactly at the Dock" = "Exactly at the Dock";
+"Reset to defaults" = "Reset to defaults";
+"Reset all settings to their defaults?" = "Reset all settings to their defaults?";
+"Reset" = "Reset";
+"Cancel" = "Cancel";
+"Start at login and the permission stay as they are." = "Start at login and the permission stay as they are.";

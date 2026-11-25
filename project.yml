@@ -53,6 +53,7 @@ targets:
     sources:
       - Tests
       - path: Sources/Logic
+      - path: Sources/Settings.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

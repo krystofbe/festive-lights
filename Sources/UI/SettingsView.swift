@@ -54,6 +54,7 @@ struct SettingsView: View {
     @ObservedObject var s: Settings
     @ObservedObject var perm: PermissionModel
     @ObservedObject var login: LoginModel
+    @State private var confirmReset = false
 
     var body: some View {
         TabView {
@@ -61,7 +62,7 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
-        .frame(width: 470, height: 430)
+        .frame(width: 470, height: 480)
         .onAppear { perm.start() }
         .onDisappear { perm.stop() }
     }
@@ -143,6 +144,13 @@ struct SettingsView: View {
                 Text("With this permission FestiveLights sees where the Dock and your windows are, to hang lights on the Dock and let snow settle on windows. It sees no contents and no input.")
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button("Open System Settings") { Permission.request(); Permission.openSystemSettings() }
+            }
+            Section {
+                Button("Reset to defaults", role: .destructive) { confirmReset = true }
+                    .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
+                        Button("Reset", role: .destructive) { s.resetToDefaults() }
+                        Button("Cancel", role: .cancel) {}
+                    } message: { Text("Start at login and the permission stay as they are.") }
             }
         }
         .formStyle(.grouped)
