@@ -94,7 +94,7 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 - Die Kette erscheint nur auf dem Bildschirm, der gerade das Dock zeigt. Ist die Dock-Vergrößerung beim Überfahren eingeschaltet, geht die Kette mit: Der Abschnitt über den vergrößerten Symbolen wölbt sich mit deren Oberkante nach oben (bei seitlichem Dock zur Bildschirmmitte), Birnen und Zweige gehen mit, und beim Verlassen senkt sich die Kette mit dem Dock wieder ab. Die Kette folgt dabei ohne sichtbare Verzögerung, höchstens ein Bild hinter dem Dock, und liegt in jeder Phase auf der Oberkante der Symbole, ohne in sie hineinzuragen oder darüber zu schweben.
 - Ändert sich die Dock-Größe (Apps öffnen oder beenden, Dock-Position, Größe), liegt die Kette spätestens 0,5 s nachdem das Dock seine neue Größe erreicht hat, wieder deckungsgleich an. Abweichung höchstens 2 pt.
 - Ausgeblendetes Dock: Die Kette erscheint und verschwindet mit dem Dock.
-- Stil, Farbe, Muster, Größe und Abstand gelten für beide Ketten gemeinsam. Am Dock ist die Girlande der Tannen-Stile schmal: nur kurze Zweige, keine hängenden, keine Zapfen und keine Kugeln, damit die Regel mit dem oberen Viertel der Symbole gilt. Dock-Lichter haben eine eigene Ein/Aus-Einstellung. Ausweichen wie F1: Die Birnen rutschen am Kabel entlang zur Seite, das Kabel bleibt am Dock.
+- Der Stil ist für das Dock eigens wählbar: "wie Menüleiste" (Standard), "klassisch", "Tanne bunt" oder "Tanne warmgold". Farbmodus, Muster, Größe und Abstand gelten für beide Ketten gemeinsam. Am Dock ist die Girlande der Tannen-Stile schmal: nur kurze Zweige, keine hängenden, keine Zapfen und keine Kugeln, damit die Regel mit dem oberen Viertel der Symbole gilt. Dock-Lichter haben eine eigene Ein/Aus-Einstellung. Ausweichen wie F1: Die Birnen rutschen am Kabel entlang zur Seite, das Kabel bleibt am Dock.
 
 ### F6 Schnee bleibt auf Fenstern liegen
 
@@ -130,7 +130,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hinter der Kamera-Aussparung verschwindet).
 
 **Einstellungsfenster**, kompakt, drei Bereiche:
-- **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus.
+- **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus, Stil am Dock.
 - **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
 - **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Der Status aktualisiert sich live, während das Fenster offen ist.
 
