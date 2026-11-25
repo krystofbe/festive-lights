@@ -27,13 +27,17 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 ## Schnee
 - Mengenstufen pro Bildschirm: 30, 55, 80, 170, 320 Flocken. Sturm: dreifach, höchstens 520 je Bildschirm.
 - "Leichte Menge" beim Start: Die Menge steigt in 25 s von 30 % auf den eingestellten Wert.
-- Ausweichen: Der Abstand zum Zeiger wird stetig und monoton aufgeweitet (freie Zone mit halbem Radius), Radien 30 bis 140 pt, Flocken folgen dem Ziel mit 70 ms Trägheit.
+- Ausweichen (Schwerkraft gewinnt immer): Flocken im Umkreis (30 bis 140 pt) werden nur seitlich verschoben (bis 0,55 Radius, glatt eingeblendet, 90 ms Trägheit), Flocken über dem Zeiger fallen langsamer (bis auf 35 %). Es gibt keine senkrechte Verschiebung und keine radiale Abstoßung (`Dodge.flow`).
+- Aufstöbern (F2): Das Zeigertempo wird aus Mausereignissen und aus dem Zeigerstand je Bild geglättet gemessen (`PointerVelocityTracker`). Ab 350 pt/s beginnt es, ab 1600 pt/s voll. Der Impuls wirkt auf Flocken im Umkreis (80 bis 180 pt) um die Bahn des Zeigers seit dem letzten Bild, in Bewegungsrichtung und überwiegend waagerecht. Aufwärts gibt es nur, wenn der Zeiger selbst deutlich nach oben fährt (dann höchstens 35 %, Abklingzeit 0,2 s). Die Flocke fällt danach 1,8 s lang erst gebremst, dann wieder normal. Pro Flocke gilt eine Pause von 0,7 s, damit nichts am Zeiger klebt. Mit "Bewegung reduzieren" aus.
+- Aufstöbern (F6): Fährt der Zeiger schnell über die sichtbare Schneeschicht (Band 18 pt über bis 8 pt unter der Fensterkante, keine Maustaste gedrückt), entsteht pro 14 pt Bahn eine Delle (40 bis 70 % der Höhe auf 28 pt Breite) und eine kleine Wolke feiner Flocken, die in Wischrichtung höchstens etwa 5 pt aufsteigt und fällt. Die Delle füllt sich durch normalen Schneefall wieder.
+- Fallrichtung: Die Simulation rechnet mit y nach unten, die Layer der Overlays haben den Ursprung unten (`ScreenCoords`). Die Wurzel-Ebene wird nicht gespiegelt, weil das auf macOS am Hauptlayer eines Fensters nicht greift.
 - Wind: 38 pt/s mit Böen. Sturm bei "Wind aus" weht nach rechts.
 - Etwa 70 % der vordersten Flocken (Tiefe über 0,9) sind Kristalle.
 - Sturm: Hülle in `StormEnvelope`, nicht gespeichert, Menüeintrag als Schalter.
 - Mit "Bewegung reduzieren" ist der Sturm nicht startbar (Menüeintrag deaktiviert).
 
 ## Schneeschicht (F6)
+- Ecken: Die Schicht folgt der sichtbaren Fensterform. Der Eckenradius ist pro macOS-Version festgelegt (`WindowCorners`): 26 pt ab macOS 26, sonst 10 pt. Der Wert 26 stammt aus einer Messung am Testrechner (Fensterecke, Pixelprofil: Kante liegt bei 4 pt Seitenabstand 12 pt, bei 14 pt 3 pt neben der geraden Kante). Die Schicht liegt auf der Rundung und wird zur Ecke hin dünn (smoothstep bis 1,4 Radien). Alle 15 bis 45 s rutscht an einer sichtbaren Ecke Schnee ab (55 % der Höhe auf 1,6 Radien, 14 Flocken).
 - Höhenprofil in 4-pt-Spalten, maximal 12 pt. Jeder Treffer einer Flocke erhöht einen weichen Hügel, die Wirkung wird zum Maximum hin schwächer. Der Wert pro Treffer ist auf die Bildschirmgröße normiert, sodass bei Standardmenge nach etwa 5 Minuten die Schicht voll ist.
 - Sichtbare Kanten: Oberkante abzüglich Abschnitte, die von Fenstern davor verdeckt sind. Fenster ohne Ebene 0, kleiner als 140 x 80, Vollbild-Fenster und Fenster unterhalb der Menüleiste-Kante ("maximiert") bekommen keinen Schnee.
 - Schütteln: Richtungswechsel bei mindestens 30 pt Ausschlag, 3 in 1 s schärfen, danach nimmt jeder weitere Wechsel ein Drittel weg (`ShakeDetector`).
