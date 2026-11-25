@@ -750,12 +750,25 @@ final class DockProfileTests: XCTestCase {
         XCTAssertTrue(DockProfile.samples(spans: flat, du: 6, count: 50).allSatisfy { $0 == 0 })
     }
 
-    func testLiftPerEdge() {
-        let rest = CGRect(x: 100, y: 10, width: 48, height: 48), big = CGRect(x: 90, y: 10, width: 80, height: 80)
-        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: big, rest: rest), 32)
-        XCTAssertEqual(DockProfile.lift(edge: .left, current: big, rest: rest), 22)
-        XCTAssertEqual(DockProfile.lift(edge: .right, current: big, rest: rest), 10)
-        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: rest, rest: rest), 0)
-        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: CGRect(x: 100, y: 10, width: 40, height: 40), rest: rest), 0, "nie negativ")
+    func testVisibleSizeCalibrationFromTestMachine() {
+        let rest = CGRect(x: 771, y: 10, width: 77, height: 93), cur = CGRect(x: 763, y: 10, width: 99.9, height: 115.9)
+        XCTAssertEqual(DockProfile.visibleSize(tile: 64, current: rest, rest: rest), 64, accuracy: 1e-9)
+        XCTAssertEqual(DockProfile.visibleSize(tile: 64, current: cur, rest: rest), 78, accuracy: 1.5)
+    }
+
+    func testLiftIsMeasuredAboveTheDockLineAndNeverNegative() {
+        let rest = CGRect(x: 771, y: 10, width: 77, height: 93), cur = CGRect(x: 763, y: 10, width: 99.9, height: 115.9)
+        // ruhendes Symbol: Oberkante liegt unter der Dock-Linie, keine Anhebung
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: rest, rest: rest, tile: 64, barLine: 99), 0)
+        // am Testrechner gemessen: sichtbare Oberkante des vergrößerten Symbols etwa 105 bis 107, Dock-Linie 99
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: cur, rest: rest, tile: 64, barLine: 99), 7, accuracy: 3)
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: CGRect(x: 0, y: 10, width: 40, height: 40), rest: rest, tile: 64, barLine: 99), 0)
+    }
+
+    func testLiftForSideDocksGrowsTowardScreenCenter() {
+        let rest = CGRect(x: 0, y: 100, width: 93, height: 77), cur = CGRect(x: 0, y: 90, width: 115.9, height: 99.9)
+        XCTAssertGreaterThan(DockProfile.lift(edge: .left, current: cur, rest: rest, tile: 64, barLine: 80), 0)
+        let restR = CGRect(x: 1800, y: 100, width: 93, height: 77), curR = CGRect(x: 1777, y: 90, width: 115.9, height: 99.9)
+        XCTAssertGreaterThan(DockProfile.lift(edge: .right, current: curR, rest: restR, tile: 64, barLine: 1840), 0)
     }
 }

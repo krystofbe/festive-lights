@@ -89,9 +89,10 @@ final class DockTracker {
         let near = c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation)
         if !near && !spansActive { stopMagnification(); return }
         guard let items = Self.readItems(), items.count == restItems.count, !items.isEmpty else { return }
+        let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
         var spans: [DockProfile.Span] = []
         for (r, rest) in zip(items, restItems) {
-            let lift = DockProfile.lift(edge: c.edge, current: r, rest: rest)
+            let lift = DockProfile.lift(edge: c.edge, current: r, rest: rest, tile: tile, barLine: c.edgeLine)
             spans.append(c.edge == .bottom ? DockProfile.Span(a: Double(r.minX), b: Double(r.maxX), lift: lift)
                                            : DockProfile.Span(a: Double(r.minY), b: Double(r.maxY), lift: lift))
         }
