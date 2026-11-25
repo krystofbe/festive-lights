@@ -58,10 +58,10 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
+            general.tabItem { Label("General", systemImage: "gearshape") }
             menuBar.tabItem { Label("Menu bar", systemImage: "menubar.rectangle") }
             dock.tabItem { Label("Dock", systemImage: "dock.rectangle") }
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
-            general.tabItem { Label("General", systemImage: "gearshape") }
         }
         .frame(width: 470, height: 480)
         .onAppear { perm.start() }
