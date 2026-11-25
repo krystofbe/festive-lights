@@ -6,8 +6,6 @@ enum LightPattern: String, CaseIterable {
 
 /// Zeitplan der Birnen: liefert pro Birne die Helligkeit 0 (gedimmt) bis 1 (voll).
 enum PatternSchedule {
-    static let twinkleCycle = 4.5
-
     static func brightness(index: Int, count: Int, time: Double, pattern: LightPattern, tempo: Double) -> Double {
         switch pattern {
         case .steady: return 1
@@ -16,18 +14,22 @@ enum PatternSchedule {
         }
     }
 
-    /// Jede Birne dimmt einmal pro Zyklus für 0,3 bis 1 s, mit weichen Flanken.
+    /// Länge einer Phase in Sekunden. In geraden Phasen dürfen nur Birnen mit gerader Nummer dimmen, in ungeraden nur die ungeraden.
+    /// Benachbarte Birnen haben unterschiedliche Parität und dimmen deshalb nie gleichzeitig.
+    static let twinklePhase = 6.0
+    /// Wahrscheinlichkeit, dass eine Birne in ihrer Phase dimmt. Ergibt etwa 6 % gleichzeitig gedimmte Birnen.
+    static let twinkleChance = 0.5
+
+    /// Jede Birne dimmt höchstens einmal pro eigener Phase für 1,5 bis 3 s, Aus- und Aufglimmen je bis 0,8 s weich.
     static func twinkle(index: Int, time t: Double) -> Double {
-        let phase = stableRandom(index, 7) * twinkleCycle
-        let shifted = t + phase
-        let cycle = Int(floor(shifted / twinkleCycle))
-        let pos = shifted - Double(cycle) * twinkleCycle
-        let d = 0.3 + 0.7 * stableRandom(index, cycle, 1)
-        let start = stableRandom(index, cycle, 2) * (twinkleCycle - d)
-        let u = (pos - start) / d
-        guard u > 0, u < 1 else { return 1 }
-        let edge = 0.3
-        let depth = u < edge ? u / edge : (u > 1 - edge ? (1 - u) / edge : 1)
+        let phase = Int(floor(t / twinklePhase))
+        guard (phase + index) % 2 == 0, stableRandom(index, phase, 21) < twinkleChance else { return 1 }
+        let d = 1.5 + 1.5 * stableRandom(index, phase, 22)
+        let start = Double(phase) * twinklePhase + stableRandom(index, phase, 23) * (twinklePhase - d)
+        let u = t - start
+        guard u > 0, u < d else { return 1 }
+        let fade = min(0.8, d / 2.2)
+        let depth = u < fade ? u / fade : (u > d - fade ? (d - u) / fade : 1)
         let s = depth * depth * (3 - 2 * depth)
         return 1 - s
     }

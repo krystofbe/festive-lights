@@ -99,3 +99,6 @@ NSPopover erschien auf macOS 26 etwa 230 pt unter dem Menüleisten-Symbol (Pfeil
 - Performance: Alle Zweige sind Layer mit geteilten Bildern und werden nur neu positioniert, wenn sich Federn bewegen. Im Stillstand kostet die Girlande nichts. Ruhezustand mit Tanne warmgold gemessen: WindowServer 1,7 %, App 0,8 % (gleich wie klassisch).
 
 Nach dem Praxistest schlanker (SPEC Commit 4843b35): `Garland.density` 0,4, `branchScale` 0,45, `hangScale` 0,21, Zapfen und Schleifen mit 0,6, Durchhang bei Tanne 0,2 Birnenhöhen, Birnen unverändert. Gemessen am Testrechner (Tanne warmgold, Mittelstellung, dunkler Grund): dichtes Grün (mindestens 10 % der Spalten belegt) bis 22 pt unter der Menüleiste, tiefste Zweigspitzen 48 pt. Am Dock sind Ansatzpunkte fest alle 16 pt.
+
+## Funkeln ruhiger (SPEC Commit 5aee61b)
+Phasen von 6 s: In geraden Phasen dürfen nur Birnen mit gerader Nummer dimmen, in ungeraden nur die ungeraden. Benachbarte Birnen dimmen dadurch nie gleichzeitig (getestet über 150 Birnen und 150 s). Jede Birne dimmt in ihrer Phase mit Wahrscheinlichkeit 0,5 einmal für 1,5 bis 3 s, Aus- und Aufglimmen je 0,8 s mit smoothstep (bei kurzen Ereignissen kürzer). Das ergibt im Test im Mittel etwa 6 % gedimmte Birnen. Bildrate fürs Muster bleibt 22 pro Sekunde: Bei 0,8 s Übergang ändert sich die Deckkraft je Bild um höchstens etwa 8 %, das wirkt nicht stufig.

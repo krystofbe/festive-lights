@@ -5,29 +5,41 @@ final class PatternTests: XCTestCase {
         for i in 0..<20 { XCTAssertEqual(PatternSchedule.brightness(index: i, count: 20, time: Double(i), pattern: .steady, tempo: 1), 1) }
     }
 
-    func testTwinkleDimsAboutTenPercent() {
-        var shares: [Double] = []
-        for step in 0..<200 {
-            let t = 10 + Double(step) * 0.37
-            let dimmed = (0..<200).filter { PatternSchedule.twinkle(index: $0, time: t) < 0.5 }.count
-            shares.append(Double(dimmed) / 200)
+    func testTwinkleDimsAboutSixPercent() {
+        var sum = 0.0, steps = 0
+        for step in 0..<600 {
+            let time = 10 + Double(step) * 0.37
+            sum += Double((0..<200).filter { PatternSchedule.twinkle(index: $0, time: time) < 0.5 }.count) / 200
+            steps += 1
         }
-        let mean = shares.reduce(0, +) / Double(shares.count)
-        XCTAssertGreaterThan(mean, 0.06)
-        XCTAssertLessThan(mean, 0.14)
+        let mean = sum / Double(steps)
+        XCTAssertGreaterThan(mean, 0.04)
+        XCTAssertLessThan(mean, 0.08)
     }
 
-    func testTwinkleDimDurationBetween03And1() {
-        for i in 0..<30 {
-            var run = 0.0, longest = 0.0, shortest = 100.0
+    func testNoTwoNeighboursDimAtTheSameTime() {
+        for step in 0..<3000 {
+            let time = Double(step) * 0.05
+            for i in 0..<150 {
+                let a = PatternSchedule.twinkle(index: i, time: time), b = PatternSchedule.twinkle(index: i + 1, time: time)
+                XCTAssertFalse(a < 1 && b < 1, "Birne \(i) und \(i + 1) dimmen gleichzeitig bei t=\(time)")
+            }
+        }
+    }
+
+    func testTwinkleDimDurationAndSoftFades() {
+        for i in 0..<40 {
+            var run = 0.0, longest = 0.0, shortest = 100.0, maxStep = 0.0, last = 1.0
             var t = 0.0
-            while t < 60 {
-                if PatternSchedule.twinkle(index: i, time: t) < 0.999 { run += 0.01 }
-                else if run > 0 { longest = max(longest, run); shortest = min(shortest, run); run = 0 }
+            while t < 120 {
+                let v = PatternSchedule.twinkle(index: i, time: t)
+                maxStep = max(maxStep, abs(v - last)); last = v
+                if v < 0.999 { run += 0.01 } else if run > 0 { longest = max(longest, run); shortest = min(shortest, run); run = 0 }
                 t += 0.01
             }
-            XCTAssertLessThanOrEqual(longest, 1.05)
-            XCTAssertGreaterThanOrEqual(shortest, 0.25)
+            XCTAssertLessThanOrEqual(longest, 3.05)
+            XCTAssertGreaterThanOrEqual(shortest, 1.45)
+            XCTAssertLessThan(maxStep, 0.03, "Übergänge sind weich, kein Sprung (je Schritt von 10 ms)")
         }
     }
 
