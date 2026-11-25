@@ -7,6 +7,8 @@ struct BeadChain {
     let length: Double
     let minGap: Double      // Mindestabstand der Mittelpunkte
     let halfGap: Double     // halbe Lückenbreite bei voller Stärke
+    /// Ausdehnung jeder Perle nach links und rechts (zum Beispiel Nadelspitzen), die nicht in die Lücke ragen darf.
+    let extents: [(left: Double, right: Double)]
     private(set) var pos: [Double]
     private(set) var vel: [Double]
 
@@ -16,13 +18,14 @@ struct BeadChain {
     /// Zurückrutschen in etwa 0,6 s mit leichtem Überschwingen.
     static let release = Params(omega: 11, zeta: 0.5)
 
-    init(rest: [Double], length: Double, minGap: Double, halfGap: Double) {
+    init(rest: [Double], length: Double, minGap: Double, halfGap: Double, extents: [(left: Double, right: Double)]? = nil) {
         self.rest = rest; self.length = length; self.minGap = minGap; self.halfGap = halfGap
+        self.extents = extents ?? Array(repeating: (0, 0), count: rest.count)
         pos = rest; vel = Array(repeating: 0, count: rest.count)
     }
 
     /// Zielpositionen: Perlen im Lückenbereich werden an die Ränder geschoben, ihre Nachbarn rücken mit.
-    static func targets(rest: [Double], pointer: Double?, strength k: Double, halfGap: Double, minGap: Double, length: Double) -> [Double] {
+    static func targets(rest: [Double], pointer: Double?, strength k: Double, halfGap: Double, minGap: Double, length: Double, extents: [(left: Double, right: Double)]? = nil) -> [Double] {
         guard let p = pointer, k > 0, !rest.isEmpty else { return rest }
         let h = halfGap * min(max(k, 0), 1)
         var t = rest
@@ -30,15 +33,16 @@ struct BeadChain {
         let margin = minGap / 2
         // linke Seite: von der Lücke nach außen
         let leftIdx = (0..<n).filter { rest[$0] < p }
-        var edge = p - h
+        let ex = extents ?? Array(repeating: (left: 0.0, right: 0.0), count: n)
+        var edge = Double.infinity
         for i in leftIdx.reversed() {
-            t[i] = min(rest[i], edge)
+            t[i] = min(rest[i], edge, p - h - ex[i].right)
             edge = t[i] - minGap
         }
         let rightIdx = (0..<n).filter { rest[$0] >= p }
-        edge = p + h
+        edge = -Double.infinity
         for i in rightIdx {
-            t[i] = max(rest[i], edge)
+            t[i] = max(rest[i], edge, p + h + ex[i].left)
             edge = t[i] + minGap
         }
         // Kettenenden: Perlen können nicht über das Ende hinaus, sie stauen sich dort
@@ -48,7 +52,7 @@ struct BeadChain {
     }
 
     mutating func step(dt: Double, pointer: Double?, strength k: Double) {
-        let tg = Self.targets(rest: rest, pointer: pointer, strength: k, halfGap: halfGap, minGap: minGap, length: length)
+        let tg = Self.targets(rest: rest, pointer: pointer, strength: k, halfGap: halfGap, minGap: minGap, length: length, extents: extents)
         let steps = max(1, Int(ceil(dt / 0.004)))
         let h = dt / Double(steps)
         for _ in 0..<steps {

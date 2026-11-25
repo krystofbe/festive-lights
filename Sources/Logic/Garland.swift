@@ -32,6 +32,14 @@ enum Garland {
     static let hangScale = 0.21
     static let coneScale = 0.6
     static let bowScale = 0.6
+    /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
+    static func extent(layer: BranchLayer, sprite n: Int) -> (left: Double, right: Double) {
+        let maxX: [BranchLayer: [Double]] = [.back: [98, 101.5, 102.5, 104], .mid: [92, 95.5, 96, 97], .hang: [87, 86, 87.5], .front: [80.5, 82, 85.5]]
+        let minX: [BranchLayer: [Double]] = [.back: [39.5, 39.5, 39.5, 39.5], .mid: [39.5, 39.5, 39.5, 39.5], .hang: [33.5, 35, 15], .front: [39.5, 39.5, 39.5]]
+        let i = min(max(n, 1), maxX[layer]!.count) - 1
+        return (max(0, 40 - minX[layer]![i]), max(0, maxX[layer]![i] - 40))
+    }
+
     static let spriteCounts: [BranchLayer: Int] = [.back: 4, .mid: 4, .hang: 3, .front: 3]
 
     static func anchorSpacing(scale s: Double, dock: Bool = false) -> Double { dock ? 16 : 22 * s / max(density, 0.1) }

@@ -687,3 +687,37 @@ final class BeadChainTests: XCTestCase {
         XCTAssertGreaterThan(sum / Double(n), 25, "im Mittel bleibt eine Lücke um den Zeiger, sie wandert mit")
     }
 }
+
+final class BranchSlideTests: XCTestCase {
+    func testNoBranchTipInsideGapAndReturnWithinOneSecond() {
+        let plan = Garland.plan(length: 1920, arcLength: 274, arcCount: 7, scale: 1, style: .firGold, dock: false)
+        for layer in [BranchLayer.back, .mid, .hang, .front] {
+            let list = plan.branches.filter { $0.layer == layer }
+            let scale = layer == .hang ? Garland.hangScale : Garland.branchScale
+            let ex = list.map { b -> (left: Double, right: Double) in
+                let e = Garland.extent(layer: layer, sprite: b.sprite)
+                let m = b.mirrored ? (left: e.right, right: e.left) : e
+                return (left: m.left * scale * 1.2, right: m.right * scale * 1.2)
+            }
+            var chain = BeadChain(rest: list.map(\.u), length: 1920, minGap: 8, halfGap: 47, extents: ex)
+            let p = 900.0
+            let tg = BeadChain.targets(rest: chain.rest, pointer: p, strength: 1, halfGap: 47, minGap: 8, length: 1920, extents: ex)
+            for (i, t) in tg.enumerated() {
+                XCTAssertGreaterThanOrEqual(abs(t - p), 47 - 1e-6, "Ansatzpunkt in der Lücke")
+                let intersects = (t - ex[i].left) < (p + 47) - 1e-6 && (t + ex[i].right) > (p - 47) + 1e-6
+                XCTAssertFalse(intersects, "Zweig \(i) der Schicht \(layer) ragt mit den Nadelspitzen in die Lücke")
+            }
+            for _ in 0..<80 { chain.step(dt: 1.0 / 60, pointer: p, strength: 1) }
+            for i in 1..<chain.pos.count { XCTAssertGreaterThanOrEqual(chain.pos[i] - chain.pos[i - 1], 8 - 1e-6) }
+            for _ in 0..<60 { chain.step(dt: 1.0 / 60, pointer: nil, strength: 0) }
+            for i in chain.pos.indices { XCTAssertLessThan(abs(chain.pos[i] - chain.rest[i]), 2, "Zweig \(i) der Schicht \(layer) nicht binnen 1 s zurück") }
+        }
+    }
+
+    func testExtentsAreMeasuredAndPositive() {
+        for l in [BranchLayer.back, .mid, .hang, .front] {
+            for n in 1...Garland.spriteCounts[l]! { let e = Garland.extent(layer: l, sprite: n); XCTAssertGreaterThan(e.right, 30); XCTAssertGreaterThanOrEqual(e.left, 0) }
+        }
+        XCTAssertGreaterThan(Garland.extent(layer: .hang, sprite: 3).left, 20)
+    }
+}
