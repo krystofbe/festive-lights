@@ -87,3 +87,15 @@ Leuchten: weicher Schein in der Schein-Farbe, Mitte in der Mitte des Glaskörper
 **Christbaumkugeln** `bauble-red.pdf` und `bauble-gold.pdf` (16 × 26 pt, Aufhängepunkt = Fadenanfang bei (8, 2,5)): nur bei "Tanne bunt", statt der Zapfen, rot und gold abwechselnd, etwa vier pro Bogen. Eine Kugel hängt immer an ihrem Faden an einem Tannenzweig, an einer Stelle des Zweigs mit Nadeln nahe der Zweigspitze, nie am Kabel und nie an einer Birne. Wo kein Zweig ist, hängt keine Kugel. Kugeln nehmen die Farben des Weihnachtsbaums auf: Rot, Gold und Grün, dazu das Cremeweiß der Birnen.
 
 **Schleife** `bow.pdf` (40 × 34 pt, Mitte des Knotens bei (20, 12)): nur bei "Tanne warmgold", an jedem Aufhängepunkt der Bögen.
+
+## Stil "Tanne bunt" (Ordner `TanneBunt/`, ersetzt die bisherige Darstellung von "Tanne bunt")
+
+Flacher Illustrationsstil nach der Vorlage `TanneBunt/vorlage.svg` (1000 × 320 Einheiten). Maßgeblich ist das Zielbild `TanneBunt/garland-preview.png`: die Vorlage im Maßstab **0,3 pt je Einheit** bei Mittelstellung der Birnengröße, unter einer echten Menüleiste, über die Bildschirmbreite wiederholt. "Tanne warmgold" bleibt unverändert (Ordner `Tanne/`).
+
+Aufbau von hinten nach vorn, wie in der Vorlage:
+1. Grundstrang: dicke dunkelbraune Linie #2D1E17 (8 Einheiten) in flachen Bögen.
+2. Tannenbüschel `tb-cluster.pdf` (130 × 110 Einheiten, Mitte bei (65, 50)), etwa alle 70 Einheiten entlang des Strangs, leicht gedreht (bis ±22 Grad) und skaliert (1,1 bis 1,25), wie in der Vorlage.
+3. Zapfen `tb-pinecone.pdf` (20 × 28, Mitte (10, 14)), etwa zwei je Bogen, in der Girlande.
+4. Kabel der Lichterkette: dünne Linie #18221B (2,2 Einheiten), die sich in eigenen, weicheren Wellen durch das Grün schlängelt.
+5. Birnen: `tb-bulb-socket.pdf` (Fassung, unverändert) und `tb-bulb-glass.pdf` (Glas als Form, einfärben), Leinwand 12 × 22, Aufhängepunkt (6, 0). Reihenfolge der Farben: cremeweiß #FFF3B0, rot #FF595E, gelb #FFCA3A. Leuchten: weicher Schein in der Birnenfarbe. Weil die Birne im Maßstab 0,3 sehr klein ist, darf der Schein etwa doppelt so weit reichen wie die Birne hoch ist.
+6. Kugeln `tb-bauble-1.pdf` bis `tb-bauble-5.pdf` (fünf Muster, reihum), jeweils an einem goldenen Faden #D4AF37 (2 Einheiten), der in einem Tannenbüschel beginnt. Aufhängepunkt (Fadenende) je Kugel: 1, 3, 5 oben mittig (x = halbe Breite, y = 0); 2 und 4 haben eine Schleife darüber, Aufhängepunkt (44, 14). Etwa alle 170 Einheiten eine Kugel, Fadenlänge 45 bis 65 Einheiten, abwechselnd, wie in der Vorlage.
