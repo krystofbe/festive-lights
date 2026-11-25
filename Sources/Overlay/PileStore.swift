@@ -49,8 +49,10 @@ final class PileStore {
 
     private(set) var entries: [Int: Entry] = [:]
     /// Wunsch nach herabfallendem Schnee: Punkt in globalen y-nach-unten-Koordinaten.
-    var debris: [(x: Double, y: Double, count: Int)] = []
+    struct DebrisRequest { var x: Double; var y: Double; var count: Int; var vx = 0.0; var vy = Double.nan }
+    var debris: [DebrisRequest] = []
     var active = false
+    var debugStirCalls = 0, debugStirHits = 0, debugEdges: [Double] = []
     private(set) var meltStart: Double?
     private var lastWindowPoll = 0.0
 
@@ -118,7 +120,7 @@ final class PileStore {
             guard let seg = e.segments.randomElement() else { return }
             let x = Double.random(in: seg)
             let h = Double(e.pile.height(at: x - Double(e.frame.minX)))
-            debris.append((x, Double(e.frame.minY) - h * Double.random(in: 0.3...1), 1))
+            debris.append(DebrisRequest(x: x, y: Double(e.frame.minY) - h * Double.random(in: 0.3...1), count: 1))
         }
     }
 
@@ -136,7 +138,38 @@ final class PileStore {
         for _ in 0..<14 {
             let dx = Double.random(in: 0...(r * 1.4)) * (c.side ? 1 : -1)
             let drop = WindowCorners.edgeDrop(distanceFromSide: abs(dx), radius: r)
-            debris.append((c.x + dx, Double(e.frame.minY) + drop - Double.random(in: 0...6), 1))
+            debris.append(DebrisRequest(x: c.x + dx, y: Double(e.frame.minY) + drop - Double.random(in: 0...6), count: 1))
+        }
+    }
+
+    /// Aufstöbern: schnelles Wischen über eine Schicht lässt eine Wolke aufstieben und hinterlässt eine Delle.
+    /// Koordinaten global, y nach unten.
+    func stir(from a: CGPoint, to b: CGPoint, velocity v: CGVector, strength: Double, time: Double) {
+        debugStirCalls += 1
+        guard active, strength > 0 else { return }
+        debugEdges = entries.values.map { Double($0.frame.minY) }
+        let samples = 12
+        for (id, e) in entries {
+            let edge = Double(e.frame.minY)
+            var lastX = -1e9
+            for k in 0...samples {
+                let t = Double(k) / Double(samples)
+                let x = Double(a.x + (b.x - a.x) * t), y = Double(a.y + (b.y - a.y) * t)
+                guard y > edge - 18, y < edge + 8, abs(x - lastX) >= 14, e.segments.contains(where: { $0.contains(x) }) else { continue }
+                let lx = x - Double(e.frame.minX)
+                let h = Double(entries[id]!.pile.height(at: lx))
+                guard h > 1.0 else { continue }
+                lastX = x
+                debugStirHits += 1
+                entries[id]!.pile.remove(fraction: Float(0.4 + 0.3 * strength), from: lx - 14, to: lx + 14)
+                entries[id]!.version += 1
+                let n = Int(3 + 10 * strength)
+                for _ in 0..<n {
+                    debris.append(DebrisRequest(x: x + Double.random(in: -12...12), y: edge - h * Double.random(in: 0.2...1), count: 1,
+                                                vx: Double(v.dx) * Double.random(in: 0.15...0.4) + Double.random(in: -40...40),
+                                                vy: Double(v.dy) * 0.2 - Double.random(in: 60...260) * (0.5 + strength)))
+                }
+            }
         }
     }
 

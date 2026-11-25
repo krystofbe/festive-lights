@@ -341,3 +341,47 @@ final class CornerTests: XCTestCase {
         XCTAssertLessThan(p.height(at: 10), corner * 0.6)
     }
 }
+
+final class StirTests: XCTestCase {
+    func testVelocityTrackerMeasuresSpeed() {
+        var t = PointerVelocityTracker()
+        for i in 0..<30 { t.feed(time: Double(i) * 0.008, position: CGPoint(x: Double(i) * 12, y: 0)) } // 1500 pt/s
+        XCTAssertEqual(t.speed(at: 29 * 0.008), 1500, accuracy: 150)
+        XCTAssertEqual(t.speed(at: 29 * 0.008 + 0.5), 0, "ohne Ereignisse klingt das Tempo ab")
+        XCTAssertGreaterThan(t.velocity.dx, 0)
+    }
+
+    func testSlowMovementDoesNotStir() {
+        XCTAssertEqual(Stir.strength(speed: 200), 0)
+        XCTAssertNil(Stir.impulse(flake: CGPoint(x: 5, y: 0), from: .zero, to: CGPoint(x: 10, y: 0), velocity: CGVector(dx: 200, dy: 0)))
+        XCTAssertEqual(Stir.strength(speed: 2000), 1)
+    }
+
+    func testFastMovementCarriesFlakesForwardAndUp() {
+        let v = CGVector(dx: 1200, dy: 0)
+        let imp = Stir.impulse(flake: CGPoint(x: 100, y: 20), from: CGPoint(x: 80, y: 0), to: CGPoint(x: 120, y: 0), velocity: v)!
+        XCTAssertGreaterThan(imp.dx, 100, "in Bewegungsrichtung")
+        XCTAssertLessThan(imp.dy, 0, "etwas nach oben (y nach unten)")
+    }
+
+    func testFasterStirsMoreFlakesAndHarder() {
+        XCTAssertGreaterThan(Stir.radius(strength: Stir.strength(speed: 1500)), Stir.radius(strength: Stir.strength(speed: 600)))
+        func hit(_ speed: Double) -> CGFloat {
+            Stir.impulse(flake: CGPoint(x: 0, y: 50), from: CGPoint(x: -20, y: 0), to: CGPoint(x: 20, y: 0), velocity: CGVector(dx: speed, dy: 0))?.dx ?? 0
+        }
+        XCTAssertGreaterThan(hit(1500), hit(700))
+    }
+
+    func testFlakesOutsideRadiusUntouched() {
+        XCTAssertNil(Stir.impulse(flake: CGPoint(x: 0, y: 400), from: .zero, to: CGPoint(x: 50, y: 0), velocity: CGVector(dx: 1500, dy: 0)))
+    }
+
+    func testFallRecoversAfterTwoSeconds() {
+        XCTAssertLessThan(Stir.fallFactor(age: 0), 0.2)
+        XCTAssertEqual(Stir.fallFactor(age: 2.0), 1, accuracy: 1e-9)
+        var last = 0.0
+        for a in stride(from: 0.0, through: 2.0, by: 0.1) { let f = Stir.fallFactor(age: a); XCTAssertGreaterThanOrEqual(f, last); last = f }
+        let d = Stir.decayed(CGVector(dx: 1000, dy: -400), dt: 2.0)
+        XCTAssertLessThan(hypot(d.dx, d.dy), 40)
+    }
+}

@@ -59,6 +59,7 @@ final class AppController: NSObject {
 
         monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
             let p = NSEvent.mouseLocation
+            Engine.shared.pointerEvent(p, time: ProcessInfo.processInfo.systemUptime)
             self?.overlays.values.forEach { $0.pointerMoved(p) }
         } as Any)
 
@@ -99,7 +100,7 @@ final class AppController: NSObject {
 
     private func poll() {
         #if DEBUG
-        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
+        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) stir[events=\(Engine.shared.debugEvents) maxSpeed=\(Int(Engine.shared.debugMaxSpeed)) stirred=\(Engine.shared.debugStirred) pileCalls=\(PileStore.shared.debugStirCalls) hits=\(PileStore.shared.debugStirHits) edges=\(PileStore.shared.debugEdges)] piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
         let p = Permission.granted
@@ -208,6 +209,7 @@ final class AppController: NSObject {
         st.dock = dockGeometry
         st.snowRampStart = snowRampStart
         Engine.shared.settleActive = settle
+        Engine.shared.reduceMotion = reduceMotion
         PileStore.shared.setActive(settle, time: now)
         if !settle && PileStore.shared.isIdle { PileStore.shared.clear() }
         overlays.values.forEach { $0.apply(st) }

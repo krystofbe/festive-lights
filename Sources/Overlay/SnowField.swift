@@ -23,6 +23,7 @@ private struct Flake {
     var ttl = -1.0
     var vx = 0.0
     var ox = 0.0, oy = 0.0
+    var svx = 0.0, svy = 0.0, stirAge = 99.0, stirCool = 0.0, spin = 0.0
     var layer = 0
     var dying = false, debris = false
 }
@@ -125,15 +126,15 @@ final class SnowField {
         flakes.append(f)
     }
 
-    func spawnDebris(at p: CGPoint, count: Int) {
+    func spawnDebris(at p: CGPoint, count: Int, vx: Double = 0, vy: Double = .nan) {
         guard layers.count < 1100 else { return }
         for _ in 0..<count {
             var f = Flake()
             f.debris = true
             f.x = Double(p.x) + Double.random(in: -3...3); f.y = Double(p.y)
             f.size = Double.random(in: 1.4...3.2) * appliedSize
-            f.speed = Double.random(in: 25...200)
-            f.vx = Double.random(in: -22...22)
+            f.speed = vy.isNaN ? Double.random(in: 25...200) : vy + Double.random(in: -30...30)
+            f.vx = vx + Double.random(in: -22...22)
             f.alpha = Double.random(in: 0.6...1)
             f.ttl = Double.random(in: 0.7...2.2)
             f.fade = 1
@@ -186,6 +187,11 @@ final class SnowField {
         } else { pointerSmooth = nil }
 
         let settleTargets = cfg.settle ? targets : []
+        var localSweep: (a: CGPoint, b: CGPoint, v: CGVector)?
+        if let sw = Engine.shared.sweep, !reduce {
+            func loc(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x - screen.frame.minX, y: screen.frame.height - (p.y - screen.frame.minY)) }
+            localSweep = (loc(sw.from), loc(sw.to), CGVector(dx: sw.velocity.dx, dy: -sw.velocity.dy))
+        }
         let hitScale = pileHitAmount()
         var i = 0
         while i < flakes.count {
@@ -204,7 +210,23 @@ final class SnowField {
                 f.fade += (f.dying ? -1 : 1) * f.fadeRate * dt
                 if f.fade >= 1 { f.fade = 1; f.fadeRate = f.dying ? f.fadeRate : 0 }
                 if f.fade <= 0 { remove = true }
-                f.y += f.speed * speedMult * dt
+                if let sw = localSweep, !f.dying, f.stirCool <= 0,
+                   let imp = Stir.impulse(flake: CGPoint(x: f.x, y: f.y), from: sw.a, to: sw.b, velocity: sw.v, jitter: Double.random(in: -1...1)) {
+                    f.svx = Double(imp.dx) * (0.6 + 0.6 * f.z); f.svy = Double(imp.dy) * (0.6 + 0.6 * f.z)
+                    Engine.shared.debugStirred += 1
+                    f.stirAge = 0; f.stirCool = 0.7; f.spin = Double.random(in: -9...9)
+                }
+                f.stirCool -= dt
+                var fallFactor = 1.0
+                if f.stirAge < 3 {
+                    f.stirAge += dt
+                    fallFactor = Stir.fallFactor(age: f.stirAge)
+                    let d = Stir.decayed(CGVector(dx: f.svx, dy: f.svy), dt: dt)
+                    f.svx = Double(d.dx); f.svy = Double(d.dy)
+                    f.x += f.svx * dt; f.y += f.svy * dt
+                    f.rot += f.spin * dt * max(0, 1 - f.stirAge / 1.8)
+                }
+                f.y += f.speed * speedMult * dt * fallFactor
                 f.x += windV * (0.35 + 0.65 * f.z) * dt
                 if f.crystal { f.rot += f.rotSpeed * dt * (reduce ? 0.5 : 1) }
                 if f.y > H + f.size * 2 {
