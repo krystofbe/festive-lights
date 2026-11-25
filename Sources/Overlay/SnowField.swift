@@ -129,7 +129,7 @@ final class SnowField {
     }
 
     func spawnDebris(at p: CGPoint, count: Int, vx: Double = 0, vy: Double = .nan, gravity: Double = 72, big: Bool = false) {
-        guard layers.count < 1100 else { return }
+        guard layers.count - free.count < 1100 else { return }
         for _ in 0..<count {
             var f = Flake()
             f.debris = true
@@ -176,7 +176,7 @@ final class SnowField {
         }
 
         let speedMult = cfg.speedMult * (reduce ? 0.5 : 1) * (cfg.energySaving ? 0.8 : 1) * (1 + stormFactor)
-        let windV = reduce ? 0 : SnowPhysics.windSpeed(mode: cfg.wind, time: time, storm: stormFactor)
+        let windV = SnowPhysics.windSpeed(mode: cfg.wind, time: time, storm: stormFactor, gusts: !reduce)
         let swayOn = !reduce
         let W = screenSize.width, H = screenSize.height
 
@@ -242,7 +242,7 @@ final class SnowField {
                 }
                 if f.x > W + 40 { f.x -= W + 80 } else if f.x < -40 { f.x += W + 80 }
                 if !settleTargets.isEmpty, !f.dying, f.z > 0.12 {
-                    let gx = Double(screen.cgOrigin.x) + f.x
+                    let gx = ox0 + f.x
                     for t in settleTargets where prevY < t.topY && f.y >= t.topY {
                         if let s = t.segments.first(where: { $0.contains(gx) }), s.upperBound > s.lowerBound {
                             store.deposit(id: t.id, x: gx - t.originX, amount: hitScale)
@@ -308,7 +308,7 @@ final class SnowField {
         let melt = store.melt
         for (id, e) in store.entries where cfg.settle || store.meltStart != nil {
             let frame = e.frame
-            guard frame.maxX > screen.cgOrigin.x, frame.minX < screen.cgOrigin.x + screenSize.width,
+            guard frame.maxX > originX, frame.minX < originX + screenSize.width,
                   frame.minY > originY - 20, frame.minY < originY + screenSize.height + 20, !e.pile.isEmpty else { continue }
             seen.insert(id)
             let layer: CAShapeLayer

@@ -8,22 +8,33 @@ struct TrackedWindow {
 
 /// Liest die Fensterliste (nur Geometrie, keine Berechtigung nötig).
 enum WindowTracker {
-    static func poll(menuBarBottom: (CGRect) -> Double) -> [TrackedWindow] {
+    /// Menüleistenkante je Bildschirm in CG-Koordinaten (y nach unten), damit auch Zweitbildschirme über oder unter dem Hauptbildschirm stimmen.
+    private struct ScreenBar { var rect: CGRect; var barBottom: Double }
+
+    static func poll() -> [TrackedWindow] {
         guard let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return [] }
         let me = ProcessInfo.processInfo.processIdentifier
-        let screens = NSScreen.screens.map { CGRect(origin: $0.cgOrigin, size: $0.frame.size) }
+        let screens = NSScreen.screens.map { s in
+            ScreenBar(rect: CGRect(origin: s.cgOrigin, size: s.frame.size), barBottom: Double(s.cgOrigin.y) + Double(max(s.frame.maxY - s.visibleFrame.maxY, 0)))
+        }
         var occluders: [CGRect] = []
         var out: [TrackedWindow] = []
         for w in info {
             guard let layer = w[kCGWindowLayer as String] as? Int, layer >= 0, layer < 24,
-                  let pid = w[kCGWindowOwnerPID as String] as? Int32, pid != me,
+                  let pid = w[kCGWindowOwnerPID as String] as? Int32,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary,
                   let r = CGRect(dictionaryRepresentation: bd),
                   (w[kCGWindowAlpha as String] as? Double ?? 1) > 0.1, r.width >= 40, r.height >= 20,
                   (w[kCGWindowOwnerName as String] as? String) != "Dock" else { continue }
+            if pid == me {
+                // eigene normale Fenster (Einstellungen) verdecken Schnee anderer Fenster, bekommen aber selbst keinen
+                if layer == 0 { occluders.append(r) }
+                continue
+            }
             if layer == 0, let id = w[kCGWindowNumber as String] as? Int, r.width >= 140, r.height >= 80 {
-                let fullscreen = screens.contains { r.width >= $0.width - 2 && r.height >= $0.height - 2 }
-                if !fullscreen, r.minY > menuBarBottom(r) + 3 { out.append(TrackedWindow(id: id, frame: r, above: occluders)) }
+                let fullscreen = screens.contains { r.width >= $0.rect.width - 2 && r.height >= $0.rect.height - 2 }
+                let home = screens.first { $0.rect.contains(CGPoint(x: r.midX, y: r.midY)) } ?? screens.first
+                if !fullscreen, r.minY > (home?.barBottom ?? 26) + 3 { out.append(TrackedWindow(id: id, frame: r, above: occluders)) }
             }
             occluders.append(r)
         }
@@ -54,7 +65,8 @@ final class PileStore {
     var active = false
     var debugStirCalls = 0, debugStirHits = 0, debugEdges: [Double] = []
     private(set) var meltStart: Double?
-    private var lastWindowPoll = 0.0
+    /// Zeitpunkt der letzten erkannten Fensterbewegung (steuert die Abfragerate beim Ziehen).
+    private(set) var lastMoveTime = 0.0
 
     var melt: Double { meltFactor }
     private var meltFactor = 0.0
@@ -92,6 +104,7 @@ final class PileStore {
             if moved > 0.5 || w.frame != e.frame {
                 e.version += 1
                 e.moving = moved > 0.5
+                if moved > 0.5 { lastMoveTime = time }
                 if moved > 2, active, e.pile.fill > 0.04 { fall(e, fraction: 0, scatter: min(5, Int(moved / 8) + 1)) }
                 if mouseDown, moved > 0.5, active {
                     let steps = e.detector.feed(time: time, position: w.frame.origin)

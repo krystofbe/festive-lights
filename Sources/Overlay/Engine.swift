@@ -64,12 +64,13 @@ final class Engine {
         lastSweepPos = pos
         store.advanceMelt(time: now)
         let down = NSEvent.pressedMouseButtons & 1 != 0
-        let pollGap = down ? 1.0 / 60 : (now < burstUntil ? 1.0 / 30 : 0.5)
+        // Beim Ziehen mit 60 Hz nur, solange sich wirklich ein Fenster bewegt, sonst 20 Hz (Textmarkieren, Zeichnen)
+        let dragging = now - store.lastMoveTime < 0.5
+        let pollGap = down ? (dragging ? 1.0 / 60 : 1.0 / 20) : (now < burstUntil ? 1.0 / 30 : 0.5)
         if settleActive, now - lastPoll >= pollGap {
             let interval = now - lastPoll
             lastPoll = now
-            let bar = Double(NSStatusBar.system.thickness) + 2
-            store.update(windows: WindowTracker.poll(menuBarBottom: { _ in bar }), mouseDown: down, time: now, interval: interval)
+            store.update(windows: WindowTracker.poll(), mouseDown: down, time: now, interval: interval)
         }
         if !store.debris.isEmpty {
             for d in store.debris {
