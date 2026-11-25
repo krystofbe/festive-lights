@@ -306,3 +306,38 @@ final class CoordinateTests: XCTestCase {
         XCTAssertGreaterThan(SnowPhysics.windSpeed(mode: .right, time: 1, storm: 0, gusts: false), 0)
     }
 }
+
+final class CornerTests: XCTestCase {
+    func testRadiusPerVersion() {
+        XCTAssertEqual(WindowCorners.radius(forMajorVersion: 26), 26)
+        XCTAssertEqual(WindowCorners.radius(forMajorVersion: 14), 10)
+    }
+
+    func testEdgeDropFollowsCircleAndMeasuredPoints() {
+        let r = 26.0
+        XCTAssertEqual(WindowCorners.edgeDrop(distanceFromSide: 0, radius: r), r, accuracy: 1e-9)
+        XCTAssertEqual(WindowCorners.edgeDrop(distanceFromSide: r, radius: r), 0)
+        XCTAssertEqual(WindowCorners.edgeDrop(distanceFromSide: 100, radius: r), 0)
+        // gemessen am Testrechner: bei 4 pt Abstand liegt die Kante etwa 12 pt, bei 14 pt etwa 3 pt von der geraden Kante entfernt
+        XCTAssertEqual(WindowCorners.edgeDrop(distanceFromSide: 4, radius: r), 12, accuracy: 1.5)
+        XCTAssertEqual(WindowCorners.edgeDrop(distanceFromSide: 14, radius: r), 3.0, accuracy: 1.5)
+        var last = 100.0
+        for d in stride(from: 0.0, through: r, by: 0.5) { let v = WindowCorners.edgeDrop(distanceFromSide: d, radius: r); XCTAssertLessThanOrEqual(v, last); last = v }
+    }
+
+    func testTaperThinsTowardCorner() {
+        let r = 26.0
+        XCTAssertEqual(WindowCorners.taper(distanceFromSide: 0, radius: r), 0)
+        XCTAssertEqual(WindowCorners.taper(distanceFromSide: r * 2, radius: r), 1)
+        XCTAssertLessThan(WindowCorners.taper(distanceFromSide: 8, radius: r), WindowCorners.taper(distanceFromSide: 20, radius: r))
+    }
+
+    func testRemoveRangeOnlyAffectsCorner() {
+        var p = SnowPile(width: 200)
+        for _ in 0..<3000 { for x in stride(from: 0.0, to: 200, by: 4) { p.deposit(at: x, amount: 1) } }
+        let mid = p.height(at: 100), corner = p.height(at: 10)
+        p.remove(fraction: 0.6, from: 0, to: 30)
+        XCTAssertEqual(p.height(at: 100), mid, accuracy: 0.01)
+        XCTAssertLessThan(p.height(at: 10), corner * 0.6)
+    }
+}

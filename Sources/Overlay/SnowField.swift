@@ -311,35 +311,43 @@ final class SnowField {
         }
     }
 
-    static func path(entry e: PileStore.Entry, id: Int, originX: Double, originY: Double, melt: Double, screenHeight: Double) -> CGPath {
+    static func path(entry e: PileStore.Entry, id: Int, originX: Double, originY: Double, melt: Double, screenHeight H: Double) -> CGPath {
         let path = CGMutablePath()
-        let edgeY = screenHeight - (Double(e.frame.minY) - originY)  // bottom-up
+        let edgeY = Double(e.frame.minY) - originY
         let factor = 1 - melt
+        let r = WindowCorners.currentRadius
+        let left = Double(e.frame.minX), width = Double(e.frame.width)
+        func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x - originX, y: ScreenCoords.layerY(topDown: y, height: H)) }
         for seg in e.segments {
             let x0 = seg.lowerBound, x1 = seg.upperBound
-            var pts: [CGPoint] = []
+            let leftCorner = x0 <= left + 0.5, rightCorner = x1 >= left + width - 0.5
+            var top: [CGPoint] = [], base: [CGPoint] = []
             var x = x0
             while true {
-                let lx = x - Double(e.frame.minX)
-                let edge = min(1, min(x - x0, x1 - x) / 14)
-                let taper = sqrt(max(0, 1 - (1 - edge) * (1 - edge)))
+                let lx = x - left
+                let dl = leftCorner ? lx : .infinity, dr = rightCorner ? width - lx : .infinity
+                let d = min(dl, dr)
+                let drop = WindowCorners.edgeDrop(distanceFromSide: d, radius: r)
+                var taper = d.isFinite ? WindowCorners.taper(distanceFromSide: d, radius: r) : 1
+                let cut = min(leftCorner ? .infinity : x - x0, rightCorner ? .infinity : x1 - x)
+                if cut.isFinite { let t = min(1, cut / 14); taper = min(taper, (1 - (1 - t) * (1 - t)).squareRoot()) }
                 let col = Int(max(0, lx) / SnowPile.columnWidth)
                 let wave = 0.88 + 0.12 * sin(lx / 23 + Double(id % 7)) + 0.08 * sin(lx / 9 + Double(id % 5))
-                let noise = wave * (0.9 + 0.2 * stableRandom(id, col, 5))
-                let h = Double(e.pile.height(at: lx)) * noise * taper * factor
-                pts.append(CGPoint(x: x - originX, y: edgeY + h))
+                let h = Double(e.pile.height(at: lx)) * wave * (0.9 + 0.2 * stableRandom(id, col, 5)) * taper * factor
+                base.append(pt(x, edgeY + drop + 1.5))
+                top.append(pt(x, edgeY + drop - h))
                 if x >= x1 { break }
                 x = min(x + 3, x1)
             }
-            guard pts.count > 1 else { continue }
-            path.move(to: CGPoint(x: x0 - originX, y: edgeY - 1.5))
-            path.addLine(to: pts[0])
-            for k in 1..<pts.count {
-                let mid = CGPoint(x: (pts[k - 1].x + pts[k].x) / 2, y: (pts[k - 1].y + pts[k].y) / 2)
-                path.addQuadCurve(to: mid, control: pts[k - 1])
+            guard top.count > 1 else { continue }
+            path.move(to: base[0])
+            path.addLine(to: top[0])
+            for k in 1..<top.count {
+                let mid = CGPoint(x: (top[k - 1].x + top[k].x) / 2, y: (top[k - 1].y + top[k].y) / 2)
+                path.addQuadCurve(to: mid, control: top[k - 1])
             }
-            path.addLine(to: pts[pts.count - 1])
-            path.addLine(to: CGPoint(x: x1 - originX, y: edgeY - 1.5))
+            path.addLine(to: top[top.count - 1])
+            for p in base.reversed() { path.addLine(to: p) }
             path.closeSubpath()
         }
         return path

@@ -36,6 +36,16 @@ struct SnowPile {
         return removed
     }
 
+    /// Nimmt nur im Bereich x0...x1 einen Anteil weg (Abrutschen an einer Ecke).
+    @discardableResult
+    mutating func remove(fraction: Float, from x0: Double, to x1: Double) -> Float {
+        var removed: Float = 0
+        let lo = max(0, Int(x0 / SnowPile.columnWidth)), hi = min(columns.count - 1, Int(x1 / SnowPile.columnWidth))
+        guard lo <= hi else { return 0 }
+        for i in lo...hi { removed += columns[i] * fraction; columns[i] *= 1 - fraction }
+        return removed
+    }
+
     mutating func clear() { for i in columns.indices { columns[i] = 0 } }
 
     /// Passt das Profil einer geänderten Fensterbreite an.

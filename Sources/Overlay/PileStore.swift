@@ -22,7 +22,7 @@ enum WindowTracker {
                   (w[kCGWindowAlpha as String] as? Double ?? 1) > 0.1, r.width >= 40, r.height >= 20,
                   (w[kCGWindowOwnerName as String] as? String) != "Dock" else { continue }
             if layer == 0, let id = w[kCGWindowNumber as String] as? Int, r.width >= 140, r.height >= 80 {
-                let fullscreen = screens.contains { $0.insetBy(dx: -2, dy: -2).contains(r) || (abs($0.width - r.width) < 2 && abs($0.height - r.height) < 2) }
+                let fullscreen = screens.contains { r.width >= $0.width - 2 && r.height >= $0.height - 2 }
                 if !fullscreen, r.minY > menuBarBottom(r) + 3 { out.append(TrackedWindow(id: id, frame: r, above: occluders)) }
             }
             occluders.append(r)
@@ -44,6 +44,7 @@ final class PileStore {
         var missing = 0
         var version = 0
         var moving = false
+        var nextSlide = 0.0
     }
 
     private(set) var entries: [Int: Entry] = [:]
@@ -80,7 +81,7 @@ final class PileStore {
             }
         }
         for w in windows {
-            var e = entries[w.id] ?? Entry(pile: SnowPile(width: Double(w.frame.width)), frame: w.frame, above: w.above, segments: [])
+            var e = entries[w.id] ?? Entry(pile: SnowPile(width: Double(w.frame.width)), frame: w.frame, above: w.above, segments: [], nextSlide: time + Double.random(in: 12...35))
             e.missing = 0
             e.moving = false
             let moved = hypot(w.frame.minX - e.frame.minX, w.frame.minY - e.frame.minY)
@@ -101,6 +102,10 @@ final class PileStore {
             if !mouseDown { e.detector.reset() }
             let segs = WindowEdges.visibleSegments(of: w.frame, above: w.above)
             if segs != e.segments { e.segments = segs; e.version += 1 }
+            if active, time >= e.nextSlide {
+                e.nextSlide = time + Double.random(in: 15...45)
+                slideCorner(&e)
+            }
             e.frame = w.frame
             e.above = w.above
             entries[w.id] = e
@@ -114,6 +119,24 @@ final class PileStore {
             let x = Double.random(in: seg)
             let h = Double(e.pile.height(at: x - Double(e.frame.minX)))
             debris.append((x, Double(e.frame.minY) - h * Double.random(in: 0.3...1), 1))
+        }
+    }
+
+    /// An einer sichtbaren Ecke rutscht ein kleines Stück Schnee ab.
+    private func slideCorner(_ e: inout Entry) {
+        guard e.pile.fill > 0.3 else { return }
+        let r = WindowCorners.currentRadius
+        let width = Double(e.frame.width)
+        let candidates: [(side: Bool, x: Double)] = [
+            (true, Double(e.frame.minX)), (false, Double(e.frame.maxX)),
+        ].filter { c in e.segments.contains { c.side ? $0.lowerBound <= Double(e.frame.minX) + 0.5 : $0.upperBound >= Double(e.frame.maxX) - 0.5 } }
+        guard let c = candidates.randomElement() else { return }
+        if c.side { e.pile.remove(fraction: 0.55, from: 0, to: r * 1.6) } else { e.pile.remove(fraction: 0.55, from: width - r * 1.6, to: width) }
+        e.version += 1
+        for _ in 0..<14 {
+            let dx = Double.random(in: 0...(r * 1.4)) * (c.side ? 1 : -1)
+            let drop = WindowCorners.edgeDrop(distanceFromSide: abs(dx), radius: r)
+            debris.append((c.x + dx, Double(e.frame.minY) + drop - Double.random(in: 0...6), 1))
         }
     }
 

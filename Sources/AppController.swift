@@ -52,6 +52,8 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(systemChanged), name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
         #if DEBUG
         dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.storm"), object: nil)
+        dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
+        dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil)
 
@@ -97,7 +99,7 @@ final class AppController: NSObject {
 
     private func poll() {
         #if DEBUG
-        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) \(status.debugAppearance)\n"
+        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) piles=\(PileStore.shared.entries.count) fills=\(PileStore.shared.entries.values.map { String(format: "%.2f", $0.pile.fill) }) \(status.debugAppearance)\n"
         try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
         #endif
         let p = Permission.granted
@@ -232,6 +234,43 @@ final class AppController: NSObject {
     var reduceMotionActive: Bool { reduceMotion }
 
     @objc private func debugStorm() { toggleStorm() }
+
+    /// Entwicklerhilfe: schüttelt ein Fenster per echten Mausereignissen. Objekt "x,y,Wechsel,Ausschlag,Intervall".
+    @objc private func debugShake(_ n: Notification) {
+        let v = (n.object as? String ?? "").split(separator: ",").compactMap { Double($0) }
+        guard v.count >= 5 else { return }
+        DispatchQueue.global().async {
+            func post(_ t: CGEventType, _ x: Double, _ y: Double) {
+                CGEvent(mouseEventSource: nil, mouseType: t, mouseCursorPosition: CGPoint(x: x, y: y), mouseButton: .left)?.post(tap: .cghidEventTap)
+            }
+            var x = v[0]
+            post(.mouseMoved, x, v[1]); usleep(200_000)
+            post(.leftMouseDown, x, v[1]); usleep(100_000)
+            var dir = 1.0
+            let steps = 8
+            var segs = Int(v[2]) + 1
+            if segs % 2 == 1 { segs += 1 }
+            for _ in 0..<segs {
+                for _ in 0..<steps { x += dir * v[3] / Double(steps); post(.leftMouseDragged, x, v[1]); usleep(UInt32(v[4] * 1_000_000 / Double(steps))) }
+                dir = -dir
+            }
+            post(.leftMouseUp, x, v[1])
+        }
+    }
+
+    /// Entwicklerhilfe: bewegt den Zeiger schnell von A nach B. Objekt "x1,y1,x2,y2,Sekunden".
+    @objc private func debugSwipe(_ n: Notification) {
+        let v = (n.object as? String ?? "").split(separator: ",").compactMap { Double($0) }
+        guard v.count >= 5 else { return }
+        DispatchQueue.global().async {
+            let steps = max(2, Int(v[4] * 120))
+            for i in 0...steps {
+                let t = Double(i) / Double(steps)
+                CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: CGPoint(x: v[0] + (v[2] - v[0]) * t, y: v[1] + (v[3] - v[1]) * t), mouseButton: .left)?.post(tap: .cghidEventTap)
+                usleep(UInt32(1_000_000 / 120))
+            }
+        }
+    }
     @objc private func showSettingsRequested() { showSettings() }
 
     func showSettings() {
