@@ -57,6 +57,7 @@ Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
 - Schneeflocken rieseln über alle Bildschirme. Mehrere Tiefenebenen: Nahe Flocken sind größer, schneller und heller, ferne kleiner, langsamer und blasser.
 - Flocken pendeln leicht seitlich. Wind (aus, weht nach links, weht nach rechts) treibt sie in eine Richtung, mit gelegentlichen Böen. Bei "Wind aus" gibt es keine Böen, nur das Pendeln.
 - **Ausweichen:** Um den Zeiger entsteht eine kleine schneefreie Zone, Flocken teilen sich weich um ihn herum. Die Stärke ist einstellbar.
+- **Aufstöbern:** Fährt der Zeiger schnell durch fallenden Schnee, reißt er die Flocken in seiner Nähe mit: Sie wirbeln in Bewegungsrichtung und etwas nach oben, drehen sich, werden langsamer und rieseln nach 1 bis 2 s wieder normal. Je schneller die Bewegung, desto mehr Flocken und desto kräftiger der Wirbel. Langsame Bewegungen lösen nur das normale Ausweichen aus. Das Aufstöbern darf nie aussehen, als würde Schnee am Zeiger kleben.
 - Menge, Flockengröße und Fallgeschwindigkeit sind einstellbar. In Mittelstellung sind etwa 80 Flocken pro Bildschirm gleichzeitig sichtbar, in der höchsten Stufe etwa das Vierfache.
 - Flocken bleiben auf hellem und dunklem Untergrund sichtbar (dezenter dunkler Schatten, siehe `Art/preview.png`).
 - Beim Ausschalten entstehen keine neuen Flocken, die vorhandenen fallen aus dem Bild oder blenden innerhalb von 3 s aus.
@@ -99,6 +100,7 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 - Wird ein Fenster bewegt, rieselt etwas Schnee herunter. Wird es geschlossen oder minimiert, fällt sein Schnee herab.
 - **Abschütteln:** Schütteln heißt mindestens 3 Richtungswechsel beim Ziehen innerhalb von 1 s. Danach entfernt jeder weitere Richtungswechsel etwa ein Drittel des verbleibenden Schnees, bis das Fenster frei ist. Hört man auf, baut sich die Schicht wieder auf. Normales Verschieben, auch mit Korrekturbewegung, entfernt nichts.
 - Herabfallender Schnee zerfällt in feine Flocken, die unterschiedlich schnell fallen und ausblenden.
+- **Aufstöbern der Schicht:** Wischt der Zeiger schnell über die Schneeschicht eines Fensters, stiebt an dieser Stelle eine kleine Wolke feiner Flocken auf und rieselt wieder herab. In der Schicht bleibt eine kleine Delle, die langsam wieder zuschneit. Langsames Darüberfahren und Klicks auf die Titelleiste stöbern nichts auf.
 - Bei Schnee-Ebene "nur auf dem Schreibtisch" oder ausgeschaltetem Schnee ist F6 inaktiv, liegender Schnee schmilzt in etwa 3 s.
 
 Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfang.
@@ -151,7 +153,7 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
   - Für Intel gibt es keinen Zielwert, die App muss dort aber flüssig laufen.
 - Energiesparen: Im Akkubetrieb unter 20 % Ladung, im Stromsparmodus oder mit "Immer Energie sparen" halbe Flockenzahl und ruhigere Animation. Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
 - Keine sichtbar ausgelassenen Bilder bei 60 Hz und 120 Hz.
-- "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen und Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
+- "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen, kein Aufstöbern und kein Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
 - Die Overlays stehlen nie den Fokus. Keine Abstürze ohne Berechtigung oder beim Wechsel von Bildschirmen.
 
 ## 11. Abnahme
@@ -162,8 +164,9 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 4. Zwei Bildschirme: Lichter und Schnee auf beiden. 20-mal Anstecken und Abstecken ohne Absturz.
 5. Dock: App öffnen und beenden, Dock-Position wechseln, Auto-Hide schalten. Jeweils spätestens 0,5 s danach höchstens 2 pt Abweichung.
 6. Schneeschicht: nach 5 Minuten Standardmenge sichtbar volle Schicht. 3 Richtungswechsel in 1 s plus ein weiterer entfernen etwa ein Drittel. Anhaltendes Schütteln macht das Fenster frei. Zehnmal normales Verschieben entfernt nichts.
-7. Berechtigung erteilen und entziehen ohne Neustart, Verhalten wie in Abschnitt 5.
-8. "Bewegung reduzieren" wie in Abschnitt 10.
-9. Einstellungen überleben einen Neustart.
-10. CPU und Speicher wie in Abschnitt 10.
-11. 8 Stunden Dauerlauf ohne nennenswerten Speicherzuwachs.
+7. Aufstöbern: Schnelles Durchfahren des Schnees (Zeigertempo über etwa 1000 pt/s) bewegt in zwei Aufnahmen im Abstand von 0,3 s sichtbar Flocken in Bewegungsrichtung. Nach 2 s fallen alle wieder normal. Schnelles Wischen über eine Schneeschicht erzeugt eine aufstiebende Wolke und eine Delle, die sich wieder füllt.
+8. Berechtigung erteilen und entziehen ohne Neustart, Verhalten wie in Abschnitt 5.
+9. "Bewegung reduzieren" wie in Abschnitt 10.
+10. Einstellungen überleben einen Neustart.
+11. CPU und Speicher wie in Abschnitt 10.
+12. 8 Stunden Dauerlauf ohne nennenswerten Speicherzuwachs.
