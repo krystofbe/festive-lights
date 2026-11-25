@@ -51,6 +51,8 @@ final class ScreenOverlay {
     private var lastTick: Double?
     private var rateMode = -1
     private var barDynamic = false
+    private var dockSpans: [DockProfile.Span] = []
+    private var dockEdge = DockEdge.bottom
 
     init(screen: NSScreen) {
         self.screen = screen
@@ -75,6 +77,18 @@ final class ScreenOverlay {
     func updateScreen(_ s: NSScreen) {
         screen = s
         snow.place(s)
+    }
+
+    /// Vergrößerte Dock-Symbole: absolute Spannen in Cocoa-Koordinaten, hier in u-Koordinaten der Dock-Kette umgerechnet.
+    func setDockSpans(_ spans: [DockProfile.Span], edge: DockEdge) {
+        guard let sp = dock.spec, dock.isShown else { return }
+        let u: [DockProfile.Span] = spans.map { s in
+            edge == .bottom ? DockProfile.Span(a: s.a - Double(sp.p0.x), b: s.b - Double(sp.p0.x), lift: s.lift)
+                            : DockProfile.Span(a: Double(sp.p0.y) - s.b, b: Double(sp.p0.y) - s.a, lift: s.lift)
+        }
+        let count = Int(sp.length / dock.stepU) + 2
+        dock.setDockLift(spans.isEmpty ? [] : DockProfile.samples(spans: u, du: dock.stepU, count: count))
+        wake()
     }
 
     func wake() { if link?.isPaused == true { lastTick = nil; link?.isPaused = false } }
@@ -135,13 +149,13 @@ final class ScreenOverlay {
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: -1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: h * 1.8, spacing: sp, garlandDepth: fir ? 24 : 0)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: fir ? h * 0.3 : h, liftSign: 1, liftToTop: false, liftMax: 110, spacing: sp, garlandDepth: fir ? 24 : 0)
             }
             dock.configure(spec: spec, style: style(), scale: scale, levelsKey: 0)
             dock.setVisible(true, layer: st.lightsLayer, intro: nil)

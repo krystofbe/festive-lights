@@ -1,8 +1,6 @@
 import AppKit
 import ApplicationServices
 
-enum DockEdge { case bottom, left, right }
-
 struct DockGeometry: Equatable {
     var screenID: CGDirectDisplayID
     var edge: DockEdge
@@ -27,6 +25,12 @@ enum Permission {
 /// Beobachtet Position und Größe des Docks über die Bedienungshilfen-Schnittstelle.
 final class DockTracker {
     var onChange: ((DockGeometry?) -> Void)?
+    /// Vergrößerte Symbole: Spannen entlang der Kette in absoluten Cocoa-Koordinaten (x bei unten, y bei seitlichem Dock).
+    var onSpans: (([DockProfile.Span], DockEdge) -> Void)?
+    private var restItems: [CGRect] = []
+    private var magTimer: Timer?
+    private var spansActive = false
+    var debugItems = ""
     private var timer: Timer?
     private var stabilizer = DockFrameStabilizer()
     private var burstUntil = 0.0
@@ -70,15 +74,75 @@ final class DockTracker {
         let now = CACurrentMediaTime()
         if now > burstUntil { schedule(0.2) }
         let geo = Permission.granted ? Self.read() : nil
+        startMagnificationIfNeeded()
         // Vergrößerung beim Überfahren ignorieren: Zeiger im Dock-Bereich friert den Rahmen ein.
         if Self.magnification, let c = current, c.rect.insetBy(dx: -40, dy: -40).contains(NSEvent.mouseLocation) { return }
         guard let result = stabilizer.feed(time: now, frame: geo?.rect) else { return }
         current = result == nil ? nil : geo
+        restItems = current == nil ? [] : (Self.readItems() ?? [])
         onChange?(current)
     }
 
+    /// Während der Zeiger über dem Dock ist (Vergrößerung an): Symbolrahmen mit Bildrate lesen, sonst nichts tun.
+    private func pollMagnification() {
+        guard Self.magnification, let c = current else { stopMagnification(); return }
+        let near = c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation)
+        if !near && !spansActive { stopMagnification(); return }
+        guard let items = Self.readItems(), items.count == restItems.count, !items.isEmpty else { return }
+        var spans: [DockProfile.Span] = []
+        for (r, rest) in zip(items, restItems) {
+            let lift = DockProfile.lift(edge: c.edge, current: r, rest: rest)
+            spans.append(c.edge == .bottom ? DockProfile.Span(a: Double(r.minX), b: Double(r.maxX), lift: lift)
+                                           : DockProfile.Span(a: Double(r.minY), b: Double(r.maxY), lift: lift))
+        }
+        spansActive = spans.contains { $0.lift > 0.3 }
+        #if DEBUG
+        if let i = spans.indices.max(by: { spans[$0].lift < spans[$1].lift }) { debugItems = "cur=\(items[i]) rest=\(restItems[i]) lift=\(spans[i].lift) edgeLine=\(c.edgeLine) listRect=\(c.rect)" }
+        #endif
+        onSpans?(spans, c.edge)
+        if !near && !spansActive { onSpans?([], c.edge); stopMagnification() }
+    }
+
+    private func startMagnificationIfNeeded() {
+        guard magTimer == nil, Self.magnification, let c = current, c.rect.insetBy(dx: -140, dy: -140).contains(NSEvent.mouseLocation) else { return }
+        let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.pollMagnification() }
+        RunLoop.main.add(t, forMode: .common)
+        magTimer = t
+    }
+
+    func pointerMoved() { startMagnificationIfNeeded() }
+
+    private func stopMagnification() { magTimer?.invalidate(); magTimer = nil; spansActive = false }
+
     private static var magnification: Bool {
         (CFPreferencesCopyAppValue("magnification" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+    }
+
+    /// Rahmen aller Dock-Symbole (Cocoa-Koordinaten), bei Vergrößerung die aktuell vergrößerten.
+    static func readItems() -> [CGRect]? {
+        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first,
+              let primary = NSScreen.screens.first else { return nil }
+        let el = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(el, 0.1)
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(el, kAXChildrenAttribute as CFString, &ref) == .success, let kids = ref as? [AXUIElement] else { return nil }
+        for k in kids {
+            var role: CFTypeRef?
+            AXUIElementCopyAttributeValue(k, kAXRoleAttribute as CFString, &role)
+            guard (role as? String) == "AXList" else { continue }
+            var cref: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(k, kAXChildrenAttribute as CFString, &cref) == .success, let items = cref as? [AXUIElement] else { return nil }
+            var out: [CGRect] = []
+            for it in items {
+                var fv: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(it, "AXFrame" as CFString, &fv) == .success else { continue }
+                var r = CGRect.zero
+                AXValueGetValue(fv as! AXValue, .cgRect, &r)
+                out.append(CGRect(x: r.minX, y: primary.frame.height - r.maxY, width: r.width, height: r.height))
+            }
+            return out
+        }
+        return nil
     }
 
     static func read() -> DockGeometry? {

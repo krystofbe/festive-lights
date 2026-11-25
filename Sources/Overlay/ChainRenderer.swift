@@ -240,7 +240,30 @@ final class ChainRenderer {
         }
     }
 
-    private func cableV(_ sp: ChainSpec, _ u: Double) -> Double { sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) }
+    private var dockLift: [Double] = []
+
+    /// Anhebung der Kette über den vergrößerten Dock-Symbolen an Stützstellen im Abstand `du` (leer: keine).
+    func setDockLift(_ l: [Double]) {
+        guard l != dockLift else { return }
+        dockLift = l
+        cableDirty = true
+        cableDirtyForGarland = true
+        lastMotion = true
+    }
+
+    var stepU: Double { du }
+
+    private func liftAt(_ u: Double) -> Double {
+        guard dockLift.count > 1 else { return 0 }
+        let f = max(0, u) / du
+        let i = min(Int(f), dockLift.count - 2)
+        let t = min(max(f - Double(i), 0), 1)
+        return dockLift[i] * (1 - t) + dockLift[i + 1] * t
+    }
+
+    private func cableV(_ sp: ChainSpec, _ u: Double) -> Double {
+        sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
+    }
 
     /// Zweige, Zapfen und Schleifen sitzen am Kabel. Zweige biegen sich vom Zeiger weg, Zapfen rutschen wie die Birnen.
     /// Gibt zurück, ob noch etwas schwingt.

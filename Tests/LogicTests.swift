@@ -721,3 +721,41 @@ final class BranchSlideTests: XCTestCase {
         XCTAssertGreaterThan(Garland.extent(layer: .hang, sprite: 3).left, 20)
     }
 }
+
+final class DockProfileTests: XCTestCase {
+    let spans = [DockProfile.Span(a: 0, b: 50, lift: 0), DockProfile.Span(a: 55, b: 105, lift: 20), DockProfile.Span(a: 110, b: 160, lift: 45),
+                 DockProfile.Span(a: 165, b: 215, lift: 18), DockProfile.Span(a: 220, b: 270, lift: 0)]
+
+    func testCableLiesOnTopOfEveryIconAndNeverInside() {
+        for u in stride(from: 0.0, through: 270, by: 0.5) {
+            let e = DockProfile.envelope(spans: spans, at: u)
+            for s in spans where u >= s.a && u <= s.b { XCTAssertGreaterThanOrEqual(e, s.lift - 1e-9, "Kette liegt im Symbol bei u=\(u)") }
+            XCTAssertGreaterThanOrEqual(e, 0)
+        }
+    }
+
+    func testCableDoesNotFloatFarAboveIcons() {
+        // über der Lücke zwischen Symbolen höchstens ein paar pt über der Oberkante der höheren Nachbarn
+        for u in stride(from: 105.0, through: 110, by: 0.5) {
+            let e = DockProfile.envelope(spans: spans, at: u)
+            XCTAssertLessThanOrEqual(e - 45, 0.01)
+            XCTAssertLessThanOrEqual(e, 45)
+        }
+        XCTAssertEqual(DockProfile.envelope(spans: spans, at: 135), 45)
+        XCTAssertLessThan(DockProfile.envelope(spans: spans, at: 270), 1, "weit weg vom Maximum fällt die Kette ab")
+    }
+
+    func testNoMagnificationMeansFlatChain() {
+        let flat = (0..<5).map { DockProfile.Span(a: Double($0) * 55, b: Double($0) * 55 + 50, lift: 0) }
+        XCTAssertTrue(DockProfile.samples(spans: flat, du: 6, count: 50).allSatisfy { $0 == 0 })
+    }
+
+    func testLiftPerEdge() {
+        let rest = CGRect(x: 100, y: 10, width: 48, height: 48), big = CGRect(x: 90, y: 10, width: 80, height: 80)
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: big, rest: rest), 32)
+        XCTAssertEqual(DockProfile.lift(edge: .left, current: big, rest: rest), 22)
+        XCTAssertEqual(DockProfile.lift(edge: .right, current: big, rest: rest), 10)
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: rest, rest: rest), 0)
+        XCTAssertEqual(DockProfile.lift(edge: .bottom, current: CGRect(x: 100, y: 10, width: 40, height: 40), rest: rest), 0, "nie negativ")
+    }
+}
