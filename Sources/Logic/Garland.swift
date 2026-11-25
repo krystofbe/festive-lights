@@ -40,6 +40,8 @@ enum Garland {
     /// Skalierung der Zweige gegenüber der Zweig-Leinwand: geschlossenes Grün bei Mittelstellung etwa 30 pt tief, kein Zweig tiefer als etwa 45 pt.
     static let branchScale = 0.45
     static let hangScale = 0.21
+    /// Durchhang des Bandes in Birnenhöhen (Praxistest: ein bisschen mehr hängen lassen; vorher 0,2).
+    static let sag = 0.45
     static let coneScale = 0.6
     static let baubleScale = 0.6
     static let baublesPerArc = 4
