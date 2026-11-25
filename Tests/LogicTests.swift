@@ -988,3 +988,98 @@ final class RuntimeStateTests: XCTestCase {
         XCTAssertEqual(base, RuntimeState())
     }
 }
+
+final class DockStateMachineTests: XCTestCase {
+    let r = CGRect(x: 301, y: 0, width: 1318, height: 93)
+
+    func feed(_ m: inout DockStateMachine, _ obs: [DockObservation], from t0: Double = 0, dt: Double = 1.0 / 30) -> [DockObservation] {
+        var out: [DockObservation] = []
+        for (i, o) in obs.enumerated() { if let e = m.observe(o, time: t0 + Double(i) * dt) { out.append(e) } }
+        return out
+    }
+
+    func testVisibleIsReportedOnceAfterSettling() {
+        var m = DockStateMachine()
+        let out = feed(&m, Array(repeating: .visible(r), count: 12))
+        XCTAssertEqual(out, [.visible(r)])
+    }
+
+    func testSingleBadStepDoesNotFallBack() {
+        var m = DockStateMachine()
+        var seq: [DockObservation] = Array(repeating: .visible(r), count: 8)
+        seq.append(.unavailable)
+        seq += Array(repeating: .visible(r), count: 8)
+        XCTAssertEqual(feed(&m, seq), [.visible(r)], "ein unplausibler Schritt ändert nichts")
+    }
+
+    func testRealFallbackAfterHysteresisAndReturnToTheSameFrame() {
+        var m = DockStateMachine()
+        var seq: [DockObservation] = Array(repeating: .visible(r), count: 8)
+        seq += Array(repeating: .unavailable, count: 15)   // 0,5 s unplausibel
+        seq += Array(repeating: .visible(r), count: 10)    // derselbe Rahmen wie vorher
+        XCTAssertEqual(feed(&m, seq), [.visible(r), .unavailable, .visible(r)], "nach dem Rückfall wird derselbe Rahmen wieder gemeldet")
+    }
+
+    func testAutoHideCycle() {
+        var m = DockStateMachine()
+        let seq: [DockObservation] = Array(repeating: .hidden, count: 8) + Array(repeating: .visible(r), count: 8) + Array(repeating: .hidden, count: 8)
+        XCTAssertEqual(feed(&m, seq), [.hidden, .visible(r), .hidden])
+    }
+
+    func testAnimatingFrameCommitsOnlyWhenSettled() {
+        var m = DockStateMachine()
+        var seq: [DockObservation] = []
+        for i in 0..<6 { seq.append(.visible(CGRect(x: 301 - Double(i) * 8, y: 0, width: 1318 + Double(i) * 16, height: 93))) }
+        seq += Array(repeating: .visible(CGRect(x: 261, y: 0, width: 1398, height: 93)), count: 8)
+        let out = feed(&m, seq)
+        XCTAssertEqual(out, [.visible(CGRect(x: 261, y: 0, width: 1398, height: 93))])
+        XCTAssertFalse(m.isSettling)
+    }
+
+    func testIsSettlingWhileCandidateDiffers() {
+        var m = DockStateMachine()
+        _ = feed(&m, Array(repeating: .visible(r), count: 8))
+        _ = m.observe(.hidden, time: 10)
+        XCTAssertTrue(m.isSettling, "der Burst soll weitermessen, bis der neue Zustand steht")
+    }
+}
+
+final class DockPointerLogicTests: XCTestCase {
+    let screen = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+    let strip = CGRect(x: 0, y: 0, width: 1920, height: 3)
+
+    func zone() -> CGRect { DockPointerLogic.barZone(a: 301, length: 1318, thick: 99, grow: 32, edge: .bottom, screen: screen) }
+
+    func testZoneIsSmallAroundTheDockNotAThirdOfTheScreen() {
+        let z = zone()
+        XCTAssertEqual(z.height, 139, accuracy: 0.01, "Leiste plus Vergrößerung plus Rand, nicht 238 pt")
+        XCTAssertFalse(z.contains(CGPoint(x: 800, y: 300)))
+        XCTAssertTrue(z.contains(CGPoint(x: 800, y: 120)))
+    }
+
+    func testMagnificationLoopOnlyStartsOverTheDock() {
+        let on = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 60), barZone: zone(), edgeStrip: strip, autohide: false, magnification: true, loopRunning: false, wasInside: false)
+        XCTAssertTrue(on.0.startMagnificationLoop)
+        let away = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 400), barZone: zone(), edgeStrip: strip, autohide: false, magnification: true, loopRunning: false, wasInside: false)
+        XCTAssertEqual(away.0, DockPointerLogic.Action())
+        let running = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 60), barZone: zone(), edgeStrip: strip, autohide: false, magnification: true, loopRunning: true, wasInside: true)
+        XCTAssertFalse(running.0.startMagnificationLoop)
+    }
+
+    func testAutoHideRevealIsDetectedWithoutAKnownBar() {
+        let r = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 1), barZone: nil, edgeStrip: strip, autohide: true, magnification: false, loopRunning: false, wasInside: false)
+        XCTAssertTrue(r.0.burst, "Zeiger an der Kante lässt das Dock erscheinen, auch ohne bekannte Leiste (Befund 1)")
+        let off = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 1), barZone: nil, edgeStrip: strip, autohide: false, magnification: false, loopRunning: false, wasInside: false)
+        XCTAssertFalse(off.0.burst)
+    }
+
+    func testAutoHideLeavingTheZoneTriggersMeasurement() {
+        let r = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 500), barZone: zone(), edgeStrip: strip, autohide: true, magnification: false, loopRunning: false, wasInside: true)
+        XCTAssertTrue(r.0.burst); XCTAssertFalse(r.inside)
+    }
+
+    func testNoWorkWhenNothingChanges() {
+        let r = DockPointerLogic.react(pointer: CGPoint(x: 800, y: 500), barZone: zone(), edgeStrip: strip, autohide: true, magnification: true, loopRunning: false, wasInside: false)
+        XCTAssertEqual(r.0, DockPointerLogic.Action(), "Ruhezustand: Mausbewegung fern vom Dock löst nichts aus")
+    }
+}

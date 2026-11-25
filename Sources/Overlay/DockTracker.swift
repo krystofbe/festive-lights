@@ -37,6 +37,7 @@ final class DockTracker {
     private var magnificationOn = false
     private var tile = 64.0
     private var reading = false
+    private var polling = false
     private let axQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockax", qos: .userInteractive)
     #if DEBUG
     var debugItems = ""
@@ -59,13 +60,13 @@ final class DockTracker {
         observers.append(DistributedNotificationCenter.default().addObserver(forName: NSNotification.Name("com.apple.dock.prefchanged"), object: nil, queue: .main) { [weak self] _ in self?.burst() })
     }
 
-    func stop() {
+    func stop(reportNil: Bool = true) {
         started = false
         timer?.invalidate(); timer = nil
         observers.forEach { NotificationCenter.default.removeObserver($0); NSWorkspace.shared.notificationCenter.removeObserver($0); DistributedNotificationCenter.default().removeObserver($0) }
         observers = []
         stabilizer = DockFrameStabilizer()
-        if current != nil { current = nil; onChange?(nil) }
+        if current != nil { current = nil; if reportNil { onChange?(nil) } }
     }
 
     func burst() {
@@ -86,16 +87,31 @@ final class DockTracker {
         timer = t
     }
 
+    /// Eine Abfrage der Bedienungshilfen auf eigener Queue (höchstens eine zugleich), der Haupt-Thread wartet nie auf das Dock.
     private func poll() {
         let now = CACurrentMediaTime()
         if now > burstUntil { timer?.invalidate(); timer = nil }   // Ruhezustand: keine laufende Abfrage, nur Ereignisse
-        let geo = Permission.granted ? Self.read() : nil
         startMagnificationIfNeeded()
         // Vergrößerung beim Überfahren ignorieren: Zeiger im Dock-Bereich friert den Rahmen ein.
         if magnificationOn, let c = current, c.rect.insetBy(dx: -40, dy: -40).contains(NSEvent.mouseLocation) { return }
-        guard let result = stabilizer.feed(time: now, frame: geo?.rect) else { return }
+        guard !polling else { return }
+        polling = true
+        let primary = Double(NSScreen.screens.first?.frame.height ?? 0)
+        axQueue.async { [weak self] in
+            let trusted = Permission.granted
+            let raw = trusted ? Self.readRect() : nil
+            let rest = raw == nil ? [] : (Self.readItems(primaryHeight: primary) ?? [])
+            DispatchQueue.main.async { self?.handlePolled(raw, rest) }
+        }
+    }
+
+    private func handlePolled(_ raw: CGRect?, _ rest: [CGRect]) {
+        polling = false
+        guard started else { return }
+        let geo = raw.flatMap { Self.geometry(forCGRect: $0) }
+        guard let result = stabilizer.feed(time: CACurrentMediaTime(), frame: geo?.rect) else { return }
         current = result == nil ? nil : geo
-        restItems = current == nil ? [] : (Self.readItems(primaryHeight: Double(NSScreen.screens.first?.frame.height ?? 0)) ?? [])
+        restItems = current == nil ? [] : rest
         onChange?(current)
     }
 
@@ -183,10 +199,11 @@ final class DockTracker {
         return nil
     }
 
-    static func read() -> DockGeometry? {
+    /// Rahmen der Symbolleiste des Docks in Koordinaten oben links, nur Bedienungshilfen (auch abseits des Haupt-Threads erlaubt).
+    static func readRect() -> CGRect? {
         guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { return nil }
         let el = AXUIElementCreateApplication(app.processIdentifier)
-        AXUIElementSetMessagingTimeout(el, 0.15)
+        AXUIElementSetMessagingTimeout(el, 0.05)
         var ref: CFTypeRef?
         guard AXUIElementCopyAttributeValue(el, kAXChildrenAttribute as CFString, &ref) == .success, let kids = ref as? [AXUIElement] else { return nil }
         for k in kids {
@@ -195,12 +212,12 @@ final class DockTracker {
             guard (role as? String) == "AXList" else { continue }
             var pv: CFTypeRef?, sv: CFTypeRef?
             guard AXUIElementCopyAttributeValue(k, kAXPositionAttribute as CFString, &pv) == .success,
-                  AXUIElementCopyAttributeValue(k, kAXSizeAttribute as CFString, &sv) == .success else { continue }
+                  AXUIElementCopyAttributeValue(k, kAXSizeAttribute as CFString, &sv) == .success else { return nil }
             var pos = CGPoint.zero, size = CGSize.zero
             AXValueGetValue(pv as! AXValue, .cgPoint, &pos)
             AXValueGetValue(sv as! AXValue, .cgSize, &size)
             guard size.width > 20, size.height > 20 else { continue }
-            return geometry(forCGRect: CGRect(origin: pos, size: size))
+            return CGRect(origin: pos, size: size)
         }
         return nil
     }
