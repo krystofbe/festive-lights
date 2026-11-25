@@ -6,6 +6,7 @@ struct DockGeometry: Equatable {
     var edge: DockEdge
     var rect: CGRect        // Symbolleiste des Docks, Cocoa-Koordinaten
     var edgeLine: Double    // Innenkante des Docks: y bei unten, x bei links oder rechts
+    var continuous = false  // durchgehende Kette über die volle Bildschirmbreite statt genau am Dock
 }
 
 enum Permission {

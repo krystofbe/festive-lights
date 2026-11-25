@@ -58,6 +58,7 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
         dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
         #endif
+        dn.addObserver(self, selector: #selector(dockPrefsChanged), name: NSNotification.Name("com.apple.dock.prefchanged"), object: nil)
         dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil)
 
         monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
@@ -133,9 +134,10 @@ final class AppController: NSObject {
     }
 
     private func updateDockTracking() {
-        if permission && settings.dockLights { dockTracker.start() } else { dockTracker.stop() }
+        if permission && settings.dockLights && settings.dockShape == .exact && !settings.paused && !suspended { dockTracker.start() } else { dockTracker.stop() }
     }
 
+    @objc private func dockPrefsChanged() { DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.scheduleApply() } }
     @objc private func screensChanged() { reconcileScreens(); dockTracker.burst(); scheduleApply() }
     @objc private func systemChanged() { refreshSystem(); scheduleApply() }
     @objc private func sleepChanged(_ n: Notification) {
@@ -211,7 +213,10 @@ final class AppController: NSObject {
         updateDockTracking()
         var st = AppState()
         st.lightsOn = lightsOn
-        st.dockLightsOn = live && s.dockLights && permission && dockGeometry != nil
+        // Dock-Kette: "genau am Dock" nur mit Berechtigung und bekannter Geometrie, sonst durchgehend (wechselt bei Entzug von selbst)
+        let shape = DockShape.effective(choice: s.dockShape, permission: permission, exactAvailable: dockGeometry != nil)
+        let dockGeo: DockGeometry? = s.dockLights ? (shape == .exact ? dockGeometry : continuousDockGeometry()) : nil
+        st.dockLightsOn = live && dockGeo != nil
         st.snowOn = snowOn
         st.settle = settle
         st.lightsLayer = s.lightsLayer
@@ -232,13 +237,29 @@ final class AppController: NSObject {
         st.energySaving = energySaving
         st.dark = dark
         st.suspended = suspended
-        st.dock = dockGeometry
+        st.dock = dockGeo
         st.snowRampStart = snowRampStart
         Engine.shared.settleActive = settle
         Engine.shared.reduceMotion = reduceMotion
         PileStore.shared.setActive(settle, time: now)
         if !settle && PileStore.shared.isIdle { PileStore.shared.clear() }
         overlays.values.forEach { $0.apply(st) }
+    }
+
+    /// Durchgehende Dock-Kette aus öffentlichen Größen (visibleFrame und Dock-Ausrichtung), ohne Berechtigung.
+    private func continuousDockGeometry() -> DockGeometry? {
+        let screens = NSScreen.screens
+        let orientation = CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String
+        guard let p = ContinuousDock.placement(screens: screens.map { ScreenInfo(frame: $0.frame, visible: $0.visibleFrame) }, orientation: orientation) else { return nil }
+        let s = screens[p.screenIndex].frame
+        let t = p.thickness
+        let rect: CGRect
+        switch p.edge {
+        case .bottom: rect = CGRect(x: s.minX, y: s.minY, width: s.width, height: t)
+        case .left: rect = CGRect(x: s.minX, y: s.minY, width: t, height: s.height)
+        case .right: rect = CGRect(x: s.maxX - t, y: s.minY, width: t, height: s.height)
+        }
+        return DockGeometry(screenID: screens[p.screenIndex].displayID, edge: p.edge, rect: rect, edgeLine: p.edgeLine, continuous: true)
     }
 
     func startStorm() {

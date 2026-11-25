@@ -82,7 +82,7 @@ final class ScreenOverlay {
 
     /// Vergrößerte Dock-Symbole: absolute Spannen in Cocoa-Koordinaten, hier in u-Koordinaten der Dock-Kette umgerechnet.
     func setDockSpans(_ spans: [DockProfile.Span], edge: DockEdge) {
-        guard let sp = dock.spec, dock.isShown else { return }
+        guard let sp = dock.spec, dock.isShown, !(state.dock?.continuous ?? false) else { return }
         let u: [DockProfile.Span] = spans.map { s in
             edge == .bottom ? DockProfile.Span(a: s.a - Double(sp.p0.x), b: s.b - Double(sp.p0.x), lift: s.lift)
                             : DockProfile.Span(a: Double(sp.p0.y) - s.b, b: Double(sp.p0.y) - s.a, lift: s.lift)
@@ -143,11 +143,13 @@ final class ScreenOverlay {
         if st.dockLightsOn, let d = st.dock, d.screenID == screen.displayID {
             let menuH = MenuBar.info(for: screen)?.height ?? Double(NSStatusBar.system.thickness)
             let h0 = ChainLayout.bulbHeight(menuBarHeight: menuH, level: st.bulbLevel)
-            let icon = Double(d.edge == .bottom ? d.rect.height : d.rect.width)
+            // durchgehend: Dicke des Docks (ausgeblendet: Standardmaß), genau am Dock: Höhe der Symbolleiste
+            let thickness = Double(d.edge == .bottom ? d.rect.height : d.rect.width)
+            let icon = d.continuous && thickness < 20 ? 90 : thickness
             // Birnengröße gilt auch am Dock: höchster Regler = ein Viertel der Symbolhöhe, darunter proportional
             let h = max(8, icon * 0.25 * Levels.value(Levels.bulbSize, st.bulbLevel) / 1.4)
             _ = h0
-            let pad = 6.0
+            let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
             let sp = ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel)
             switch d.edge {

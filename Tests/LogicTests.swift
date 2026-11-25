@@ -880,3 +880,54 @@ final class DockStyleTests: XCTestCase {
         XCTAssertEqual(DockStyle(rawValue: "sameAsBar"), .sameAsBar)
     }
 }
+
+final class DockShapeTests: XCTestCase {
+    func testExactOnlyWithChoicePermissionAndGeometry() {
+        XCTAssertEqual(DockShape.effective(choice: .exact, permission: true, exactAvailable: true), .exact)
+        XCTAssertEqual(DockShape.effective(choice: .continuous, permission: true, exactAvailable: true), .continuous)
+        XCTAssertEqual(DockShape.effective(choice: .exact, permission: false, exactAvailable: true), .continuous, "ohne Berechtigung durchgehend")
+        XCTAssertEqual(DockShape.effective(choice: .exact, permission: true, exactAvailable: false), .continuous, "ohne bekannte Dock-Geometrie durchgehend")
+    }
+
+    func testPermissionRevokedAtRuntimeSwitchesToContinuousAndBack() {
+        var permission = true
+        var shapes: [DockShape] = []
+        for step in 0..<6 {
+            if step == 2 { permission = false }
+            if step == 4 { permission = true }
+            shapes.append(DockShape.effective(choice: .exact, permission: permission, exactAvailable: true))
+        }
+        XCTAssertEqual(shapes, [.exact, .exact, .continuous, .continuous, .exact, .exact])
+    }
+
+    let screens = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 99, width: 1920, height: 957)),
+                   ScreenInfo(frame: CGRect(x: 1920, y: 0, width: 1440, height: 900), visible: CGRect(x: 1920, y: 0, width: 1440, height: 876))]
+
+    func testBottomDockLineComesFromVisibleFrame() {
+        let p = ContinuousDock.placement(screens: screens, orientation: nil)!
+        XCTAssertEqual(p, ContinuousDock.Placement(screenIndex: 0, edge: .bottom, edgeLine: 99, thickness: 99))
+    }
+
+    func testDockOnTheSecondScreenIsFoundByThickness() {
+        let s = [screens[1], ScreenInfo(frame: screens[0].frame, visible: CGRect(x: 0, y: 70, width: 1920, height: 986))]
+        let p = ContinuousDock.placement(screens: s, orientation: "bottom")!
+        XCTAssertEqual(p.screenIndex, 1); XCTAssertEqual(p.edgeLine, 70)
+    }
+
+    func testSideDocks() {
+        let left = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 79, y: 0, width: 1841, height: 1056))]
+        XCTAssertEqual(ContinuousDock.placement(screens: left, orientation: "left")!.edgeLine, 79)
+        let right = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 0, width: 1840, height: 1056))]
+        let p = ContinuousDock.placement(screens: right, orientation: "right")!
+        XCTAssertEqual(p.edge, .right); XCTAssertEqual(p.edgeLine, 1840); XCTAssertEqual(p.thickness, 80)
+    }
+
+    func testHiddenDockSitsAtTheScreenEdgeOfTheMainScreen() {
+        let hidden = [ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 0, width: 1920, height: 1056)),
+                      ScreenInfo(frame: CGRect(x: 1920, y: 0, width: 1440, height: 900), visible: CGRect(x: 1920, y: 0, width: 1440, height: 876))]
+        let p = ContinuousDock.placement(screens: hidden, orientation: "bottom")!
+        XCTAssertEqual(p, ContinuousDock.Placement(screenIndex: 0, edge: .bottom, edgeLine: 0, thickness: 0))
+    }
+
+    func testNoScreensNoPlacement() { XCTAssertNil(ContinuousDock.placement(screens: [], orientation: nil)) }
+}

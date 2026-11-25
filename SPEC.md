@@ -30,7 +30,7 @@ Ziel: ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start, und Nutzer l
 | Schneemenge, Flockengröße, Tempo, Ausweichen | Mittelstellung |
 | Wind | aus |
 | Ebene Schnee | über allen Fenstern |
-| Lichter am Dock | an; ohne Berechtigung in der Form "durchgehend", nach erteilter Berechtigung "genau am Dock" |
+| Lichter am Dock | an, Form "genau am Dock" |
 | Schnee bleibt auf Fenstern liegen | an, sobald die Berechtigung erteilt ist |
 | Beim Anmelden starten | aus |
 | Immer Energie sparen | aus |
@@ -89,9 +89,10 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 
 ### F5 Lichterkette am Dock
 
-- Zwei Formen, in den Einstellungen wählbar: **"durchgehend"** und **"genau am Dock"** (Standard, sobald die Berechtigung erteilt ist).
-- **Durchgehend** (braucht keine Berechtigung, ist ohne Berechtigung automatisch aktiv): Die Kette läuft über die volle Bildschirmbreite auf Höhe der Dock-Oberkante (bei seitlichem Dock über die volle Bildschirmhöhe an dessen Innenkante), in gleichmäßigen Bögen wie an der Menüleiste. Die Höhe ergibt sich aus dem freien Bildschirmbereich ohne Dock. Ist das Dock ausgeblendet, liegt die Kette am Bildschirmrand. Ausweichen wie an der Menüleiste. Der Dock-Vergrößerung folgt sie nicht. Die übrigen Regeln dieses Abschnitts gelten nur für "genau am Dock".
-- **Genau am Dock** (mit Berechtigung):
+- Zwei Formen, in den Einstellungen wählbar: **"genau am Dock"** (Standard) und **"durchgehend"**.
+- **Durchgehend:** Die Kette läuft über die volle Bildschirmbreite auf Höhe der Dock-Oberkante (bei seitlichem Dock über die volle Bildschirmhöhe an dessen Innenkante), in gleichmäßigen Bögen wie an der Menüleiste. Die Höhe ergibt sich aus dem freien Bildschirmbereich ohne Dock. Ist das Dock ausgeblendet, liegt die Kette am Bildschirmrand. Ausweichen wie an der Menüleiste. Der Dock-Vergrößerung folgt sie nicht. Die übrigen Regeln dieses Abschnitts gelten nur für "genau am Dock".
+- **Genau am Dock** soll auch ohne Berechtigung funktionieren, einschließlich der Vergrößerung beim Überfahren. Lage, Breite, Ein- und Ausblenden und die vergrößerte Form des Docks werden dann ohne Bedienungshilfen ermittelt (zum Beispiel, indem der Fensterserver gefragt wird, wo das Dock-Fenster getroffen wird). Mit Berechtigung darf der genauere Weg über die Bedienungshilfen genutzt werden. Liefert die Ermittlung ohne Berechtigung kein plausibles Ergebnis (anderes macOS, ungewöhnliche Anordnung), fällt die Kette sanft auf "durchgehend" zurück, statt falsch zu liegen.
+- Performance der Dock-Ermittlung, Teil der Abnahme: Im Ruhezustand (Zeiger nicht über dem Dock, Dock unverändert) keine laufende Abfrage, nur auf Ereignisse reagieren (App gestartet oder beendet, Dock-Einstellungen geändert, Bildschirm geändert). Während der Vergrößerung höchstens 2 ms Arbeit pro Bild auf dem Haupt-Thread, nie ein Aussetzer über 8 ms; reagiert der Fensterserver oder das Dock nicht, bricht die Abfrage sofort ab und die Kette bleibt, wo sie ist. Die Gesamtlast-Grenzen aus Abschnitt 10 gelten unverändert.
 - Dock unten: Das Kabel liegt in flachen Bögen auf der Oberkante des Docks über dessen volle Breite. Die Birnen hängen nach unten und überdecken höchstens das obere Viertel der Symbole.
 - Dock links oder rechts: Das Kabel läuft an der Innenkante entlang, die Birnen zeigen zur Bildschirmmitte.
 - Die Kette erscheint nur auf dem Bildschirm, der gerade das Dock zeigt. Ist die Dock-Vergrößerung beim Überfahren eingeschaltet, geht die Kette mit: Der Abschnitt über den vergrößerten Symbolen wölbt sich mit deren Oberkante nach oben (bei seitlichem Dock zur Bildschirmmitte), Birnen und Zweige gehen mit, und beim Verlassen senkt sich die Kette mit dem Dock wieder ab. Die Kette folgt dabei ohne sichtbare Verzögerung, höchstens ein Bild hinter dem Dock, und liegt in jeder Phase auf der Oberkante der Symbole, ohne in sie hineinzuragen oder darüber zu schweben.
@@ -124,7 +125,7 @@ Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfan
 **Menüleisten-Symbol** (schwarzweiß wie die System-Symbole, Kabel mit zwei Birnen, dezent animiert, siehe `Art/README.md`) mit Menü:
 - Pause (schaltet alles vorübergehend aus und mit erneutem Klick wieder ein, gespeichert bis zum Fortsetzen)
 - Lichter an der Menüleiste (an/aus)
-- Lichter am Dock (an/aus; ohne Berechtigung durchgehende Form mit Hinweis "Genau am Dock: Berechtigung nötig", Klick führt zu den Systemeinstellungen)
+- Lichter am Dock (an/aus)
 - Schnee (an/aus)
 - Schneesturm
 - Einstellungen…
