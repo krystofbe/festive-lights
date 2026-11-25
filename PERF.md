@@ -31,3 +31,8 @@ Dock-Vergrößerung ohne Berechtigung (Treffer-Test, Debug-Build, Zeiger kreist 
 | 25.11.2026 | c85a896 | Standard | 47,0 | 3,7 | Referenz Vollbild-Animation 43,8, Differenz +3,2 |
 
 Dock-Vergrößerung ohne Berechtigung nach dem Review (c85a896, Test-Build, 8 s Zeigerkreisen über dem Dock): Haupt-Thread je Bild im Mittel 0,011 ms, höchstens 0,044 ms (Grenze 2 ms mittel, nie über 8 ms), Hintergrund je Messung im Mittel 4,5 ms, höchstens 22,6 ms.
+| 25.11.2026 | acde7e3 | Ruhezustand, mit Berechtigung | 1,3 | 0,7 | Nachprüfung N1 bis N10; App +0,3 gegenüber c85a896, Wiederholung 1,3 / 0,6 (+0,2, unter der Grenze 0,3); im Code ändert sich im Ruhezustand nichts (keine Timer, kein Abfragen), vermutlich Schwankung des Testrechners |
+| 25.11.2026 | acde7e3 | Ruhezustand, ohne Berechtigung (Treffer-Test) | 1,4 | 0,7 | vorher 1,3 / 0,4 |
+| 25.11.2026 | acde7e3 | Standard | 47,2 | 3,9 | vorher 47,0 / 3,7, Differenz zur Referenz 43,8 ist +3,4 |
+
+Dock-Vergrößerung ohne Berechtigung (acde7e3, Test-Build, 8 s Zeigerkreisen): Haupt-Thread je Bild im Mittel 0,012 ms, höchstens 0,047 ms, Hintergrund je Messung im Mittel 4,6 ms, höchstens 25,8 ms (vorher 0,011 / 0,044 und 4,5 / 22,6).
