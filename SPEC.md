@@ -1,117 +1,169 @@
 # FestiveLights: Spezifikation
 
-Stand: Entwurf zur Abstimmung. Diese Spezifikation beschreibt ausschließlich Verhalten und Erlebnis aus Nutzersicht. Sie enthält bewusst keine Implementierungsdetails. Wie etwas technisch gelöst wird, entscheidet das Implementierungs-Team.
+Diese Spezifikation beschreibt Verhalten und Erlebnis aus Nutzersicht. Wie etwas technisch gelöst wird, entscheidet das Implementierungs-Team. Ausnahme sind die Rahmenbedingungen in Abschnitt 9 und die Grafikvorgaben in Abschnitt 8.
 
 ## 1. Produktidee
 
-FestiveLights macht den Mac in der Weihnachtszeit festlich: eine Lichterkette hängt unter der Menüleiste, Schnee fällt über den Bildschirm. Beides reagiert auf den Mauszeiger und stört nie bei der Arbeit.
+FestiveLights macht den Mac in der Weihnachtszeit festlich: Eine Lichterkette hängt unter der Menüleiste, Schnee rieselt über den Bildschirm. Beides reagiert auf den Mauszeiger und stört nie bei der Arbeit.
 
-Ziel ist ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start und dass Nutzer die App die ganze Saison über anlassen.
+Ziel: ein Lächeln innerhalb von 10 Sekunden nach dem ersten Start, und Nutzer lassen die App die ganze Saison über an.
 
 ## 2. Gestaltungsprinzipien
 
-1. **Liebe zum Detail vor Feature-Menge.** Lieber wenige Dinge, die sich hochwertig und lebendig anfühlen.
-2. **Nie im Weg.** Klicks gehen immer durch Lichter und Schnee hindurch. Was dem Zeiger nahekommt, weicht sanft aus.
-3. **Sofortige Magie.** Nach dem Start leuchtet es sofort, ohne Einrichtung und ohne Dialoge.
+1. **Liebe zum Detail vor Feature-Menge.** Wenige Dinge, die sich hochwertig und lebendig anfühlen. Nichts schaltet hart, alles blendet, schwingt oder glimmt.
+2. **Nie im Weg.** Klicks, Scrollen und Drag-and-drop gehen immer durch Lichter und Schnee hindurch. Was dem Zeiger nahekommt, weicht sanft aus.
+3. **Sofortige Magie.** Nach dem Start leuchtet es sofort, ohne Einrichtung und ohne modale Dialoge.
 4. **Respekt vor dem Rechner.** Sparsam mit Energie, besonders im Akkubetrieb.
-5. **Ruhig konfigurierbar.** Wenige, verständliche Einstellungen statt einer Optionswüste.
+5. **Ruhig konfigurierbar.** Wenige, verständliche Einstellungen.
 
-## 3. Umfang
+## 3. Standardwerte beim ersten Start
 
-### Stufe 1, ohne jede Berechtigung (sofort beim ersten Start)
+| Einstellung | Standard |
+|---|---|
+| Lichter an der Menüleiste | an |
+| Farbmodus | bunt |
+| Muster | Funkeln |
+| Tempo, Birnengröße, Abstand | jeweils Mittelstellung (entspricht `Art/preview.png`) |
+| Ebene Lichter | über allen Fenstern |
+| Schnee | an, startet 3 s nach dem App-Start mit leichter Menge (siehe Abschnitt 6) |
+| Schneemenge, Flockengröße, Tempo, Ausweichen | Mittelstellung |
+| Wind | aus |
+| Ebene Schnee | über allen Fenstern |
+| Lichter am Dock | an, sobald die Berechtigung erteilt ist |
+| Schnee bleibt auf Fenstern liegen | an, sobald die Berechtigung erteilt ist |
+| Beim Anmelden starten | aus |
+| Immer Energie sparen | aus |
 
-**F1 Lichterkette an der Menüleiste**
-- Ein Kabel hängt in mehreren gleichmäßigen Bögen unter der Menüleiste über die volle Bildschirmbreite, an jedem Bildschirm mit Menüleiste.
-- Glühbirnen hängen in gleichmäßigen Abständen am Kabel. Jede Birne ist leicht und zufällig geneigt, damit es natürlich wirkt.
-- Farben wechseln reihum durch eine festliche Palette (rot, gelb, grün, blau, lila). Alternativ ein warmweißer Modus.
-- Muster: Dauerleuchten, sanftes Funkeln (einzelne Birnen dimmen zufällig kurz ab), Lauflicht. Standard ist Funkeln.
-- Nähert sich der Mauszeiger dem Kabel, hebt sich der betroffene Kabelabschnitt sanft vom Zeiger weg und senkt sich wieder, wenn der Zeiger geht. Bewegung weich, ohne Ruckeln.
-- Klicks in den Bereich hinter Kabel und Birnen erreichen immer die darunterliegende App.
+Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
 
-**F2 Schnee**
-- Schneeflocken fallen über alle Bildschirme. Mehrere Tiefenebenen: nahe Flocken größer, schneller, heller; ferne kleiner, langsamer, blasser.
-- Flocken pendeln leicht seitlich, Wind kann sie gleichmäßig in eine Richtung treiben, gelegentliche Böen variieren die Bewegung.
-- Flocken weichen dem Mauszeiger aus. Um den Zeiger entsteht eine kleine schneefreie Zone, die Flocken teilen sich um ihn herum.
-- Einstellbar: Schneemenge, Flockengröße, Fallgeschwindigkeit, Wind (aus, links, rechts), Stärke des Ausweichens.
-- **Schneesturm:** ein Schalter im Menü, der für den Moment Menge und Tempo deutlich erhöht.
-- Schnee sieht besonders vor dunklem Hintergrund gut aus, muss aber auch auf hellem Hintergrund sichtbar bleiben (zum Beispiel durch einen leichten Kontrast oder Schatten).
+## 4. Funktionen, Stufe 1 (ohne jede Berechtigung)
 
-**F3 Ebene wählen**
-- Lichter und Schnee lassen sich jeweils "über allen Fenstern" oder "nur auf dem Schreibtisch" (hinter allen Fenstern) anzeigen.
+### F1 Lichterkette an der Menüleiste
 
-**F4 Mehrere Bildschirme**
-- Lichter und Schnee erscheinen auf allen angeschlossenen Bildschirmen. An- und Abstecken sowie Auflösungswechsel werden ohne Neustart übernommen.
-- Bei Vollbild-Apps und auf allen Spaces verhalten sich die Overlays konsistent.
+- Ein Kabel hängt in mehreren gleichmäßigen, flachen Bögen unter der Menüleiste über die volle Bildschirmbreite. Bei Mittelstellung etwa 6 Birnen pro Bogen, Durchhang etwa eine Birnenhöhe, Birnenhöhe etwa wie die Menüleiste.
+- Die Kette hängt auf jedem Bildschirm, der eine Menüleiste zeigt. Bei automatisch ausgeblendeter Menüleiste hängt sie an der Bildschirmoberkante und rutscht mit der Menüleiste nach unten, wenn diese erscheint.
+- Birnen hängen gleichmäßig verteilt am Kabel, jede mit einer kleinen, zufälligen, aber stabilen Neigung (höchstens ±15 Grad).
+- Farben reihum aus der Palette in `Art/README.md`. Alternativ Modus "warmweiß".
+- Muster:
+  - **Dauerleuchten.**
+  - **Funkeln:** Zu jedem Zeitpunkt sind etwa 10 % der Birnen für 0,3 bis 1 s gedimmt, sie glimmen weich aus und wieder an.
+  - **Lauflicht:** Ein heller Abschnitt wandert von links nach rechts, die übrigen Birnen sind gedimmt.
+  - Das Tempo wirkt auf Funkeln und Lauflicht.
+- **Ausweichen:** Kommt der Zeiger dem Kabel näher als etwa 60 pt (von unten oder seitlich), hebt sich der betroffene Abschnitt samt Birnen weich nach oben, bis knapp unter die Menüleiste. Birnen und Schein blenden in Zeigernähe auf etwa 30 % Deckkraft ab. Die Reaktion beginnt innerhalb von 0,1 s. Entfernt sich der Zeiger, senkt sich die Kette innerhalb von etwa 0,5 s wieder, und die Birnen pendeln kurz nach. Steht der Zeiger in der Menüleiste selbst, passiert nichts.
+- Ein- und Ausschalten: Die Kette blendet in etwa 0,3 s ein oder aus. Beim App-Start gehen die Birnen innerhalb von etwa 1,5 s nacheinander von links nach rechts an.
 
-### Stufe 2, nach einer optionalen Berechtigung
+### F2 Schnee
 
-Diese Funktionen brauchen die macOS-Bedienungshilfen-Berechtigung. Die App fragt erst danach, wenn der Nutzer die Stufe 1 erlebt hat (siehe Abschnitt 5). Ohne Berechtigung fehlen nur diese Funktionen, alles andere läuft.
+- Schneeflocken rieseln über alle Bildschirme. Mehrere Tiefenebenen: Nahe Flocken sind größer, schneller und heller, ferne kleiner, langsamer und blasser.
+- Flocken pendeln leicht seitlich. Wind (aus, weht nach links, weht nach rechts) treibt sie in eine Richtung, mit gelegentlichen Böen. Bei "Wind aus" gibt es keine Böen, nur das Pendeln.
+- **Ausweichen:** Um den Zeiger entsteht eine kleine schneefreie Zone, Flocken teilen sich weich um ihn herum. Die Stärke ist einstellbar.
+- Menge, Flockengröße und Fallgeschwindigkeit sind einstellbar. In Mittelstellung sind etwa 80 Flocken pro Bildschirm gleichzeitig sichtbar, in der höchsten Stufe etwa das Vierfache.
+- Flocken bleiben auf hellem und dunklem Untergrund sichtbar (dezenter dunkler Schatten, siehe `Art/preview.png`).
+- Beim Ausschalten entstehen keine neuen Flocken, die vorhandenen fallen aus dem Bild oder blenden innerhalb von 3 s aus.
 
-**F5 Lichterkette am Dock**
-- Eine zweite Lichterkette folgt der Oberkante des Docks (bzw. der Innenkante bei Dock links oder rechts) über die volle Dock-Breite.
-- Wenn Apps geöffnet oder beendet werden und das Dock dadurch breiter oder schmaler wird, passt sich die Kette nach Ende der Dock-Animation zuverlässig an.
-- Ausgeblendetes Dock: Kette erscheint und verschwindet mit dem Dock.
-- Gleiche Optionen wie F1 (Farben, Muster), eigene Ein/Aus-Einstellung.
+**Schneesturm:**
+- Etwa dreifache Menge, doppeltes Tempo, kräftiger Wind mit Böen.
+- Baut sich in etwa 2 s auf, endet nach 30 s oder bei erneutem Klick und klingt dann in etwa 5 s ab.
+- Ist der Schnee aus, schaltet der Sturm ihn für seine Dauer ein.
+- Der Sturm wird nicht gespeichert.
 
-**F6 Schnee bleibt auf Fenstern liegen**
-- Fallender Schnee sammelt sich langsam auf den Oberkanten der Fenster und baut sich über Minuten zu einer weichen Schneeschicht auf.
-- Wird ein Fenster bewegt, rieselt etwas Schnee herunter. Wird ein Fenster geschlossen oder minimiert, fällt sein Schnee herab.
-- **Abschütteln:** Schüttelt man ein Fenster kurz, fällt ein Teil des Schnees ab. Schüttelt man weiter, ist es irgendwann ganz frei. Hört man auf, baut sich der Schnee wieder auf. Normales Verschieben eines Fensters zählt nicht als Schütteln.
-- Herabfallender Schnee zerfällt in feine Flocken, die natürlich und leicht unterschiedlich schnell fallen und ausblenden.
+### F3 Ebene wählen
 
-### Nicht im Umfang
+Lichter und Schnee lassen sich jeweils "über allen Fenstern" oder "nur auf dem Schreibtisch" (hinter allen Fenstern) anzeigen.
 
-Eigener Birnen-Editor, Import und Export von Designs, Kurzbefehle, Zeiger-Effekte, mehrseitiges Onboarding, iPhone-Anbindung, Countdown, Updates über einen Update-Mechanismus.
+### F4 Bildschirme, Spaces, Vollbild
 
-## 4. Bedienung
+- Schnee erscheint auf allen Bildschirmen, Lichter auf jedem Bildschirm mit Menüleiste.
+- Anstecken, Abstecken und Auflösungswechsel werden ohne Neustart übernommen.
+- Lichter und Schnee sind auf allen Spaces sichtbar. In Vollbild-Apps sind sie ausgeblendet.
+- Sie erscheinen nicht als eigene Fenster in Mission Control, im App-Umschalter oder in Fensterlisten.
+- Sie erscheinen nicht in Bildschirmfotos, Bildschirmaufnahmen und Bildschirmfreigaben.
 
-**Menüleisten-Symbol** (bunt, drei Birnen am Kabel, dezent animiert, siehe Art/README.md) mit Menü:
+## 5. Funktionen, Stufe 2 (nach einer optionalen Berechtigung)
+
+F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. Welche, entscheidet das Team. Die Bildschirmaufnahme-Berechtigung ist ausgeschlossen. Ohne Berechtigung fehlen nur F5 und F6, alles andere läuft. Wird sie erteilt, schalten sich F5 und F6 ohne Neustart ein. Wird sie entzogen, verschwinden F5 und F6 binnen 5 s ohne Dialog.
+
+### F5 Lichterkette am Dock
+
+- Dock unten: Das Kabel liegt in flachen Bögen auf der Oberkante des Docks über dessen volle Breite. Die Birnen hängen nach unten und überdecken höchstens das obere Viertel der Symbole.
+- Dock links oder rechts: Das Kabel läuft an der Innenkante entlang, die Birnen zeigen zur Bildschirmmitte.
+- Die Kette erscheint nur auf dem Bildschirm, der gerade das Dock zeigt. Die Vergrößerung beim Überfahren wird ignoriert.
+- Ändert sich die Dock-Größe (Apps öffnen oder beenden, Dock-Position, Größe), liegt die Kette spätestens 0,5 s nachdem das Dock seine neue Größe erreicht hat, wieder deckungsgleich an. Abweichung höchstens 2 pt.
+- Ausgeblendetes Dock: Die Kette erscheint und verschwindet mit dem Dock.
+- Farbe, Muster, Größe und Abstand gelten für beide Ketten gemeinsam. Dock-Lichter haben eine eigene Ein/Aus-Einstellung. Ausweichen wie F1, nur hebt sich das Kabel hier vom Dock weg zur Bildschirmmitte.
+
+### F6 Schnee bleibt auf Fenstern liegen
+
+- Fallender Schnee sammelt sich auf den sichtbaren Oberkanten normaler App-Fenster, nicht auf Menüs, Popovers und Vollbild-Fenstern.
+- Die Schicht wird höchstens etwa 12 pt hoch, ist weich und unregelmäßig und ist bei Standardmenge nach etwa 5 Minuten voll.
+- Wird ein Fenster bewegt, rieselt etwas Schnee herunter. Wird es geschlossen oder minimiert, fällt sein Schnee herab.
+- **Abschütteln:** Schütteln heißt mindestens 3 Richtungswechsel beim Ziehen innerhalb von 1 s. Danach entfernt jeder weitere Richtungswechsel etwa ein Drittel des verbleibenden Schnees, bis das Fenster frei ist. Hört man auf, baut sich die Schicht wieder auf. Normales Verschieben, auch mit Korrekturbewegung, entfernt nichts.
+- Herabfallender Schnee zerfällt in feine Flocken, die unterschiedlich schnell fallen und ausblenden.
+- Bei Schnee-Ebene "nur auf dem Schreibtisch" oder ausgeschaltetem Schnee ist F6 inaktiv, liegender Schnee schmilzt in etwa 3 s.
+
+Alles, was in den Abschnitten 3 bis 7 nicht genannt ist, gehört nicht zum Umfang.
+
+## 6. Erster Start und Berechtigung
+
+1. App startet, die Birnen der Menüleisten-Kette gehen nacheinander an (F1). Kein modaler Dialog, kein Fenster.
+2. Nach 3 s beginnt leichter Schnee. Gleichzeitig öffnet sich am Menüleisten-Symbol ein kleines Popover: "Frohe Festtage! ❄️ Lust auf einen Schneesturm?" mit einem Button, der den Schneesturm startet. Das Popover nimmt keinen Fokus und schließt sich nach 20 s oder bei Klick daneben.
+3. Einmalig und frühestens 60 s nach Schritt 2 erscheint ein zweites Popover: "Lichter auch ans Dock und Schnee, der auf Fenstern liegen bleibt?" Es erklärt in einem Satz, was die App dafür sieht (Position von Dock und Fenstern) und was nicht (keine Inhalte, keine Eingaben), und bietet einen Button, der direkt zur passenden Stelle in den Systemeinstellungen führt.
+4. Wird das Popover übersprungen, fragt die App nie wieder von selbst. Der Weg bleibt über Menü und Einstellungen erreichbar.
+
+## 7. Bedienung
+
+**Menüleisten-Symbol** (bunt, drei Birnen am Kabel, dezent animiert, siehe `Art/README.md`) mit Menü:
+- Pause (schaltet alles vorübergehend aus und mit erneutem Klick wieder ein, gespeichert bis zum Fortsetzen)
 - Lichter an der Menüleiste (an/aus)
-- Lichter am Dock (an/aus; ohne Berechtigung mit Hinweis "Berechtigung nötig")
+- Lichter am Dock (an/aus; ohne Berechtigung mit Hinweis "Berechtigung nötig", Klick führt zu den Systemeinstellungen)
 - Schnee (an/aus)
-- Schneesturm (an/aus)
+- Schneesturm
 - Einstellungen…
 - Beenden
 
+Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hinter der Kamera-Aussparung verschwindet).
+
 **Einstellungsfenster**, kompakt, drei Bereiche:
-- **Lichter:** Farbmodus (bunt, warmweiß), Muster, Tempo, Birnengröße, Abstand der Birnen, Ebene (F3), Dock-Lichter an/aus.
-- **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene (F3), "Schnee bleibt auf Fenstern liegen" an/aus.
-- **Allgemein:** Beim Anmelden starten, Energiesparen (siehe Abschnitt 6), Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen, live aktualisiert.
+- **Lichter:** Farbmodus, Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus.
+- **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
+- **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Der Status aktualisiert sich live, während das Fenster offen ist.
 
-Alle Einstellungen werden sofort sichtbar übernommen und bleiben über Neustarts erhalten.
+Alle Einstellungen werden sofort sichtbar übernommen und bleiben über Neustarts erhalten. Die Oberfläche ist auf Deutsch und Englisch, je nach Systemsprache, sonst Englisch. Die Einstellungen sind mit VoiceOver bedienbar. Lichter und Schnee sind für VoiceOver unsichtbar.
 
-## 5. Erster Start
+## 8. Grafik
 
-1. App startet, Lichter an der Menüleiste gehen sofort an. Kein Dialog, kein Fenster.
-2. Ein kleines, freundliches Hinweisfenster oder Popover am Menüleisten-Symbol: "Lass es schneien ❄️" mit einem Button, der den Schnee einschaltet.
-3. Frühestens danach, einmalig und überspringbar: "Lichter auch ans Dock und Schnee, der auf Fenstern liegen bleibt?" mit Erklärung, wofür die Berechtigung gebraucht wird, und Button zu den Systemeinstellungen. Wird die Berechtigung erteilt, schalten sich F5 und F6 ohne Neustart ein.
+Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/README.md` und das Zielbild `Art/preview.png`. Birnen sind in jeder Palettenfarbe einfärbbar und bleiben in jeder Größe scharf. Für Elemente ohne Vorgabe (Schneeschicht auf Fenstern, Popovers, Einstellungsfenster) gestaltet das Team selbst, passend zum Stil der Vorgaben und zu macOS.
 
-## 6. Qualität und Energie
+## 9. Rahmenbedingungen
 
-- Im Ruhezustand (Zeiger nicht in der Nähe, Muster Dauerleuchten) praktisch keine CPU-Last. Mit Schnee und Funkeln deutlich unter 5 % CPU auf einem aktuellen Apple-Silicon-Mac.
-- Energiesparen: im Akkubetrieb bei niedrigem Ladestand oder aktivem Stromsparmodus reduzierte Bildrate. Option "Immer Energie sparen".
-- Keine sichtbaren Ruckler bei 60 Hz und ProMotion.
-- "Bewegung reduzieren" in den Bedienungshilfen wird respektiert (keine Ausweich- und Funkelanimation, ruhiger Schnee).
-- Overlays tauchen nicht in der Fensterauswahl von Bildschirmfotos auf und stehlen nie den Fokus.
-- Keine Abstürze ohne Berechtigung oder beim Wechsel von Bildschirmen.
-
-## 7. Grafik
-
-Alle Grafiken (Birnen, Schneeflocken, App-Icon, Menüleisten-Symbol) sind abgestimmte Vorgaben und liegen im Ordner `Art/`. Verbindlich ist `Art/README.md` samt Farbpalette; `Art/preview.png` zeigt das Zielbild. Birnen werden aus den Vektor-Ebenen zusammengesetzt, in jeder Palettenfarbe eingefärbt und bleiben in jeder Größe scharf. Keine anderen Grafiken verwenden.
-
-## 8. Technische Rahmenbedingungen
-
-- Name FestiveLights, Bundle-ID `ms.blckbox.FestiveLights`, macOS 14 oder neuer, Apple Silicon und Intel.
-- Swift, SwiftUI und AppKit. Keine Fremdabhängigkeiten ohne Rücksprache.
+- Name FestiveLights, Bundle-ID `ms.blckbox.FestiveLights` (Präfix so beabsichtigt), macOS 14 oder neuer, Apple Silicon und Intel.
+- Swift mit SwiftUI und AppKit, keine Fremdabhängigkeiten ohne Rücksprache.
 - Menüleisten-App ohne Dock-Symbol.
-- Vertrieb direkt (signiert, notarisiert), nicht über den App Store.
+- Vertrieb direkt (signiert und notarisiert), nicht über den App Store.
 
-## 9. Abnahme
+## 10. Qualität und Energie
 
-- Erster Start: Lichter sichtbar in unter 2 Sekunden, ohne Interaktion.
-- Klick durch Lichter und Schnee auf darunterliegende Bedienelemente funktioniert überall.
-- Zeiger an Kabel und in den Schnee: sichtbares, weiches Ausweichen.
-- Zwei Bildschirme: Lichter und Schnee auf beiden, Abstecken ohne Fehler.
-- Dock: App öffnen und beenden, Kette passt sich danach korrekt an.
-- Schnee auf Fenstern: nach einigen Minuten sichtbare Schicht. Kurzes Schütteln entfernt einen Teil, langes alles, normales Verschieben nichts.
-- CPU-Messung gemäß Abschnitt 6.
+- Referenzgerät: MacBook Air M2, internes Display, Standardwerte. Messung: Mittel über 60 s in der Aktivitätsanzeige.
+  - Nur Lichter mit Dauerleuchten, Zeiger weit weg: unter 1 % CPU.
+  - Lichter mit Funkeln plus Schnee: unter 5 % CPU.
+  - Schneesturm: unter 10 % CPU.
+  - Speicher unter 150 MB.
+  - Für Intel gibt es keinen Zielwert, die App muss dort aber flüssig laufen.
+- Energiesparen: Im Akkubetrieb unter 20 % Ladung, im Stromsparmodus oder mit "Immer Energie sparen" halbe Flockenzahl und ruhigere Animation. Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
+- Keine sichtbar ausgelassenen Bilder bei 60 Hz und 120 Hz.
+- "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen und Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
+- Die Overlays stehlen nie den Fokus. Keine Abstürze ohne Berechtigung oder beim Wechsel von Bildschirmen.
+
+## 11. Abnahme
+
+1. Erster Start: Lichter sichtbar in unter 2 s ohne Interaktion. Schnee und Popover nach 3 s.
+2. Durchklick-Prüfliste, jeweils bei beiden Ebenen: Menüleisten-Extras, Browser-Tabs direkt unter der Kette, Dock-Symbole unter der Dock-Kette, Fenster-Ampel unter der Schneeschicht, Drag-and-drop und Scrollen unter Schnee.
+3. Ausweichen: Reaktion binnen 0,1 s, in einer Bildschirmaufnahme kein Sprung, Rückkehr binnen 1 s.
+4. Zwei Bildschirme: Lichter und Schnee auf beiden. 20-mal Anstecken und Abstecken ohne Absturz.
+5. Dock: App öffnen und beenden, Dock-Position wechseln, Auto-Hide schalten. Jeweils spätestens 0,5 s danach höchstens 2 pt Abweichung.
+6. Schneeschicht: nach 5 Minuten Standardmenge sichtbar volle Schicht. 3 Richtungswechsel in 1 s plus ein weiterer entfernen etwa ein Drittel. Anhaltendes Schütteln macht das Fenster frei. Zehnmal normales Verschieben entfernt nichts.
+7. Berechtigung erteilen und entziehen ohne Neustart, Verhalten wie in Abschnitt 5.
+8. "Bewegung reduzieren" wie in Abschnitt 10.
+9. Einstellungen überleben einen Neustart.
+10. CPU und Speicher wie in Abschnitt 10.
+11. 8 Stunden Dauerlauf ohne nennenswerten Speicherzuwachs.
