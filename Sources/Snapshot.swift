@@ -76,8 +76,8 @@ enum Snapshot {
         for i in 0..<400 {
             _ = field.tick(time: Double(i) / 60, dt: 1.0 / 60, pointerGlobal: CGPoint(x: 1500, y: 600), stormFactor: 0, targets: [], store: store)
         }
-        write(field.window.rootLayer, size: f.size, background: dark, flipped: true, to: "\(dir)/snow-dark.png")
-        write(field.window.rootLayer, size: f.size, background: light, flipped: true, to: "\(dir)/snow-light.png")
+        write(field.window.rootLayer, size: f.size, background: dark, to: "\(dir)/snow-dark.png")
+        write(field.window.rootLayer, size: f.size, background: light, to: "\(dir)/snow-light.png")
         print("aliveCount", field.aliveCount)
     }
 }

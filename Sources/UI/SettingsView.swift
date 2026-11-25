@@ -59,7 +59,7 @@ struct SettingsView: View {
             snow.tabItem { Label("Snow", systemImage: "snowflake") }
             general.tabItem { Label("General", systemImage: "gearshape") }
         }
-        .frame(width: 470, height: 372)
+        .frame(width: 470, height: 340)
         .onAppear { perm.start() }
         .onDisappear { perm.stop() }
     }

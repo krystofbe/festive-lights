@@ -34,7 +34,7 @@ final class DockTracker {
     private var observers: [NSObjectProtocol] = []
 
     func start() {
-        stop()
+        guard timer == nil else { return }
         schedule(0.2)
         let nc = NSWorkspace.shared.notificationCenter
         for n in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {

@@ -40,9 +40,13 @@ final class StatusController: NSObject, NSMenuDelegate {
         updateIcon()
     }
 
+    var debugAppearance: String {
+        "btn=\(item.button?.effectiveAppearance.name.rawValue ?? "-") win=\(item.button?.window?.effectiveAppearance.name.rawValue ?? "-") app=\(NSApp.effectiveAppearance.name.rawValue)"
+    }
+
     func updateIcon() {
         guard let button = item.button else { return }
-        let dark = button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let dark = button.effectiveAppearance.name.rawValue.contains("Dark")
         let animated = timer != nil
         let f = animated ? frame : 0
         if let s = shown, s.0 == f, s.1 == dark { return }

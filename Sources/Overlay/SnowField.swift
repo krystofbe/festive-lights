@@ -50,7 +50,6 @@ final class SnowField {
         self.screen = screen
         screenSize = screen.frame.size
         window = OverlayWindow(frame: screen.frame)
-        window.rootLayer.isGeometryFlipped = true
         scale = screen.backingScaleFactor
         window.rootLayer.addSublayer(pileHost)
         window.rootLayer.addSublayer(flakeHost)
@@ -246,7 +245,7 @@ final class SnowField {
                     if abs(f.ox) < 0.05, abs(f.oy) < 0.05, tox == 0, toy == 0 { f.ox = 0; f.oy = 0 }
                 }
                 let l = layers[f.layer]
-                l.position = CGPoint(x: sx + f.ox, y: sy + f.oy)
+                l.position = CGPoint(x: sx + f.ox, y: ScreenCoords.layerY(topDown: sy + f.oy, height: H))
                 if f.crystal { l.transform = CATransform3DMakeRotation(f.rot, 0, 0, 1) }
                 l.opacity = Float(f.alpha * max(0, min(1, f.fade)))
                 flakes[i] = f
@@ -254,7 +253,7 @@ final class SnowField {
                 continue
             }
             let l = layers[f.layer]
-            l.position = CGPoint(x: f.x, y: f.y)
+            l.position = CGPoint(x: f.x, y: ScreenCoords.layerY(topDown: f.y, height: H))
             if remove {
                 l.isHidden = true
                 free.append(f.layer)
@@ -303,7 +302,7 @@ final class SnowField {
             if layer.path == nil || (moved && (e.moving || time - last > 0.25)) {
                 pileVersion[id] = e.version
                 pileTime[id] = time
-                layer.path = Self.path(entry: e, id: id, originX: originX, originY: originY, melt: melt)
+                layer.path = Self.path(entry: e, id: id, originX: originX, originY: originY, melt: melt, screenHeight: Double(screenSize.height))
             }
             layer.opacity = Float(1 - melt)
         }
@@ -312,9 +311,9 @@ final class SnowField {
         }
     }
 
-    static func path(entry e: PileStore.Entry, id: Int, originX: Double, originY: Double, melt: Double) -> CGPath {
+    static func path(entry e: PileStore.Entry, id: Int, originX: Double, originY: Double, melt: Double, screenHeight: Double) -> CGPath {
         let path = CGMutablePath()
-        let edgeY = Double(e.frame.minY) - originY
+        let edgeY = screenHeight - (Double(e.frame.minY) - originY)  // bottom-up
         let factor = 1 - melt
         for seg in e.segments {
             let x0 = seg.lowerBound, x1 = seg.upperBound
@@ -328,19 +327,19 @@ final class SnowField {
                 let wave = 0.88 + 0.12 * sin(lx / 23 + Double(id % 7)) + 0.08 * sin(lx / 9 + Double(id % 5))
                 let noise = wave * (0.9 + 0.2 * stableRandom(id, col, 5))
                 let h = Double(e.pile.height(at: lx)) * noise * taper * factor
-                pts.append(CGPoint(x: x - originX, y: edgeY - h))
+                pts.append(CGPoint(x: x - originX, y: edgeY + h))
                 if x >= x1 { break }
                 x = min(x + 3, x1)
             }
             guard pts.count > 1 else { continue }
-            path.move(to: CGPoint(x: x0 - originX, y: edgeY + 1.5))
+            path.move(to: CGPoint(x: x0 - originX, y: edgeY - 1.5))
             path.addLine(to: pts[0])
             for k in 1..<pts.count {
                 let mid = CGPoint(x: (pts[k - 1].x + pts[k].x) / 2, y: (pts[k - 1].y + pts[k].y) / 2)
                 path.addQuadCurve(to: mid, control: pts[k - 1])
             }
             path.addLine(to: pts[pts.count - 1])
-            path.addLine(to: CGPoint(x: x1 - originX, y: edgeY + 1.5))
+            path.addLine(to: CGPoint(x: x1 - originX, y: edgeY - 1.5))
             path.closeSubpath()
         }
         return path

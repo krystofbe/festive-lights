@@ -96,6 +96,10 @@ final class AppController: NSObject {
     }
 
     private func poll() {
+        #if DEBUG
+        let line = "trusted=\(Permission.granted) dock=\(String(describing: dockGeometry)) raw=\(String(describing: DockTracker.read())) suspended=\(suspended) energy=\(energySaving) reduce=\(reduceMotion) \(status.debugAppearance)\n"
+        try? line.write(toFile: NSHomeDirectory() + "/festivelights-test/state.txt", atomically: true, encoding: .utf8)
+        #endif
         let p = Permission.granted
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
@@ -237,7 +241,8 @@ final class AppController: NSObject {
             w.title = String(localized: "settings.title")
             w.styleMask = [.titled, .closable, .miniaturizable]
             w.isReleasedWhenClosed = false
-            w.center()
+            w.setContentSize(NSSize(width: 470, height: 340))
+            if let v = NSScreen.screens.first?.visibleFrame { w.setFrameTopLeftPoint(NSPoint(x: v.midX - 235, y: v.maxY - 200)) }
             settingsWindow = w
         }
         permissionModel.refresh()

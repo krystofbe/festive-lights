@@ -274,3 +274,35 @@ final class StormTests: XCTestCase {
         XCTAssertNotEqual(SnowPhysics.windSpeed(mode: .off, time: 3, storm: 1), 0)
     }
 }
+
+final class CoordinateTests: XCTestCase {
+    func testFallingFlakeMovesDownOnScreen() {
+        let h = 1080.0
+        var y = 100.0
+        let before = ScreenCoords.layerY(topDown: y, height: h)
+        y += 60 * 0.5 // fällt: y wächst in der Simulation
+        let after = ScreenCoords.layerY(topDown: y, height: h)
+        XCTAssertLessThan(after, before, "Layer-y muss beim Fallen kleiner werden (nach unten)")
+        XCTAssertEqual(ScreenCoords.layerY(topDown: 0, height: h), h, "Bildschirmoberkante liegt oben")
+        XCTAssertEqual(ScreenCoords.layerY(topDown: h, height: h), 0, "Unterkante liegt unten")
+    }
+
+    func testPileSitsAboveWindowEdge() {
+        let edge = 300.0, h = 1080.0
+        let layerEdge = ScreenCoords.layerY(topDown: edge, height: h)
+        XCTAssertGreaterThan(ScreenCoords.pileTopLayerY(edgeTopDown: edge, height: 12, screenHeight: h), layerEdge)
+    }
+
+    func testWindowTopEdgeIsAboveItsBottomInCocoa() {
+        let primary = 1080.0
+        let top = ScreenCoords.cocoaY(fromCG: 200, rectHeight: 400, primaryHeight: primary) + 400
+        let bottom = ScreenCoords.cocoaY(fromCG: 200, rectHeight: 400, primaryHeight: primary)
+        XCTAssertGreaterThan(top, bottom)
+        XCTAssertEqual(top, primary - 200)
+    }
+
+    func testWindDirection() {
+        XCTAssertLessThan(SnowPhysics.windSpeed(mode: .left, time: 1, storm: 0, gusts: false), 0)
+        XCTAssertGreaterThan(SnowPhysics.windSpeed(mode: .right, time: 1, storm: 0, gusts: false), 0)
+    }
+}
