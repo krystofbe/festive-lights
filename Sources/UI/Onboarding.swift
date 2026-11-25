@@ -44,7 +44,7 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             OnbStyle.cream
-            SnowDots().accessibilityHidden(true)
+            SnowDots().accessibilityHidden(true).zIndex(0)
             VStack(spacing: 0) {
                 Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().frame(width: 560, height: 96).accessibilityHidden(true)
                 Spacer(minLength: 0)
@@ -58,19 +58,20 @@ struct OnboardingView: View {
                         Spacer()
                         tree.scaleEffect(x: -1)
                     }
-                    .padding(.horizontal, 28)
+                    .padding(.horizontal, 12)
                 }
-                .frame(height: 100)
+                .frame(height: 100, alignment: .bottom)
             }
             .accessibilityHidden(true)
-            VStack(spacing: 8) {
-                Spacer().frame(height: 112)
-                content
-                Spacer(minLength: 4)
-                dots
-                Spacer().frame(height: 14)
-                buttons
-                Spacer().frame(height: 22)
+            VStack(spacing: 0) {
+                Spacer().frame(height: 108)
+                // Inhalt im freien Raum zentriert, Punkte und Buttonzeile darunter an fester Stelle
+                VStack(spacing: 6) { content }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                dots.frame(height: 12)
+                Spacer().frame(height: 16)
+                buttons.frame(height: 44)
+                Spacer().frame(height: 26)
             }
             .padding(.horizontal, 40)
         }
@@ -81,7 +82,7 @@ struct OnboardingView: View {
     }
 
     private var tree: some View {
-        Image(nsImage: NSImage(named: "tree") ?? NSImage()).resizable().frame(width: 74, height: 100)
+        Image(nsImage: NSImage(named: "tree") ?? NSImage()).resizable().frame(width: 56, height: 76)
     }
 
     private var dots: some View {
@@ -143,7 +144,7 @@ struct OnboardingView: View {
             heading("onb.snow.title", "onb.snow.body")
             Button(action: startStorm) {
                 Text("onb.storm").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).padding(.vertical, 7)
-                    .background(Capsule().strokeBorder(OnbStyle.wine, lineWidth: 1.5))
+                    .background(Capsule().fill(Color(hex: 0xF6E2DA)))
             }.buttonStyle(.plain)
         case .access:
             #if DIRECT
@@ -152,7 +153,7 @@ struct OnboardingView: View {
             HStack(spacing: 14) {
                 Button(action: { Permission.request(); Permission.openSystemSettings() }) {
                     Text("Open System Settings").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).padding(.vertical, 7)
-                        .background(Capsule().strokeBorder(OnbStyle.wine, lineWidth: 1.5))
+                        .background(Capsule().fill(Color(hex: 0xF6E2DA)))
                 }.buttonStyle(.plain)
                 Label(LocalizedStringKey(perm.granted ? "Permission granted" : "Permission not granted"), systemImage: perm.granted ? "checkmark.circle.fill" : "circle")
                     .font(OnbStyle.body(13)).foregroundColor(perm.granted ? Color(hex: 0x2E7D4F) : OnbStyle.muted)
@@ -207,11 +208,28 @@ struct OnboardingView: View {
 
     private var illustrationWindow: some View {
         ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 8).fill(Color.white).frame(width: 150, height: 54)
-                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
-            HStack(spacing: 4) { ForEach(0..<3) { _ in Circle().fill(OnbStyle.dotOff).frame(width: 7, height: 7) } }.padding(.top, 8).padding(.trailing, 100)
-            Capsule().fill(Color(hex: 0xEAF3FA)).frame(width: 154, height: 10).offset(y: -4)
+            RoundedRectangle(cornerRadius: 8).fill(Color(hex: 0xDCE6EC)).frame(width: 150, height: 56).offset(y: 8)
+                .shadow(color: .black.opacity(0.10), radius: 4, y: 2)
+            HStack(spacing: 4) { ForEach(0..<3) { _ in Circle().fill(Color.white.opacity(0.9)).frame(width: 7, height: 7) } }
+                .frame(width: 150, alignment: .leading).padding(.leading, 12).offset(y: 24)
+            // Schneeschicht auf der Oberkante, wie die echte Schicht der App
+            ZStack {
+                Capsule().fill(Color.white).frame(width: 156, height: 9)
+                Circle().fill(Color.white).frame(width: 18, height: 18).offset(x: -40, y: -3)
+                Circle().fill(Color.white).frame(width: 24, height: 24).offset(x: 6, y: -5)
+                Circle().fill(Color.white).frame(width: 15, height: 15).offset(x: 48, y: -2)
+            }
+            .shadow(color: OnbStyle.flake.opacity(0.5), radius: 1, y: 1).offset(y: 6)
+            Group {
+                Circle().frame(width: 4, height: 4).offset(x: -50, y: -4)
+                Circle().frame(width: 3, height: 3).offset(x: -12, y: -14)
+                Circle().frame(width: 5, height: 5).offset(x: 34, y: -8)
+                Circle().frame(width: 3, height: 3).offset(x: 62, y: -16)
+            }
+            .foregroundColor(OnbStyle.flake)
         }
+        .frame(width: 170, height: 70)
+        .scaleEffect(0.8).frame(height: 54)
         .accessibilityHidden(true)
     }
 }
@@ -223,12 +241,12 @@ struct SnowDots: View {
         TimelineView(.animation(minimumInterval: still ? nil : 1.0 / 20)) { ctx in
             Canvas { gc, size in
                 let t = still ? 0 : ctx.date.timeIntervalSinceReferenceDate
-                for i in 0..<16 {
+                for i in 0..<9 {
                     let x = stableRandom(i, 1, 2) * size.width
                     let r = 1.5 + stableRandom(i, 2, 2) * 1.5
                     let speed = 6 + stableRandom(i, 3, 2) * 8
                     let y = (stableRandom(i, 4, 2) * size.height + t * speed).truncatingRemainder(dividingBy: size.height)
-                    gc.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)), with: .color(OnbStyle.flake.opacity(0.8)))
+                    gc.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)), with: .color(OnbStyle.flake.opacity(0.65)))
                 }
             }
         }
