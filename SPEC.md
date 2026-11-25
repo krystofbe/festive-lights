@@ -97,6 +97,7 @@ F5 und F6 dürfen höchstens eine optionale macOS-Systemberechtigung erfordern. 
 
 - Fallender Schnee sammelt sich auf den sichtbaren Oberkanten normaler App-Fenster, nicht auf Menüs, Popovers und Vollbild-Fenstern.
 - Die Schicht wird höchstens etwa 12 pt hoch, ist weich und unregelmäßig und ist bei Standardmenge nach etwa 5 Minuten voll.
+- Die Schicht folgt der sichtbaren Form des Fensters, auch den abgerundeten Ecken: Zur Ecke hin wird sie dünner und schmiegt sich an die Rundung, sie ragt nie über den Fensterrand hinaus in die Luft. Ab und zu rutscht an einer Ecke ein kleines Stück Schnee ab und fällt herunter. Der Eckenradius richtet sich nach dem tatsächlichen Erscheinungsbild der Fenster der jeweiligen macOS-Version.
 - Wird ein Fenster bewegt, rieselt etwas Schnee herunter. Wird es geschlossen oder minimiert, fällt sein Schnee herab.
 - **Abschütteln:** Schütteln heißt mindestens 3 Richtungswechsel beim Ziehen innerhalb von 1 s. Danach entfernt jeder weitere Richtungswechsel etwa ein Drittel des verbleibenden Schnees, bis das Fenster frei ist. Hört man auf, baut sich die Schicht wieder auf. Normales Verschieben, auch mit Korrekturbewegung, entfernt nichts.
 - Herabfallender Schnee zerfällt in feine Flocken, die unterschiedlich schnell fallen und ausblenden.
@@ -163,7 +164,7 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 3. Ausweichen: Reaktion binnen 0,1 s, in einer Bildschirmaufnahme kein Sprung, Rückkehr binnen 1 s.
 4. Zwei Bildschirme: Lichter und Schnee auf beiden. 20-mal Anstecken und Abstecken ohne Absturz.
 5. Dock: App öffnen und beenden, Dock-Position wechseln, Auto-Hide schalten. Jeweils spätestens 0,5 s danach höchstens 2 pt Abweichung.
-6. Schneeschicht: nach 5 Minuten Standardmenge sichtbar volle Schicht. 3 Richtungswechsel in 1 s plus ein weiterer entfernen etwa ein Drittel. Anhaltendes Schütteln macht das Fenster frei. Zehnmal normales Verschieben entfernt nichts.
+6. Schneeschicht: nach 5 Minuten Standardmenge sichtbar volle Schicht. 3 Richtungswechsel in 1 s plus ein weiterer entfernen etwa ein Drittel. Anhaltendes Schütteln macht das Fenster frei. Zehnmal normales Verschieben entfernt nichts. In einer vergrößerten Aufnahme einer Fensterecke liegt kein Schnee außerhalb der Fensterform.
 7. Aufstöbern: Schnelles Durchfahren des Schnees (Zeigertempo über etwa 1000 pt/s) bewegt in zwei Aufnahmen im Abstand von 0,3 s sichtbar Flocken in Bewegungsrichtung. Nach 2 s fallen alle wieder normal. Schnelles Wischen über eine Schneeschicht erzeugt eine aufstiebende Wolke und eine Delle, die sich wieder füllt.
 8. Berechtigung erteilen und entziehen ohne Neustart, Verhalten wie in Abschnitt 5.
 9. "Bewegung reduzieren" wie in Abschnitt 10.
