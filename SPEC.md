@@ -47,7 +47,7 @@ Alle Regler haben 5 Stufen. Die Mittelstellung ist der Standard.
 - Farben reihum aus der Palette in `Art/README.md`. Alternativ Modus "warmweiß".
 - Muster:
   - **Dauerleuchten.**
-  - **Funkeln:** Zu jedem Zeitpunkt sind etwa 10 % der Birnen für 0,3 bis 1 s gedimmt, sie glimmen weich aus und wieder an.
+  - **Funkeln:** ruhig und gemächlich, kein Flackern. Bei Mittelstellung des Tempos sind zu jedem Zeitpunkt etwa 6 % der Birnen gedimmt, jede für 1,5 bis 3 s. Ausglimmen und Wiederaufglimmen dauern jeweils etwa 0,8 s, weich und ohne Sprung. Zwei benachbarte Birnen sind nie gleichzeitig gedimmt.
   - **Lauflicht:** Ein heller Abschnitt wandert von links nach rechts, die übrigen Birnen sind gedimmt.
   - Das Tempo wirkt auf Funkeln und Lauflicht.
 - **Ausweichen:** Kommt der Zeiger dem Kabel näher als etwa 60 pt (von unten oder seitlich), hebt sich der betroffene Abschnitt samt Birnen weich nach oben, bis knapp unter die Menüleiste. Birnen und Schein blenden in Zeigernähe auf etwa 30 % Deckkraft ab. Die Reaktion beginnt innerhalb von 0,1 s. Entfernt sich der Zeiger, senkt sich die Kette innerhalb von etwa 0,5 s wieder, und die Birnen pendeln kurz nach. Steht der Zeiger in der Menüleiste selbst, passiert nichts.
