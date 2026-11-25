@@ -31,6 +31,9 @@ final class DockTracker {
     private var restItems: [CGRect] = []
     private var magTimer: Timer?
     private var spansActive = false
+    private var started = false
+    private var inZone = false
+    private var autohide = false
     var debugItems = ""
     private var timer: Timer?
     private var stabilizer = DockFrameStabilizer()
@@ -39,8 +42,9 @@ final class DockTracker {
     private var observers: [NSObjectProtocol] = []
 
     func start() {
-        guard timer == nil else { return }
-        schedule(0.2)
+        guard timer == nil, !started else { return }
+        started = true
+        burst()
         let nc = NSWorkspace.shared.notificationCenter
         for n in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
             observers.append(nc.addObserver(forName: n, object: nil, queue: .main) { [weak self] _ in self?.burst() })
@@ -50,6 +54,7 @@ final class DockTracker {
     }
 
     func stop() {
+        started = false
         timer?.invalidate(); timer = nil
         observers.forEach { NotificationCenter.default.removeObserver($0); NSWorkspace.shared.notificationCenter.removeObserver($0); DistributedNotificationCenter.default().removeObserver($0) }
         observers = []
@@ -58,7 +63,9 @@ final class DockTracker {
     }
 
     func burst() {
+        guard started else { return }
         burstUntil = CACurrentMediaTime() + 2.5
+        autohide = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
         schedule(1.0 / 30)
     }
 
@@ -73,7 +80,7 @@ final class DockTracker {
 
     private func poll() {
         let now = CACurrentMediaTime()
-        if now > burstUntil { schedule(0.2) }
+        if now > burstUntil { timer?.invalidate(); timer = nil }   // Ruhezustand: keine laufende Abfrage, nur Ereignisse
         let geo = Permission.granted ? Self.read() : nil
         startMagnificationIfNeeded()
         // Vergrößerung beim Überfahren ignorieren: Zeiger im Dock-Bereich friert den Rahmen ein.
@@ -112,7 +119,16 @@ final class DockTracker {
         magTimer = t
     }
 
-    func pointerMoved() { startMagnificationIfNeeded() }
+    func pointerMoved() {
+        guard started else { return }
+        startMagnificationIfNeeded()
+        // Auto-Hide: Dock fährt ein, wenn der Zeiger an die Kante kommt, und aus, wenn er die Zone verlässt
+        let m = NSEvent.mouseLocation
+        if let c = current {
+            let inside = c.rect.insetBy(dx: -20, dy: -20).contains(m)
+            if inside != inZone { inZone = inside; if autohide { burst() } }
+        } else if autohide, let f = NSScreen.screens.first?.frame, m.y < f.minY + 3 || m.x < f.minX + 3 || m.x > f.maxX - 3 { burst() }
+    }
 
     private func stopMagnification() { magTimer?.invalidate(); magTimer = nil; spansActive = false }
 
