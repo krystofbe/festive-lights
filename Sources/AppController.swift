@@ -66,17 +66,17 @@ final class AppController: NSObject {
         dn.addObserver(self, selector: #selector(lockChanged(_:)), name: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil)
         dn.addObserver(self, selector: #selector(systemChanged), name: NSNotification.Name("AppleInterfaceThemeChangedNotification"), object: nil)
         #if DEBUG
-        dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.storm"), object: nil)
-        dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.shake"), object: nil)
-        dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.hit"), object: nil)
-        dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.welcome"), object: nil)
+        dn.addObserver(self, selector: #selector(debugStorm), name: NSNotification.Name("ms.blackbox.festivelights.debug.storm"), object: nil)
+        dn.addObserver(self, selector: #selector(debugShake(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.shake"), object: nil)
+        dn.addObserver(self, selector: #selector(debugHit(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.hit"), object: nil)
+        dn.addObserver(self, selector: #selector(debugWelcome), name: NSNotification.Name("ms.blackbox.festivelights.debug.welcome"), object: nil)
         #if DIRECT
-        dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.prompt"), object: nil)
+        dn.addObserver(self, selector: #selector(debugPrompt), name: NSNotification.Name("ms.blackbox.festivelights.debug.prompt"), object: nil)
         #endif
-        dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blckbox.FestiveLights.debug.swipe"), object: nil)
+        dn.addObserver(self, selector: #selector(debugSwipe(_:)), name: NSNotification.Name("ms.blackbox.festivelights.debug.swipe"), object: nil)
         #endif
         dn.addObserver(self, selector: #selector(dockPrefsChanged), name: NSNotification.Name("com.apple.dock.prefchanged"), object: nil)
-        dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil)
+        dn.addObserver(self, selector: #selector(showSettingsRequested), name: NSNotification.Name("ms.blackbox.festivelights.showSettings"), object: nil)
 
         monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
             let p = NSEvent.mouseLocation

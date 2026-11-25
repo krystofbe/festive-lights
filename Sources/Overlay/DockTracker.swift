@@ -32,7 +32,7 @@ final class DockTracker {
     private var tile = 64.0
     private var reading = false
     private var polling = false
-    private let axQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockax", qos: .userInteractive)
+    private let axQueue = DispatchQueue(label: "ms.blackbox.festivelights.dockax", qos: .userInteractive)
     #if DEBUG
     var debugItems = ""
     #endif

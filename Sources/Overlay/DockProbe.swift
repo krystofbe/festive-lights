@@ -21,9 +21,9 @@ final class DockProbe {
     private typealias Placed = DockProbeCore.Placed
     private typealias Measured = DockProbeCore.Measured
 
-    private let measureQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockprobe.measure", qos: .userInteractive)
-    private let loopQueue = DispatchQueue(label: "ms.blckbox.FestiveLights.dockprobe.loop", qos: .userInteractive)
-    private let signposter = OSSignposter(subsystem: "ms.blckbox.FestiveLights", category: "dock")
+    private let measureQueue = DispatchQueue(label: "ms.blackbox.festivelights.dockprobe.measure", qos: .userInteractive)
+    private let loopQueue = DispatchQueue(label: "ms.blackbox.festivelights.dockprobe.loop", qos: .userInteractive)
+    private let signposter = OSSignposter(subsystem: "ms.blackbox.festivelights", category: "dock")
 
     // nur Haupt-Thread
     private var observers: [NSObjectProtocol] = []

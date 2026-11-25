@@ -150,7 +150,7 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 
 ## 9. Rahmenbedingungen
 
-- Name FestiveLights, Bundle-ID `ms.blckbox.FestiveLights` (Präfix so beabsichtigt), macOS 14 oder neuer, Apple Silicon und Intel.
+- Name FestiveLights, Bundle-ID `ms.blackbox.festivelights`, macOS 14 oder neuer, Apple Silicon und Intel.
 - Swift mit SwiftUI und AppKit, keine Fremdabhängigkeiten ohne Rücksprache.
 - Menüleisten-App ohne Dock-Symbol.
 - Kostenlos und Open Source unter der MIT-Lizenz (`LICENSE`). Das Repo ist öffentlich: keine Team-ID, keine Zertifikatsnamen, keine persönlichen Pfade im Repo, Signatur-Einstellungen nur in einer lokalen, nicht versionierten Datei.

@@ -54,7 +54,7 @@ Wo SPEC.md offen lässt, gilt Folgendes.
 ## Fenster
 - Lichter und Schnee laufen in getrennten Fenstern. Die Lichterkette hat ein Fenster nur in der Größe der Kette, nicht in Bildschirmgröße.
 - Ebenen: "über allen Fenstern" liegt knapp unter der Menüleiste, "nur auf dem Schreibtisch" knapp über dem Schreibtischhintergrund.
-- Overlays sind für Bildschirmfotos unsichtbar (`sharingType = .none`). Für Entwicklertests schaltet `defaults write ms.blckbox.FestiveLights debugCapture -bool YES` das ab. Im Debug-Build rendert `--render-snapshots <Ordner>` die Ebenen ohne Bildschirm in PNG-Dateien.
+- Overlays sind für Bildschirmfotos unsichtbar (`sharingType = .none`). Für Entwicklertests schaltet `defaults write ms.blackbox.festivelights debugCapture -bool YES` das ab. Im Debug-Build rendert `--render-snapshots <Ordner>` die Ebenen ohne Bildschirm in PNG-Dateien.
 - Ein zweiter Start öffnet über eine verteilte Benachrichtigung die Einstellungen der laufenden Instanz und beendet sich.
 
 ## Erster Start

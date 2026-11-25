@@ -5,13 +5,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let me = ProcessInfo.processInfo.processIdentifier
-        let others = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "ms.blckbox.FestiveLights")
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "ms.blackbox.festivelights")
             .filter { $0.processIdentifier != me }
         // Starten zwei Instanzen zugleich, bleibt die ältere (nach Startzeit, bei Gleichstand die mit der kleineren Prozessnummer)
         let myStart = NSRunningApplication.current.launchDate ?? .distantFuture
         let older = others.filter { ($0.launchDate ?? .distantFuture, $0.processIdentifier) < (myStart, me) }
         if !older.isEmpty {
-            DistributedNotificationCenter.default().postNotificationName(NSNotification.Name("ms.blckbox.FestiveLights.showSettings"), object: nil, deliverImmediately: true)
+            DistributedNotificationCenter.default().postNotificationName(NSNotification.Name("ms.blackbox.festivelights.showSettings"), object: nil, deliverImmediately: true)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
             return
         }
