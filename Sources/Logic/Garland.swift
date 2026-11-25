@@ -121,7 +121,7 @@ enum Garland {
                     let k = branchScale * s
                     let u = b.u + (b.mirrored ? -1 : 1) * (t.x - 40) * k
                     guard u > bw, u < length - bw,
-                          bulbPositions.allSatisfy({ abs($0 - u) > bw + 2 }),
+                          bulbPositions.allSatisfy({ abs($0 - u) > bw / 2 + 5 * s + 2 }),
                           placed.allSatisfy({ abs($0 - u) > bw * 1.6 }) else { continue }
                     plan.baubles.append(GarlandBauble(branch: i, gold: (plan.baubles.count % 2 == 1), x: t.x, y: t.y, u: u))
                     placed.append(u)

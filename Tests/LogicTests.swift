@@ -840,8 +840,9 @@ final class BaubleTests: XCTestCase {
 
     func testBaublesKeepDistanceToEveryBulb() {
         let width = 16 * Garland.baubleScale
+        let bulbHalf = 5.0   // Mini-Birne ist 10 pt breit
         for b in plan().baubles {
-            for bulb in layout.bulbPositions { XCTAssertGreaterThan(abs(bulb - b.u), width, "Kugel an einer Birne bei u=\(b.u)") }
+            for bulb in layout.bulbPositions { XCTAssertGreaterThan(abs(bulb - b.u), width / 2 + bulbHalf, "Kugel an einer Birne bei u=\(b.u)") }
         }
     }
 

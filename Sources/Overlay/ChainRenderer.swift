@@ -151,8 +151,10 @@ final class ChainRenderer {
         let h = fir ? FirSprites.bulbSize.height * fs : sp.bulbH
         let w = fir ? FirSprites.bulbSize.width * fs : h * 0.6
         let px = max(8, Int((h * scale).rounded()))
-        let glowPx = max(16, Int((h * 2 * scale).rounded()))
-        let glowCenter = fir ? 0.4 : 0.45
+        // Schein: klassisch Radius eine Birnenhöhe, Tanne eineinhalb Birnenlängen um die Mitte des Glaskörpers
+        let glowR = fir ? 1.5 * h : h
+        let glowPx = max(16, Int((glowR * 2 * scale).rounded()))
+        let glowCenter = fir ? 1 - 14.0 / 21.0 : 0.45
         beads = BeadChain(rest: layout.bulbPositions, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
         for (i, b) in bulbs.enumerated() {
             b.container.bounds = CGRect(x: 0, y: 0, width: w, height: h)
@@ -160,7 +162,7 @@ final class ChainRenderer {
             b.container.zPosition = 4
             b.dim.frame = b.container.bounds
             b.lit.frame = b.container.bounds
-            b.glow.frame = CGRect(x: w / 2 - h, y: glowCenter * h - h, width: 2 * h, height: 2 * h)
+            b.glow.frame = CGRect(x: w / 2 - glowR, y: glowCenter * h - glowR, width: 2 * glowR, height: 2 * glowR)
             for l in [b.dim, b.lit, b.glow] { l.contentsScale = scale }
             if fir {
                 b.dim.contents = FirSprites.bulb(kind: style.kind, index: i, lit: false, pixelHeight: px)
