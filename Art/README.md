@@ -80,8 +80,10 @@ Leuchten: weicher Schein in der Schein-Farbe, Mitte etwa 60 % der Birnenlänge u
 | Stil | Birne | Schein |
 |---|---|---|
 | Tanne warmgold | #FFC766 | #FFB547 |
-| Tanne bunt, reihum | rot #E8432F, gelb #F5A623, blau #7FB4D8, grün #5FC25A | rot #FF6A3D, gelb #FFB547, blau #BFE0FF, grün #9CF08A |
+| Tanne bunt, reihum rot, gold, cremeweiß, gold | rot #D42A2E, gold #F2B33D, cremeweiß #FFEFC4 | rot #FF5238, gold #FFB547, cremeweiß #FFE0A0 |
 
-**Zapfen** `pinecone.pdf` (24 × 40 pt, Aufhängepunkt (12, 6)): in beiden Tannen-Stilen, etwa einer pro Bogen, hängt knapp unter der Girlande.
+**Zapfen** `pinecone.pdf` (24 × 40 pt, Aufhängepunkt (12, 6)): nur bei "Tanne warmgold", etwa einer pro Bogen, hängt knapp unter der Girlande.
+
+**Christbaumkugeln** `bauble-red.pdf` und `bauble-gold.pdf` (16 × 26 pt, Aufhängepunkt = Fadenanfang bei (8, 2,5)): nur bei "Tanne bunt", statt der Zapfen, rot und gold abwechselnd, etwa vier pro Bogen. Eine Kugel hängt immer an ihrem Faden an einem Tannenzweig, an einer Stelle des Zweigs mit Nadeln nahe der Zweigspitze, nie am Kabel und nie an einer Birne. Wo kein Zweig ist, hängt keine Kugel. Kugeln nehmen die Farben des Weihnachtsbaums auf: Rot, Gold und Grün, dazu das Cremeweiß der Birnen.
 
 **Schleife** `bow.pdf` (40 × 34 pt, Mitte des Knotens bei (20, 12)): nur bei "Tanne warmgold", an jedem Aufhängepunkt der Bögen.
