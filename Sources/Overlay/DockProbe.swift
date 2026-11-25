@@ -100,11 +100,11 @@ final class DockProbe {
     }
 
     /// Nach einem Ereignis häufig messen, bis das Dock seinen Endzustand erreicht hat (längstens 6 s).
-    func burst() {
+    func burst(duration: Double = 1.5) {
         guard running else { return }
         let now = CACurrentMediaTime()
         if burstTimer == nil { burstStart = now; snapshot = takeSnapshot() }   // Einstellungen einmal je Burst lesen
-        burstUntil = now + 1.5
+        burstUntil = max(burstUntil, now + duration)
         measureNow()
         guard burstTimer == nil else { return }
         let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
@@ -133,7 +133,8 @@ final class DockProbe {
                                                       magnification: s.magnification, loopRunning: loopRunning, wasInside: pointerInside)
         pointerInside = inside
         if action.startMagnificationLoop, let p = placed { startLoop(p, s) }
-        if action.burst { burst() }
+        // Auto-Hide: Das Dock fährt nach Verzögerung ein und aus, deshalb länger messen
+        if action.burst { burst(duration: s.autohide ? 3.5 : 1.5) }
     }
 
     private static func edgeStrip(screen: CGRect?, orientation: String) -> CGRect? {
