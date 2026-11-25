@@ -87,3 +87,13 @@ Abgleich mit SPEC §10 (Stand 8c35142, WindowServer relativ zum Referenzprogramm
 
 ## Popover
 NSPopover erschien auf macOS 26 etwa 230 pt unter dem Menüleisten-Symbol (Pfeil an richtiger x-Position). Statt dessen zeigt ein eigenes nichtaktivierendes Panel (`PopoverPanel`, Material "popover", 12 pt Ecken, Ebene "popUpMenu") den Hinweis direkt unter dem Symbol, bei Bedarf in den Bildschirm geschoben. Es nimmt keinen Fokus (geprüft: vorderste App unverändert), schließt nach 20 s bzw. 45 s oder bei Klick daneben.
+
+## Stile "Tanne bunt" und "Tanne warmgold"
+- Einstellung `chainStyle` (klassisch, firColor, firGold), Standard klassisch. Der Farbmodus erscheint nur bei klassisch. Ein Startargument `-chainStyle firGold` überschreibt die Einstellung, ohne sie zu speichern.
+- Platzierung (`Garland.plan`, getestet): Ansatzpunkte alle 22 pt mal Skalierung (Skalierung = Birnenhöhe / 24). Hintere Zweige an jedem Ansatzpunkt abwechselnd gespiegelt, mittlere an 75 %, hängende an jedem fünften, vordere an 22 %. Sprite, Spiegelung und Drehung kommen aus stabilem Pseudozufall. Ein Zapfen pro Bogen, Schleifen nur bei firGold an allen Bogenenden und Aufhängepunkten.
+- Zentrale Stellschrauben in `Garland`: `density` (Dichte des Grüns), `hangLength` (Länge der hängenden Zweige), `branchScale` und `hangScale`. Bei Mittelstellung ist das geschlossene Grün etwa 60 pt tief (Zweige mal 0,8) und die hängenden reichen etwa 150 pt herab (mal 0,9).
+- Der Durchhang ist bei Tanne nur 0,3 Birnenhöhen (das Zielbild zeigt eine fast gerade Girlande). Das Ausweichen hebt dadurch weniger weit, Zweige, Zapfen und Schleifen blenden wie die Birnen auf 30 % ab.
+- Reihenfolge von hinten nach vorn über die Einfügereihenfolge der Layer: hinten, Mitte und hängend, Kabel, vorn, Birnen, Zapfen, Schleifen.
+- Mini-Birne: Glas in der Birnenfarbe, Kontur dunkler, die Ebene "shine" liegt mit 50 % Deckkraft darüber (bei voller Deckkraft verdeckt der weiße Verlauf die Farbe), gedimmt 12 %. Schein: Radius eine Birnenlänge, Mitte 60 % der Länge unterhalb der Fassung.
+- Dock: schmale Girlande mit hinteren, mittleren und vorderen Zweigen (Skalierung 0,2), ohne hängende Zweige, Zapfen und Schleifen. Die Birnen sind die kleinen Mini-Birnen im üblichen Dock-Maß.
+- Performance: Alle Zweige sind Layer mit geteilten Bildern und werden nur neu positioniert, wenn sich Federn bewegen. Im Stillstand kostet die Girlande nichts. Ruhezustand mit Tanne warmgold gemessen: WindowServer 1,7 %, App 0,8 % (gleich wie klassisch).
