@@ -136,7 +136,7 @@ Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hi
 **Einstellungsfenster**, kompakt, drei Bereiche:
 - **Lichter:** Stil, Farbmodus (nur bei "klassisch"), Muster, Tempo, Birnengröße, Abstand, Ebene, Lichter am Dock an/aus, Form am Dock (durchgehend oder genau am Dock), Stil am Dock.
 - **Schnee:** Menge, Flockengröße, Tempo, Wind, Ausweichen, Ebene, "Schnee bleibt auf Fenstern liegen".
-- **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Der Status aktualisiert sich live, während das Fenster offen ist.
+- **Allgemein:** Beim Anmelden starten, Immer Energie sparen, Berechtigungsstatus mit Erklärung und Button zu den Systemeinstellungen. Unten ein Button "Auf Standard zurücksetzen": Nach einer kurzen Rückfrage im Fenster (kein Systemdialog, mit "Abbrechen" als Standard) gelten wieder alle Werte aus Abschnitt 3, sofort sichtbar und ohne Neustart. Nicht zurückgesetzt werden "Beim Anmelden starten", die erteilte Berechtigung und die Info, dass Willkommens- und Berechtigungs-Popover schon gezeigt wurden. Die Schneeschichten auf Fenstern bleiben liegen, wenn "Schnee bleibt liegen" danach weiter an ist. Der Status aktualisiert sich live, während das Fenster offen ist.
 
 Alle Einstellungen werden sofort sichtbar übernommen und bleiben über Neustarts erhalten. Die Oberfläche ist auf Deutsch und Englisch, je nach Systemsprache, sonst Englisch. Die Einstellungen sind mit VoiceOver bedienbar. Lichter und Schnee sind für VoiceOver unsichtbar.
 
