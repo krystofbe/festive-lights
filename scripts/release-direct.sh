@@ -72,14 +72,24 @@ fi
 
 echo "== DMG"
 STAGE="$OUT/dmg-stage"; rm -rf "$STAGE"; mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/"; ln -s /Applications "$STAGE/Programme"
+ditto "$APP" "$STAGE/FestiveLights.app"
 DMG="$OUT/dmg/FestiveLights-$VERSION.dmg"
-hdiutil create -volname "FestiveLights" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+if command -v create-dmg >/dev/null; then
+  # Gestaltetes Fenster mit Hintergrund aus Art/dmg (660 x 420, @1x/@2x als TIFF)
+  create-dmg --volname "FestiveLights" --background "$ROOT/Art/dmg/background.tiff" --window-pos 200 120 --window-size 660 448 \
+    --icon-size 96 --text-size 13 --icon "FestiveLights.app" 175 140 --hide-extension "FestiveLights.app" \
+    --app-drop-link 485 140 --no-internet-enable "$DMG" "$STAGE" >/dev/null
+else
+  echo "(create-dmg fehlt, schlichte DMG: brew install create-dmg)"
+  ln -s /Applications "$STAGE/Programme"
+  hdiutil create -volname "FestiveLights" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+fi
 rm -rf "$STAGE"
 
 echo "== appcast.xml"
 "$SPARKLE_BIN/generate_appcast" --account festivelights --download-url-prefix "$DOWNLOAD_PREFIX" -o "$OUT/appcast.xml" "$OUT/dmg"
 mv "$DMG" "$OUT/"; rmdir "$OUT/dmg"
+cp "$OUT/FestiveLights-$VERSION.dmg" "$OUT/FestiveLights.dmg"   # feste URL releases/latest/download/FestiveLights.dmg
 
 echo "== Prüfung"
 spctl -a -vv "$APP" 2>&1 || true
