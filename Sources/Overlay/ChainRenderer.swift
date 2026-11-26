@@ -65,6 +65,7 @@ final class ChainRenderer {
     private final class Bulb {
         let container = CALayer(), dim = CALayer(), lit = CALayer(), glow = CALayer()
         var sway = Spring()
+        var gain = 1.0, size = 1.0, depth = 0.0   // Unterschiede von Tanne warmgold, einmal je Aufbau berechnet
         init() {
             container.anchorPoint = CGPoint(x: 0.5, y: 1)
             [glow, dim, lit].forEach { container.addSublayer($0) }
@@ -208,7 +209,9 @@ final class ChainRenderer {
         let glowPx = max(16, Int((glowR * 2 * scale * reserve).rounded()))
         let glowCenter = bunt ? 1 - 14.0 / 22.0 : (fir ? 1 - 14.0 / 21.0 : 0.45)
         beads = BeadChain(rest: localBulbs, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
+        let gold = style.kind == .firGold
         for (i, b) in bulbs.enumerated() {
+            if gold { b.gain = ChainLayout.brightJitter(index: bulbBase + i); b.size = ChainLayout.sizeJitter(index: bulbBase + i); b.depth = ChainLayout.depthJitter(index: bulbBase + i) }
             b.container.bounds = CGRect(x: 0, y: 0, width: w, height: h)
             b.container.contentsScale = scale
             b.container.zPosition = 4
@@ -458,7 +461,7 @@ final class ChainRenderer {
             CATransaction.setDisableActions(true)
             for (i, b) in bulbs.enumerated() {
                 let bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: style.pattern, tempo: 1)
-                let gain = style.kind == .firGold ? ChainLayout.brightJitter(index: bulbBase + i) : 1
+                let gain = b.gain
                 b.lit.opacity = Float(min(1, bright * gain))
                 b.glow.opacity = Float(bright * gain * glowAlpha)
             }
@@ -531,8 +534,7 @@ final class ChainRenderer {
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (i, b) in bulbs.enumerated() {
             let u = beads.pos[i]
-            let gold = style.kind == .firGold
-            b.container.position = local(sp.point(u: u, v: cableV(sp, u) + (gold ? ChainLayout.depthJitter(index: bulbBase + i) * sp.bulbH : 0)))
+            b.container.position = local(sp.point(u: u, v: cableV(sp, u) + b.depth * sp.bulbH))
             let theta = atan2(cableV(sp, u + 3) - cableV(sp, u - 3), 6)
             let tilt = ChainLayout.tilt(index: bulbBase + i) * .pi / 180
             let target = tilt + 0.5 * theta * sp.cross - sp.cross * min(max(beads.vel[i] / 900, -0.6), 0.6)
@@ -545,7 +547,7 @@ final class ChainRenderer {
                 }
                 angle = b.sway.value
             } else { b.sway = Spring(value: target, velocity: 0) }
-            let grow = magnify(sp, u) * (gold ? ChainLayout.sizeJitter(index: bulbBase + i) : 1)
+            let grow = magnify(sp, u) * b.size
             b.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1), grow, grow, 1)
 
             var bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
@@ -553,7 +555,7 @@ final class ChainRenderer {
                 let s = min(max((intro - Double(bulbBase + i) / Double(bulbTotal) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
             }
-            let gain = gold ? ChainLayout.brightJitter(index: bulbBase + i) : 1
+            let gain = b.gain
             b.lit.opacity = Float(min(1, bright * gain))
             b.glow.opacity = Float(bright * gain * glowAlpha)
         }

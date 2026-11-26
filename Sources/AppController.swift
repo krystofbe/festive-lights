@@ -119,7 +119,7 @@ final class AppController: NSObject {
             if let h = FileHandle(forWritingAtPath: NSHomeDirectory() + "/festivelights-test/dock.log") { h.seekToEndOfFile(); h.write(l.data(using: .utf8)!); h.closeFile() }
             else { try? l.write(toFile: NSHomeDirectory() + "/festivelights-test/dock.log", atomically: true, encoding: .utf8) }
             #endif
-            let hidden = DockHiding.effectiveAutohide(autohidePref: (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false, fullScreenActive: !(self?.detectedFullScreen.isEmpty ?? true))
+            let hidden = DockHiding.effectiveAutohide(autohidePref: (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false, fullScreenActive: self?.dockProbe.fullScreenHint ?? false)
             self?.dockGeometry = g
             if let g { self?.exactResult = .visible(g) } else { self?.exactResult = hidden ? .hidden : .unavailable }
             self?.scheduleApply()
@@ -268,12 +268,28 @@ final class AppController: NSObject {
     /// Vollbild-Apps je Bildschirm aus der Fensterliste (ohne Berechtigung). Bei Änderung neu anwenden.
     private var lastFullScreenCheck = 0.0
 
+    private var lastDockScreenID: CGDirectDisplayID?
+
+    private func setDockFullScreenHint(_ on: Bool) {
+        dockProbe.fullScreenHint = on
+        #if DIRECT
+        dockTracker.fullScreenHint = on
+        #endif
+    }
+
+    /// Nur eine Vollbild-App auf dem Bildschirm mit dem Dock blendet das Dock aus. Dessen Bildschirm merken wir uns vor dem Vollbild, weil visibleFrame dort nicht mehr taugt.
+    private func dockHasFullScreen(_ ids: Set<CGDirectDisplayID>) -> Bool {
+        guard let d = lastDockScreenID else { return !ids.isEmpty }
+        return ids.contains(d)
+    }
+
     private func refreshFullScreen(force: Bool = false) {
+        if detectedFullScreen.isEmpty { lastDockScreenID = continuousDockGeometry()?.screenID ?? lastDockScreenID }
         let now = CACurrentMediaTime()
         // Nichts zu verdecken oder zu pausieren: nicht abfragen und nichts ausblenden
         let nothingShown = !settings.lightsEnabled && !settings.dockLights && !settings.snowEnabled && Engine.shared.storm == nil
         if settings.paused || suspended || nothingShown {
-            if !fullScreenIDs.isEmpty || !detectedFullScreen.isEmpty { fullScreenIDs = []; detectedFullScreen = []; dockProbe.fullScreenHint = false; scheduleApply() }
+            if !fullScreenIDs.isEmpty || !detectedFullScreen.isEmpty { fullScreenIDs = []; detectedFullScreen = []; setDockFullScreenHint(false); scheduleApply() }
             return
         }
         if !force, energySaving, now - lastFullScreenCheck < 3 { return }   // im Sparmodus nur alle 3 s
@@ -293,7 +309,7 @@ final class AppController: NSObject {
         let hide = settings.showInFullScreen ? [] : ids
         if ids != detectedFullScreen || hide != fullScreenIDs {
             detectedFullScreen = ids; fullScreenIDs = hide
-            dockProbe.fullScreenHint = !ids.isEmpty
+            setDockFullScreenHint(dockHasFullScreen(ids))
             #if DIRECT
             dockTracker.burst()
             #endif

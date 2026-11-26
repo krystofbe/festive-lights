@@ -37,6 +37,7 @@ struct OnbCardToggleStyle: ToggleStyle {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(.isToggle)
         .accessibilityValue(Text(LocalizedStringKey(configuration.isOn ? "onb.on" : "Off")))
     }
 }

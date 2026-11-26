@@ -27,6 +27,8 @@ final class DockTracker {
     private var started = false
     private var inZone = false
     private var autohide = false
+    /// Vollbild-App auf dem Bildschirm mit dem Dock: das Dock ist dann ausgeblendet wie bei Autohide.
+    var fullScreenHint = false
     private var orientation = "bottom"
     private var magnificationOn = false
     private var tile = 64.0
@@ -70,7 +72,7 @@ final class DockTracker {
     func burst() {
         guard started else { return }
         burstUntil = CACurrentMediaTime() + 2.5
-        autohide = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+        autohide = DockHiding.effectiveAutohide(autohidePref: (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false, fullScreenActive: fullScreenHint)
         magnificationOn = Self.magnification
         orientation = (CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String) ?? "bottom"
         tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
@@ -107,7 +109,7 @@ final class DockTracker {
     private func handlePolled(_ raw: CGRect?, _ rest: [CGRect]) {
         polling = false
         guard started else { return }
-        let geo = raw.flatMap { Self.geometry(forCGRect: $0) }
+        let geo = raw.flatMap { Self.geometry(forCGRect: $0, fullScreen: fullScreenHint) }
         guard let result = stabilizer.feed(time: CACurrentMediaTime(), frame: geo?.rect) else { return }
         current = result == nil ? nil : geo
         restItems = current == nil ? [] : rest
@@ -221,14 +223,14 @@ final class DockTracker {
         return nil
     }
 
-    static func geometry(forCGRect cg: CGRect) -> DockGeometry? {
+    static func geometry(forCGRect cg: CGRect, fullScreen: Bool = false) -> DockGeometry? {
         guard let primary = NSScreen.screens.first else { return nil }
         let rect = CGRect(x: cg.minX, y: primary.frame.height - cg.maxY, width: cg.width, height: cg.height)
         guard let screen = NSScreen.screens.max(by: { $0.frame.intersection(rect).area < $1.frame.intersection(rect).area }) else { return nil }
         let visible = screen.frame.intersection(rect).area / max(rect.area, 1)
         guard visible > 0.9 else { return nil }
         let orientation = CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String ?? "bottom"
-        let autohide = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+        let autohide = DockHiding.effectiveAutohide(autohidePref: (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false, fullScreenActive: fullScreen)
         let vf = screen.visibleFrame, f = screen.frame
         let edge: DockEdge = orientation == "left" ? .left : orientation == "right" ? .right : .bottom
         let line: Double
