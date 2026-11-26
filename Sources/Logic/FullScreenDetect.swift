@@ -18,12 +18,20 @@ enum FullScreenDetect {
     static let splitGap = 8.0   // Spalt zwischen den Fenstern einer Split View
     static let minAlpha = 0.5   // unsichtbare Vollflächen-Fenster zählen nicht
 
-    static func fullScreenIDs(screens: [(id: Int, cgRect: CGRect)], windows: [WindowLite], ownPID: Int) -> Set<Int> {
+    /// Ebene des Dock-Fensters. Liegt es über dem ganzen Bildschirm, ist dort eine Vollbild-App aktiv.
+    static let dockLayer = -2147483622
+
+    /// `notchTop`: Höhe des Kerbenbands je Bildschirm (safeAreaInsets.top). Auf Bildschirmen mit Kerbe liegt das Vollbild-Fenster erst darunter, die Form
+    /// "unter dem Kerbenband" gilt aber nur, wenn zugleich ein Dock-Fenster den ganzen Bildschirm deckt (sonst wäre es ein maximiertes Fenster).
+    static func fullScreenIDs(screens: [(id: Int, cgRect: CGRect)], windows: [WindowLite], ownPID: Int, notchTop: [Int: Double] = [:]) -> Set<Int> {
         let candidates = windows.filter { $0.layer == 0 && $0.pid != ownPID && $0.alpha >= minAlpha && $0.regular }
         var out = Set<Int>()
         for s in screens {
             let here = candidates.filter { $0.bounds.intersects(s.cgRect.insetBy(dx: tolerance, dy: tolerance)) }
-            if here.contains(where: { matches($0.bounds, s.cgRect) }) || covers(here.map(\.bounds), s.cgRect) { out.insert(s.id) }
+            if here.contains(where: { matches($0.bounds, s.cgRect) }) || covers(here.map(\.bounds), s.cgRect) { out.insert(s.id); continue }
+            guard let n = notchTop[s.id], n > 0, windows.contains(where: { $0.layer == dockLayer && matches($0.bounds, s.cgRect) }) else { continue }
+            let below = CGRect(x: s.cgRect.minX, y: s.cgRect.minY + n, width: s.cgRect.width, height: s.cgRect.height - n)
+            if here.contains(where: { matches($0.bounds, below) }) || covers(here.map(\.bounds), below) { out.insert(s.id) }
         }
         return out
     }

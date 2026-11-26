@@ -305,7 +305,7 @@ final class AppController: NSObject {
             return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1, regular: regular)
         }
         let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
-        let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })
+        let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier), notchTop: Dictionary(uniqueKeysWithValues: NSScreen.screens.map { (Int($0.displayID), Double($0.safeAreaInsets.top)) })).map { CGDirectDisplayID($0) })
         let hide = settings.showInFullScreen ? [] : ids
         if ids != detectedFullScreen || hide != fullScreenIDs {
             detectedFullScreen = ids; fullScreenIDs = hide

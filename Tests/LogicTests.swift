@@ -1659,6 +1659,21 @@ final class FullScreenDetectTests: XCTestCase {
         XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a, b], windows: w, ownPID: 1).isEmpty)
     }
 
+    func testNotchFullScreenNeedsDockBackdropAndMatchingWindow() {
+        let m = (id: 5, cgRect: CGRect(x: 0, y: 0, width: 1728, height: 1117))
+        let notch = [5: 33.0]
+        let win = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 33, width: 1728, height: 1084))
+        let dock = WindowLite(layer: FullScreenDetect.dockLayer, pid: 70, bounds: m.cgRect, regular: false)
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [m], windows: [win, dock], ownPID: 1, notchTop: notch), [5], "Notch-Vollbild mit Dock-Fenster")
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [m], windows: [win], ownPID: 1, notchTop: notch).isEmpty, "gleiche Größe ohne Dock-Fenster: maximiertes Fenster")
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [m], windows: [dock], ownPID: 1, notchTop: notch).isEmpty, "Dock-Fenster allein")
+        let other = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 33, width: 1700, height: 1000))
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [m], windows: [other, dock], ownPID: 1, notchTop: notch).isEmpty, "Dock-Fenster ohne passendes Fenster")
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [m], windows: [win, dock], ownPID: 1, notchTop: [:]).isEmpty, "Bildschirm ohne Kerbe unverändert")
+        let l = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 33, width: 860, height: 1084)), r = WindowLite(layer: 0, pid: 501, bounds: CGRect(x: 868, y: 33, width: 860, height: 1084))
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [m], windows: [l, r, dock], ownPID: 1, notchTop: notch), [5], "Split View unter dem Kerbenband")
+    }
+
     func testOwnWindowsAndOtherLayersAreIgnored() {
         let full = CGRect(x: 0, y: 0, width: 2560, height: 1440)
         let w = [WindowLite(layer: 0, pid: 1, bounds: full), WindowLite(layer: 22, pid: 500, bounds: full), WindowLite(layer: -2147483623, pid: 600, bounds: full)]
