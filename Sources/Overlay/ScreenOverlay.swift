@@ -206,7 +206,7 @@ final class ScreenOverlay {
             let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel)
             let dockSagMid = dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag
             let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
-            let dockSagValue = d.continuous ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile)
+            let dockSagValue = d.continuous ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),

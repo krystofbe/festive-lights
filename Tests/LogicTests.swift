@@ -1711,37 +1711,40 @@ final class SagTests: XCTestCase {
 }
 
 final class DockSagCapTests: XCTestCase {
-    func capped(level: Int, bulbLevel: Int, tile: Double = 73, fir: Bool = true) -> (sag: Double, mid: Double, bulb: Double) {
+    func capped(level: Int, bulbLevel: Int, tile: Double = 73, fir: Bool = true) -> (sag: Double, mid: Double, bulb: Double, req: Double) {
         let h = Garland.dockBulbHeight(tile: tile, bulbLevel: bulbLevel)
         let mid = h * (fir ? Garland.dockSag : Garland.dockClassicSag)
         let req = mid * Garland.dockSagFactor(level: level, continuous: false)
-        return (Garland.dockExactSag(requested: req, midSag: mid, bulbH: h, tile: tile), mid, h)
+        return (Garland.dockExactSag(requested: req, midSag: mid, bulbH: h, tile: tile, level: level), mid, h, req)
     }
 
-    func testLevelFiveNeverHangsDeeperThanTheMiddleWhereTheMiddleAlreadyExceedsAQuarter() {
-        for bulb in 0..<5 {
-            let r = capped(level: 4, bulbLevel: bulb)
-            XCTAssertLessThanOrEqual(r.sag, max(r.mid, max(0, 73.0 / 4 - r.bulb)) + 1e-9)
+    func testLevelsFourAndFiveAreVisiblyDeeperThanTheMiddleAtStandardBulbSize() {
+        for fir in [true, false] {
+            let l4 = capped(level: 3, bulbLevel: 2, fir: fir), l5 = capped(level: 4, bulbLevel: 2, fir: fir)
+            XCTAssertGreaterThan(l4.sag, l4.mid * 1.1); XCTAssertGreaterThan(l5.sag, l4.sag)
+            XCTAssertEqual(l5.sag, l5.req, accuracy: 1e-9, "bei Standardgröße kommt der Deckel nicht zum Tragen")
         }
-        let big = capped(level: 4, bulbLevel: 4)   // größte Birnengröße
-        XCTAssertEqual(big.sag, big.mid, accuracy: 1e-9, "größte Birnen: schon die Birne allein ist über dem Viertel, Stufe 5 bleibt bei der Mittelstellung")
     }
 
-    func testMiddleAndFlatterLevelsAreUnchanged() {
+    func testCapAtAThirdOfTheIconHeightForLevelsFourAndFive() {
+        // große Birnen und künstlich großer Wunsch: Kabeltiefe plus halbe Birne bleibt im oberen Drittel
+        let tile = 73.0, h = Garland.dockBulbHeight(tile: tile, bulbLevel: 4)
+        let r = Garland.dockExactSag(requested: 100, midSag: h * Garland.dockSag, bulbH: h, tile: tile, level: 4)
+        XCTAssertLessThanOrEqual(r + h / 2, tile / 3 + 1e-9)
+        XCTAssertGreaterThanOrEqual(r, h * Garland.dockSag, "nie flacher als die Mittelstellung")
+        for bulb in 0..<5 { let c = capped(level: 4, bulbLevel: bulb); XCTAssertLessThanOrEqual(c.sag + c.bulb / 2, max(73.0 / 3, c.mid + c.bulb / 2) + 1e-9) }
+    }
+
+    func testLevelsOneToThreeKeepTheQuarterRuleAndStayUnchanged() {
         for level in 0...2 {
             let r = capped(level: level, bulbLevel: 2)
-            XCTAssertEqual(r.sag, r.mid * Garland.dockSagFactor(level: level, continuous: false), accuracy: 1e-9)
+            XCTAssertEqual(r.sag, r.req, accuracy: 1e-9)
         }
-    }
-
-    func testSmallBulbsMayUseTheQuarterBudgetOnHighLevels() {
-        let r = capped(level: 4, bulbLevel: 0)   // kleinste Birnen: Platz im oberen Viertel
-        XCTAssertLessThanOrEqual(r.sag + r.bulb, max(73.0 / 4, r.mid + r.bulb) + 1e-9)
-        XCTAssertGreaterThanOrEqual(r.sag, r.mid)
+        XCTAssertEqual(Garland.dockExactSag(requested: 100, midSag: 5, bulbH: 18, tile: 73, level: 2), 5, accuracy: 1e-9, "Mittelstellung liegt schon über dem Viertel: nicht tiefer")
     }
 
     func testTheMiddleSettingAlreadyExceedsAQuarterOfTheIconHeight() {
         let r = capped(level: 2, bulbLevel: 2)
-        XCTAssertGreaterThan(r.sag + r.bulb, 73.0 / 4, "Hinweis für die Spezifikation: Birne plus Mittel-Durchhang liegt schon über einem Viertel")
+        XCTAssertGreaterThan(r.sag + r.bulb, 73.0 / 4)
     }
 }

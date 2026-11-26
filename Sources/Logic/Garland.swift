@@ -90,9 +90,11 @@ enum Garland {
         return continuous ? f : 1 + (f - 1) / 2
     }
 
-    /// Durchhang am Dock bei "genau am Dock": nie tiefer als die Mittelstellung, solange diese das obere Viertel der Symbole (Birne plus Durchhang)
-    /// schon überschreitet, und sonst höchstens bis zum Viertel. Die Mittelstellung selbst und flachere Stufen bleiben unverändert.
-    static func dockExactSag(requested: Double, midSag: Double, bulbH: Double, tile: Double) -> Double {
+    /// Durchhang am Dock bei "genau am Dock". Stufen 1 bis 3: nie tiefer als die Mittelstellung, solange diese das obere Viertel der Symbole (Birne plus
+    /// Durchhang) schon überschreitet, sonst höchstens bis zum Viertel (unverändert). Stufen 4 und 5 (`level` 3 und 4): Kabeltiefe plus halbe Birne höchstens
+    /// ein Drittel der Symbolhöhe, damit sie bei der Standard-Birnengröße sichtbar tiefer sind als die Mittelstellung.
+    static func dockExactSag(requested: Double, midSag: Double, bulbH: Double, tile: Double, level: Int = 2) -> Double {
+        if level >= 3 { return min(requested, max(midSag, tile / 3 - bulbH / 2)) }
         let quarterBudget = max(0, tile / 4 - bulbH)
         return min(requested, max(midSag, quarterBudget))
     }
