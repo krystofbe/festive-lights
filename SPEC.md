@@ -78,11 +78,24 @@ Lichter und Schnee lassen sich jeweils "über allen Fenstern" oder "nur auf dem 
 
 ### F4 Bildschirme, Spaces, Vollbild
 
-- Schnee erscheint auf allen Bildschirmen, Lichter auf jedem Bildschirm mit Menüleiste.
-- Anstecken, Abstecken und Auflösungswechsel werden ohne Neustart übernommen.
-- Lichter und Schnee sind auf allen Spaces sichtbar. In Vollbild-Apps sind sie ausgeblendet.
+- Lichter und Schnee sind auf allen Spaces sichtbar.
 - Sie erscheinen nicht als eigene Fenster in Mission Control, im App-Umschalter oder in Fensterlisten.
 - Sie erscheinen wie normaler Bildschirminhalt in Bildschirmfotos, Bildschirmaufnahmen und Bildschirmfreigaben.
+
+### F4a Mehrere Bildschirme (ab 1.1)
+
+Ziel: Wer zwei oder drei Monitore hat, soll sehen, dass die App dafür gemacht ist, ohne dafür etwas einstellen zu müssen.
+
+1. **Lichter an jeder Menüleiste.** Bei "Monitore verwenden verschiedene Spaces" (Standard von macOS) hat jeder Bildschirm eine Menüleiste, also hängt an jedem eine Kette. Ist die Option aus, hat nur der Hauptbildschirm eine Menüleiste; dann hängt nur dort eine Kette, auf den anderen nicht. Wechselt die Option oder der Hauptbildschirm, passt sich die App ohne Neustart an.
+2. **Schnee auf allen Bildschirmen**, auf jedem in gleicher Dichte pro Fläche und gleicher Größe in Punkt, unabhängig von Auflösung und Retina-Faktor.
+3. **Scharf überall.** Lichter, Girlande und Schnee werden auf jedem Bildschirm in dessen eigenem Retina-Faktor gezeichnet und sind in Punkt gleich groß (gemischt 1x/2x, verschiedene Größen, gedrehte Bildschirme).
+4. **Dock-Kette folgt dem Dock.** Springt das Dock auf einen anderen Bildschirm (bei "Dock unten" folgt es dem Zeiger), wandert die Dock-Kette binnen 1 s mit.
+5. **Vollbild pro Bildschirm.** Eine Vollbild-App blendet Lichter und Schnee nur auf ihrem Bildschirm aus; die anderen Bildschirme leuchten weiter.
+6. **Anstecken und Abstecken** werden ohne Neustart und ohne Flackern übernommen, ebenso Auflösungs-, Anordnungs- und Retina-Wechsel. Beim Abstecken verschwindet alles auf dem Bildschirm sauber, ohne Reste, und der Speicher wird freigegeben.
+7. **Begrüßung neuer Bildschirme.** Wird ein Bildschirm angesteckt, gehen seine Birnen nacheinander an wie beim ersten Start (F1). Nicht beim App-Start und nicht beim Aufwachen aus dem Ruhezustand.
+8. **Durchgehende Girlande.** Liegen zwei Bildschirme laut Anordnung in den Systemeinstellungen nebeneinander und schließen ihre Oberkanten bündig an (höchstens 2 pt Versatz), läuft die Kette an der gemeinsamen Kante ohne Bruch weiter: gleicher Bogenrhythmus, das Kabel endet am rechten Rand des linken Bildschirms auf derselben Höhe, auf der es am linken Rand des rechten beginnt, Stil, Muster und Funkeln laufen im selben Takt. Liegen die Oberkanten nicht bündig, beginnt jede Kette für sich.
+9. **Einstellung** in Allgemein: "Bildschirme" (Englisch "Displays") mit "Alle" / "Nur Hauptbildschirm" (Englisch "All" / "Main display only"), Standard "Alle". "Nur Hauptbildschirm" zeigt Lichter und Schnee nur auf dem Bildschirm mit der Hauptmenüleiste; die Dock-Kette bleibt beim Dock.
+10. **Später (nicht in 1.1):** Schnee, der über Bildschirmkanten auf den Nachbarbildschirm treibt; automatische Pause auf Bildschirmen, die gerade geteilt oder präsentiert werden.
 
 ## 5. Funktionen, Stufe 2 (nach einer optionalen Berechtigung)
 
@@ -188,6 +201,7 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 - Nur zeichnen, was sich bewegt: Steht alles still (Dauerleuchten, kein Schnee, Zeiger weit weg), wird nichts neu gezeichnet. Bildschirme ohne sichtbare Bewegung und verdeckte Bereiche verursachen keine Arbeit.
 - Fensterpositionen für F6 nur so oft ermitteln wie nötig: im Ruhezustand selten, beim Ziehen eines Fensters häufig genug für flüssiges Abschütteln.
 - Mit vielen Fenstern (30 offene Fenster) und zwei Bildschirmen gelten dieselben Grenzen.
+- Mehrere Bildschirme (ab 1.1): Mit drei Bildschirmen (zum Beispiel zwei 5K plus internes Retina-Display), Ketten an allen Menüleisten und am Dock, Funkeln und Schnee auf allen, liegt die App unter 12 % CPU und der Speicher unter 250 MB. Jeder weitere Bildschirm darf höchstens so viel kosten wie der erste. Bildschirme ohne sichtbare Bewegung (Schnee aus, Dauerleuchten, Zeiger weg) zeichnen nicht neu. Ein Bildschirm, auf dem eine Vollbild-App läuft, zeichnet gar nicht.
 - Sparmodus: halbe Flockenzahl und ruhigere Animation. "Automatisch" aktiviert ihn im Stromsparmodus von macOS und im Akkubetrieb unter 20 % Ladung, "Immer" dauerhaft, "Aus" nie. Bisher gespeichertes "Immer Energie sparen = an" wird zu "Immer", "aus" zu "Automatisch". Bei gesperrtem Bildschirm, Ruhezustand oder ausgeschaltetem Display pausiert alles.
 - Keine sichtbar ausgelassenen Bilder bei 60 Hz und 120 Hz.
 - "Bewegung reduzieren": Muster wird Dauerleuchten, kein Ausweichen, kein Aufstöbern und kein Nachpendeln, Schnee mit halbem Tempo ohne Böen und Pendeln, kein Schneesturm, das Menüleisten-Symbol steht still.
@@ -209,3 +223,12 @@ Alle Grafiken liegen in `Art/` und sind verbindlich. Maßgeblich sind `Art/READM
 10. Einstellungen überleben einen Neustart.
 11. CPU, Speicher, WindowServer-Mehrlast, Energiebedarf und Flüssigkeit anderer Apps wie in Abschnitt 10, auch mit 30 offenen Fenstern.
 12. 8 Stunden Dauerlauf ohne nennenswerten Speicherzuwachs.
+
+Mehrere Bildschirme (1.1), geprüft am Rechner mit drei Bildschirmen:
+- An allen drei Menüleisten hängt eine Kette, Schnee fällt auf allen drei, überall scharf und gleich groß in Punkt.
+- "Monitore verwenden verschiedene Spaces" aus: nur am Hauptbildschirm eine Kette (nur prüfen, wenn der Nutzer die Einstellung dafür selbst umstellt; nie ungefragt ändern).
+- Dock auf einen anderen Bildschirm holen: Dock-Kette folgt binnen 1 s.
+- Vollbild-App auf einem Bildschirm: dort nichts, auf den anderen weiter Lichter und Schnee.
+- Nebeneinanderliegende Bildschirme mit bündigen Oberkanten: Girlande läuft ohne Bruch über die Kante (vergrößerter Ausschnitt der Kante als Beleg).
+- "Nur Hauptbildschirm": Lichter und Schnee nur dort.
+- Last laut §10 gemessen und in PERF.md eingetragen.
