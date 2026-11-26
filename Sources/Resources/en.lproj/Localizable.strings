@@ -101,3 +101,6 @@
 "All" = "All";
 "Main display only" = "Main display only";
 "Show in full-screen apps" = "Show in full-screen apps";
+"Sag" = "Sag";
+"sag.tight" = "Tight";
+"sag.loose" = "Loose";

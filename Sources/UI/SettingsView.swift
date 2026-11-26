@@ -117,13 +117,13 @@ struct SettingsView: View {
 
     private var menuBar: some View {
         SettingsPane(title: "Lights on the menu bar", isOn: $s.lightsEnabled) {
-            chainControls(style: $s.chainStyle, colors: $s.colorMode, pattern: $s.pattern, tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, layer: $s.lightsLayer)
+            chainControls(style: $s.chainStyle, colors: $s.colorMode, pattern: $s.pattern, tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, sag: $s.sag, layer: $s.lightsLayer)
         }
     }
 
     private var dock: some View {
         SettingsPane(title: "Lights on the Dock", isOn: $s.dockLights) {
-            chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, layer: $s.dockLayer)
+            chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, sag: $s.dockSag, layer: $s.dockLayer)
             let side = dockOnSide
             Picker("Length", selection: $s.dockShape) {
                 Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
@@ -135,7 +135,7 @@ struct SettingsView: View {
     /// Gleicher Aufbau für Menüleiste und Dock, jede Kette mit eigenen Werten.
     @ViewBuilder
     private func chainControls(style: Binding<ChainStyleKind>, colors: Binding<ColorMode>, pattern: Binding<LightPattern>, tempo: Binding<Int>,
-                               size: Binding<Int>, spacing: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
+                               size: Binding<Int>, spacing: Binding<Int>, sag: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
         Picker("Style", selection: style) {
             Text("Fir, colorful").tag(ChainStyleKind.firColor)
             Text("Fir, warm gold").tag(ChainStyleKind.firGold)
@@ -155,6 +155,7 @@ struct SettingsView: View {
         LevelSlider(title: "Speed", value: tempo, low: "Slow", high: "Fast")
         LevelSlider(title: "Size", value: size, low: "Small", high: "Large")
         LevelSlider(title: "Spacing", value: spacing, low: "Tight", high: "Wide")
+        LevelSlider(title: "Sag", value: sag, low: "sag.tight", high: "sag.loose")
         layerPicker(layer)
     }
 

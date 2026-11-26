@@ -6,6 +6,7 @@ struct WindowLite: Equatable {
     var pid: Int
     var bounds: CGRect   // CG-Koordinaten (Ursprung oben links)
     var alpha = 1.0
+    var regular = true   // normale App mit Dock-Symbol (Hintergrund- und Overlay-Apps zählen nicht)
 }
 
 /// Erkennt Vollbild-Bildschirme ohne Bildschirmaufnahme-Berechtigung und ohne Bedienungshilfen: Auf einem Bildschirm mit Vollbild-App füllen normale
@@ -18,7 +19,7 @@ enum FullScreenDetect {
     static let minAlpha = 0.5   // unsichtbare Vollflächen-Fenster zählen nicht
 
     static func fullScreenIDs(screens: [(id: Int, cgRect: CGRect)], windows: [WindowLite], ownPID: Int) -> Set<Int> {
-        let candidates = windows.filter { $0.layer == 0 && $0.pid != ownPID && $0.alpha >= minAlpha }
+        let candidates = windows.filter { $0.layer == 0 && $0.pid != ownPID && $0.alpha >= minAlpha && $0.regular }
         var out = Set<Int>()
         for s in screens {
             let here = candidates.filter { $0.bounds.intersects(s.cgRect.insetBy(dx: tolerance, dy: tolerance)) }

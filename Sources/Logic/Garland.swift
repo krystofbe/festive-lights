@@ -84,6 +84,12 @@ enum Garland {
     static func dockMaxGrow(large: Double, tile: Double) -> Double { min(max(large / max(tile, 1), 1), 2.5) }
     static func dockMagnification(lift: Double, tile: Double) -> Double { 1 + max(lift, 0) / max(tile, 1) }
 
+    /// Durchhang-Faktor am Dock: bei "genau am Dock" wirkt er nur halb so stark wie an der Menüleiste, bei "durchgehend" voll.
+    static func dockSagFactor(level: Int, continuous: Bool) -> Double {
+        let f = Levels.value(Levels.sag, level)
+        return continuous ? f : 1 + (f - 1) / 2
+    }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.

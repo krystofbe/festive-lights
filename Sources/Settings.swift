@@ -30,6 +30,8 @@ final class Settings: ObservableObject {
     @Published var lightsTempo = 2 { didSet { write("lightsTempo", lightsTempo) } }
     @Published var bulbSize = 2 { didSet { write("bulbSize", bulbSize) } }
     @Published var spacing = 2 { didSet { write("spacing", spacing) } }
+    @Published var sag = 2 { didSet { write("sag", sag) } }
+    @Published var dockSag = 2 { didSet { write("dockSag", dockSag) } }
     @Published var lightsLayer = DisplayLayer.above { didSet { write("lightsLayer", lightsLayer.rawValue) } }
     @Published var dockLights = true { didSet { write("dockLights", dockLights) } }
     @Published var dockStyle = ChainStyleKind.firColor { didSet { write("dockStyle", dockStyle.rawValue) } }
@@ -74,7 +76,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "sag", "dockSag", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "powerMode", "displays", "showInFullScreen", "paused", "welcomeShown"]
 
@@ -121,6 +123,8 @@ final class Settings: ObservableObject {
         set(\.lightsTempo, level("lightsTempo", 2))
         set(\.bulbSize, level("bulbSize", 2))
         set(\.spacing, level("spacing", 2))
+        set(\.sag, level("sag", 2))
+        set(\.dockSag, level("dockSag", 2))
         set(\.lightsLayer, raw("lightsLayer", .above))
         set(\.dockLights, bool("dockLights", true))
         set(\.dockStyle, raw("dockStyle", .firColor))
@@ -150,7 +154,7 @@ final class Settings: ObservableObject {
     /// Berechtigung liegen außerhalb dieser Klasse und sind nicht betroffen. Wirkt sofort, weil jeder Wert veröffentlicht wird.
     func resetToDefaults() {
         lightsEnabled = true; chainStyle = .firColor; colorMode = .multicolor; pattern = .twinkle
-        lightsTempo = 2; bulbSize = 2; spacing = 2; lightsLayer = .above
+        lightsTempo = 2; bulbSize = 2; spacing = 2; sag = 2; dockSag = 2; lightsLayer = .above
         dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
         dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true

@@ -101,3 +101,6 @@
 "All" = "Alle";
 "Main display only" = "Nur Hauptbildschirm";
 "Show in full-screen apps" = "Auch in Vollbild-Apps zeigen";
+"Sag" = "Durchhang";
+"sag.tight" = "Straff";
+"sag.loose" = "Locker";

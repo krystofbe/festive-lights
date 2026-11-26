@@ -5,6 +5,8 @@ enum Levels {
     static let tempo: [Double] = [0.5, 0.75, 1.0, 1.5, 2.2]
     static let bulbSize: [Double] = [0.7, 0.85, 1.0, 1.2, 1.4]
     static let spacing: [Double] = [0.75, 0.88, 1.0, 1.2, 1.45]
+    /// Durchhang (ab 1.2): Mittelstellung wie bisher, Stufe 1 etwa ein Fünftel, Stufe 5 doppelt so tief.
+    static let sag: [Double] = [0.2, 0.6, 1.0, 1.5, 2.0]
     static let snowAmount: [Double] = [30, 55, 80, 170, 320]
     static let flakeSize: [Double] = [0.6, 0.8, 1.0, 1.3, 1.7]
     static let snowSpeed: [Double] = [0.5, 0.75, 1.0, 1.4, 1.9]

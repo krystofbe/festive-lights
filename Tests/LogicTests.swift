@@ -1668,3 +1668,44 @@ final class FullScreenDetectTests: XCTestCase {
         XCTAssertFalse(s.showInFullScreen)
     }
 }
+
+final class SagTests: XCTestCase {
+    func testLevelsGoFromNearlyStraightToTwiceAsDeepWithTheOldSagInTheMiddle() {
+        let f = (0..<5).map { Levels.value(Levels.sag, $0) }
+        XCTAssertEqual(f[2], 1.0); XCTAssertEqual(f[0], 0.2, accuracy: 1e-9); XCTAssertEqual(f[4], 2.0, accuracy: 1e-9)
+        for i in 1..<5 { XCTAssertGreaterThan(f[i], f[i - 1], "streng steigend") }
+    }
+
+    func testCurveShapePerLevelAnchorsStayAndTheMiddleScales() {
+        let layout = ChainLayout(length: 1920, spacing: 60)
+        let base = 30.0
+        for level in 0..<5 {
+            let k = Levels.value(Levels.sag, level)
+            let atAnchor = base * k * layout.sagFactor(at: 0), atMid = base * k * layout.sagFactor(at: layout.arcLength / 2)
+            XCTAssertEqual(atAnchor, 0, accuracy: 1e-9, "Aufhängepunkte bleiben")
+            XCTAssertEqual(atMid, base * k, accuracy: 1e-6, "Bogenmitte hängt um base mal Faktor")
+        }
+    }
+
+    func testDockSagIsHalfAsStrongForExactAndFullForContinuous() {
+        XCTAssertEqual(Garland.dockSagFactor(level: 2, continuous: false), 1.0)
+        XCTAssertEqual(Garland.dockSagFactor(level: 4, continuous: false), 1.5, accuracy: 1e-9, "Stufe 5 nur 1,5 statt 2")
+        XCTAssertEqual(Garland.dockSagFactor(level: 0, continuous: false), 0.6, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockSagFactor(level: 4, continuous: true), 2.0, accuracy: 1e-9)
+        XCTAssertLessThan(Garland.dockSagFactor(level: 4, continuous: false) - 1, (Levels.value(Levels.sag, 4) - 1) * 0.51)
+    }
+
+    func testSagDefaultsToTheMiddleAndResetRestoresIt() {
+        let s = Settings.shared
+        s.sag = 4; s.dockSag = 0; s.resetToDefaults()
+        XCTAssertEqual([s.sag, s.dockSag], [2, 2])
+    }
+
+    func testOverlayAppsWithoutDockIconNeverCountAsFullScreen() {
+        let r = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let overlay = WindowLite(layer: 0, pid: 700, bounds: r, alpha: 1, regular: false)
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [(id: 1, cgRect: r)], windows: [overlay], ownPID: 1).isEmpty)
+        let app = WindowLite(layer: 0, pid: 701, bounds: r, alpha: 1, regular: true)
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [(id: 1, cgRect: r)], windows: [overlay, app], ownPID: 1), [1])
+    }
+}

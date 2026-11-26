@@ -281,7 +281,8 @@ final class AppController: NSObject {
         let wins: [WindowLite] = list.compactMap { w in
             guard let layer = w[kCGWindowLayer as String] as? Int, let pid = w[kCGWindowOwnerPID as String] as? Int,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: bd) else { return nil }
-            return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1)
+            return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1,
+                              regular: NSRunningApplication(processIdentifier: pid_t(pid))?.activationPolicy == .regular)
         }
         let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
         let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })
@@ -365,6 +366,7 @@ final class AppController: NSObject {
         st.dock = dockGeo
         st.snowRampStart = snowRampStart
         st.mainOnly = s.displays == .mainOnly
+        st.sagLevel = s.sag; st.dockSagLevel = s.dockSag
         st.fullScreenIDs = fullScreenIDs
         st.showInFullScreen = s.showInFullScreen
         Engine.shared.settleActive = settle

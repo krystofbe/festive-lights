@@ -102,6 +102,7 @@ final class ChainRenderer {
     private var lastPatternTime = 0.0
     /// Musterzeit, je Bild um Zeitschritt mal Tempo vorgerückt: Ein geändertes Tempo lässt das Muster nicht springen.
     private var patternClock = 0.0
+    private var sagShown: Double?   // angezeigter Durchhang: gleitet in etwa 0,3 s zum neuen Wert
     private var localBulbs: [Double] = []
     private var bulbBase = 0
     private var bulbTotal = 1
@@ -361,7 +362,7 @@ final class ChainRenderer {
     private func magnify(_ sp: ChainSpec, _ u: Double) -> Double { sp.isDock && sp.dockTile > 0 ? min(Garland.dockMagnification(lift: liftAt(u), tile: sp.dockTile), sp.dockMaxGrow) : 1 }
 
     private func cableV(_ sp: ChainSpec, _ u: Double, wave: Bool = true) -> Double {
-        var v = sp.sag * layout.sagFactor(at: stripOff + min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
+        var v = (sagShown ?? sp.sag) * layout.sagFactor(at: stripOff + min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
         if wave, bunt, sp.isMenuBar { v += 3.5 * sp.bulbH / Garland.tbRefBulbH * sin(2 * .pi * (u + stripOff) / (layout.arcLength * 0.62) + 0.8) }
         return v
     }
@@ -425,6 +426,11 @@ final class ChainRenderer {
     func update(time: Double, dt: Double, pointer: CGPoint?) -> Int {
         guard let sp = spec, !bulbs.isEmpty, wantVisible || window.rootLayer.presentation()?.opacity ?? 0 > 0.01 else { return 0 }
         let reduce = style.reduceMotion
+        var gliding = false
+        if let cur = sagShown, abs(cur - sp.sag) > 0.01 {
+            sagShown = reduce ? sp.sag : cur + (sp.sag - cur) * min(1, dt / 0.1)
+            cableDirty = true; cableDirtyForGarland = true; gliding = true
+        } else { sagShown = sp.sag }
         patternClock = PatternClockHub.value(isDock: sp.isDock, time: time, tempo: style.tempo)   // alle Bildschirme im selben Takt
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
@@ -541,7 +547,7 @@ final class ChainRenderer {
         }
         cableDirtyForGarland = false
         CATransaction.commit()
-        moving = moving || swayActive
+        moving = moving || swayActive || gliding
         lastMotion = moving || intro < Self.introDuration
         if lastMotion { return 2 }
         return (style.pattern != .steady && !reduce) ? 1 : 0
