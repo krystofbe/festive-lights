@@ -98,7 +98,11 @@ final class AppController: NSObject {
         #if DIRECT
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         #endif
-        ws.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in self?.reconcileScreens(); self?.refreshFullScreen() }
+        ws.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.reconcileScreens(); self?.refreshFullScreen(force: true)
+            // der Space ist beim Eintritt ins Vollbild erst kurz danach gewechselt: noch einmal abfragen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.refreshFullScreen(force: true) }
+        }
         dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         dockProbe.onResult = { [weak self] r in
             #if DEBUG
@@ -261,12 +265,23 @@ final class AppController: NSObject {
     }
 
     /// Vollbild-Apps je Bildschirm aus der Fensterliste (ohne Berechtigung). Bei Änderung neu anwenden.
-    private func refreshFullScreen() {
+    private var lastFullScreenCheck = 0.0
+
+    private func refreshFullScreen(force: Bool = false) {
+        let now = CACurrentMediaTime()
+        // Nichts zu verdecken oder zu pausieren: nicht abfragen und nichts ausblenden
+        let nothingShown = !settings.lightsEnabled && !settings.dockLights && !settings.snowEnabled && Engine.shared.storm == nil
+        if settings.showInFullScreen || settings.paused || suspended || nothingShown {
+            if !fullScreenIDs.isEmpty { fullScreenIDs = []; scheduleApply() }
+            return
+        }
+        if !force, energySaving, now - lastFullScreenCheck < 3 { return }   // im Sparmodus nur alle 3 s
+        lastFullScreenCheck = now
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
         let wins: [WindowLite] = list.compactMap { w in
             guard let layer = w[kCGWindowLayer as String] as? Int, let pid = w[kCGWindowOwnerPID as String] as? Int,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: bd) else { return nil }
-            return WindowLite(layer: layer, pid: pid, bounds: r)
+            return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1)
         }
         let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
         let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })

@@ -5,22 +5,43 @@ struct WindowLite: Equatable {
     var layer: Int
     var pid: Int
     var bounds: CGRect   // CG-Koordinaten (Ursprung oben links)
+    var alpha = 1.0
 }
 
-/// Erkennt Vollbild-Bildschirme ohne Bildschirmaufnahme-Berechtigung und ohne Bedienungshilfen: Auf einem Bildschirm mit Vollbild-App füllt ein normales
-/// Fenster (Ebene 0) eines anderen Prozesses den ganzen Bildschirm einschließlich des Menüleistenbereichs. NSScreen.visibleFrame ändert sich dabei
-/// für diesen Prozess nicht zuverlässig und taugt nicht als Signal.
+/// Erkennt Vollbild-Bildschirme ohne Bildschirmaufnahme-Berechtigung und ohne Bedienungshilfen: Auf einem Bildschirm mit Vollbild-App füllen normale
+/// Fenster (Ebene 0) fremder Prozesse den ganzen Bildschirm einschließlich des Menüleistenbereichs, ein Fenster oder bei Split View mehrere ohne Lücke.
+/// NSScreen.visibleFrame ändert sich dabei für diesen Prozess nicht zuverlässig und taugt nicht als Signal.
+/// Bekannte Grenze: Bei automatisch ausgeblendeter Menüleiste kann ein maximiertes Fenster den ganzen Bildschirm füllen und wird dann wie Vollbild behandelt.
 enum FullScreenDetect {
     static let tolerance = 1.5
+    static let splitGap = 8.0   // Spalt zwischen den Fenstern einer Split View
+    static let minAlpha = 0.5   // unsichtbare Vollflächen-Fenster zählen nicht
 
     static func fullScreenIDs(screens: [(id: Int, cgRect: CGRect)], windows: [WindowLite], ownPID: Int) -> Set<Int> {
+        let candidates = windows.filter { $0.layer == 0 && $0.pid != ownPID && $0.alpha >= minAlpha }
         var out = Set<Int>()
         for s in screens {
-            for w in windows where w.layer == 0 && w.pid != ownPID {
-                if abs(w.bounds.minX - s.cgRect.minX) <= tolerance, abs(w.bounds.minY - s.cgRect.minY) <= tolerance,
-                   abs(w.bounds.width - s.cgRect.width) <= tolerance, abs(w.bounds.height - s.cgRect.height) <= tolerance { out.insert(s.id); break }
-            }
+            let here = candidates.filter { $0.bounds.intersects(s.cgRect.insetBy(dx: tolerance, dy: tolerance)) }
+            if here.contains(where: { matches($0.bounds, s.cgRect) }) || covers(here.map(\.bounds), s.cgRect) { out.insert(s.id) }
         }
         return out
+    }
+
+    private static func matches(_ b: CGRect, _ r: CGRect) -> Bool {
+        abs(b.minX - r.minX) <= tolerance && abs(b.minY - r.minY) <= tolerance && abs(b.width - r.width) <= tolerance && abs(b.height - r.height) <= tolerance
+    }
+
+    /// Vereinigung der Fenster deckt den Bildschirm lückenlos (bis auf den Spalt der Split View). Mindestens zwei Fenster, jedes reicht bis zum oberen Rand.
+    private static func covers(_ rects: [CGRect], _ screen: CGRect) -> Bool {
+        guard rects.count >= 2 else { return false }
+        let r = rects.map { $0.insetBy(dx: -splitGap / 2, dy: 0).intersection(screen) }.filter { !$0.isNull && $0.width > 1 && $0.height > 1 }
+        guard r.count >= 2, r.allSatisfy({ abs($0.minY - screen.minY) <= tolerance && abs($0.maxY - screen.maxY) <= tolerance }) else { return false }
+        let sorted = r.sorted { $0.minX < $1.minX }
+        var reach = screen.minX
+        for w in sorted {
+            if w.minX > reach + tolerance { return false }
+            reach = max(reach, w.maxX)
+        }
+        return reach >= screen.maxX - tolerance && sorted.first!.minX <= screen.minX + tolerance
     }
 }

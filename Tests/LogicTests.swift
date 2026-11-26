@@ -1641,6 +1641,26 @@ final class FullScreenDetectTests: XCTestCase {
         XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [a, b], windows: w, ownPID: 1), [1, 3])
     }
 
+    func testInvisibleFullFrameWindowIsIgnored() {
+        let w = [WindowLite(layer: 0, pid: 500, bounds: a.cgRect, alpha: 0.0)]
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a], windows: w, ownPID: 1).isEmpty)
+    }
+
+    func testSplitViewOfTwoWindowsCoveringTheWholeScreenCounts() {
+        let l = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 0, width: 1270, height: 1440))
+        let r = WindowLite(layer: 0, pid: 501, bounds: CGRect(x: 1276, y: 0, width: 1284, height: 1440))   // 6 pt Spalt
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [a], windows: [l, r], ownPID: 1), [1])
+    }
+
+    func testTwoWindowsWithAGapOrBelowTheMenuBarAreNoSplitView() {
+        let l = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 0, width: 1200, height: 1440))
+        let r = WindowLite(layer: 0, pid: 501, bounds: CGRect(x: 1400, y: 0, width: 1160, height: 1440))
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a], windows: [l, r], ownPID: 1).isEmpty, "Lücke von 200 pt")
+        let l2 = WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 30, width: 1280, height: 1410))
+        let r2 = WindowLite(layer: 0, pid: 501, bounds: CGRect(x: 1280, y: 30, width: 1280, height: 1410))
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a], windows: [l2, r2], ownPID: 1).isEmpty, "zwei Fenster unter der Menüleiste: kein Vollbild")
+    }
+
     func testFullScreenSettingDefaultsOffAndResetRestoresIt() {
         let s = Settings.shared
         XCTAssertFalse(s.showInFullScreen)
