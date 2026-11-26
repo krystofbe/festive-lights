@@ -21,24 +21,27 @@ enum ScreenLayout {
     /// Bildschirme mit Menüleiste, die nebeneinander liegen (Kanten berühren sich) und deren Oberkanten bündig sind, bilden eine Girlande.
     /// Die Reihenfolge ist von links nach rechts. Alle anderen stehen für sich (offset 0, total = Breite).
     static func strips(_ screens: [ScreenGeom]) -> [Int: StripPlacement] {
-        let bars = screens.filter { $0.menuBarHeight > 0 }.sorted { $0.frame.minX < $1.frame.minX }
+        let bars = screens.filter { $0.menuBarHeight > 0 }
+        // rechter Nachbar je Bildschirm über alle Bildschirme (auch bei darüber oder darunter liegenden)
+        var next: [Int: ScreenGeom] = [:]
+        var hasPrev = Set<Int>()
+        for a in bars.sorted(by: { $0.frame.minX < $1.frame.minX }) {
+            if let b = bars.first(where: { $0.id != a.id && adjacent(a, $0) }) { next[a.id] = b; hasPrev.insert(b.id) }
+        }
         var out: [Int: StripPlacement] = [:]
-        var i = 0
-        while i < bars.count {
-            var group = [bars[i]]
-            var j = i + 1
-            while j < bars.count, let last = group.last, adjacent(last, bars[j]) { group.append(bars[j]); j += 1 }
+        for head in bars where !hasPrev.contains(head.id) {
+            var group = [head]
+            while let n = next[group.last!.id], !group.contains(where: { $0.id == n.id }) { group.append(n) }
             let total = group.reduce(0) { $0 + Double($1.frame.width) }
             var off = 0.0
             for g in group { out[g.id] = StripPlacement(offset: off, total: total); off += Double(g.frame.width) }
-            i = j
         }
         return out
     }
 
     private static func adjacent(_ a: ScreenGeom, _ b: ScreenGeom) -> Bool {
         abs(a.frame.maxX - b.frame.minX) <= flushTolerance && abs(a.frame.maxY - b.frame.maxY) <= flushTolerance
-            && abs(a.menuBarHeight - b.menuBarHeight) <= flushTolerance
+            && abs(a.menuBarHeight - b.menuBarHeight) <= 0.5   // gleiches Raster nur bei gleicher Leistenhöhe
     }
 
     /// Lichter und Schnee auf diesem Bildschirm? "Nur Hauptbildschirm" zeigt sie nur auf dem Bildschirm mit der Hauptmenüleiste.

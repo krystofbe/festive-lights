@@ -12,6 +12,7 @@ struct SnowConfig: Equatable {
     var settle = false
     var layer = DisplayLayer.above
     var rampStart: Double?
+    var piles = true   // Schneeschichten und Trümmerflocken nur auf Bildschirmen mit Effekten ("Nur Hauptbildschirm")
 }
 
 private struct Flake {
@@ -127,7 +128,7 @@ final class SnowField {
     }
 
     func spawnDebris(at p: CGPoint, count: Int, vx: Double = 0, vy: Double = .nan, gravity: Double = 72, big: Bool = false) {
-        guard layers.count - free.count < 1100 else { return }
+        guard cfg.piles, layers.count - free.count < 1100 else { return }
         for _ in 0..<count {
             var f = Flake()
             f.debris = true
@@ -158,7 +159,8 @@ final class SnowField {
 
         var ramp = 1.0
         if let r = cfg.rampStart { ramp = min(1, 0.3 + 0.7 * (time - r) / 25) }
-        let wantCount = cfg.enabled ? cfg.amount * (cfg.energySaving ? 0.5 : 1) * (1 + 2 * stormFactor) * ramp : 0
+        let area = Double(screenSize.width * screenSize.height) / (1470 * 956)   // gleiche Dichte pro Fläche, Bezug 1470 x 956 pt
+        let wantCount = cfg.enabled ? cfg.amount * min(max(area, 0.25), 2.5) * (cfg.energySaving ? 0.5 : 1) * (1 + 2 * stormFactor) * ramp : 0
         let target = Int(min(wantCount, 520).rounded())
         var alive = aliveCount
         if alive < target {
@@ -304,7 +306,7 @@ final class SnowField {
         let originX = Double(screen.cgOrigin.x), originY = Double(screen.cgOrigin.y)
         var seen = Set<Int>()
         let melt = store.melt
-        for (id, e) in store.entries where cfg.settle || store.meltStart != nil {
+        for (id, e) in store.entries where cfg.piles && (cfg.settle || store.meltStart != nil) {
             let frame = e.frame
             guard frame.maxX > originX, frame.minX < originX + screenSize.width,
                   frame.minY > originY - 20, frame.minY < originY + screenSize.height + 20, !e.pile.isEmpty else { continue }

@@ -27,6 +27,8 @@ enum MenuBar {
         let inset = Double(screen.frame.maxY - screen.visibleFrame.maxY)
         if inset > 1 { return Info(height: inset, bottomY: Double(screen.frame.maxY) - inset, dynamic: false) }
         guard UserDefaults.standard.bool(forKey: "_HIHideMenuBar") else { return nil }
+        // Ohne "verschiedene Spaces" hat nur der Hauptbildschirm eine Menüleiste
+        guard NSScreen.screensHaveSeparateSpaces || screen.displayID == NSScreen.screens.first?.displayID else { return nil }
         let nominal = Double(NSStatusBar.system.thickness)
         var shown = 0.0
         if let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] {
@@ -145,8 +147,8 @@ final class ScreenOverlay {
         configureChains()
         snow.configure(SnowConfig(enabled: st.snowOn && effectsOn, amount: st.amount, sizeMult: st.sizeMult, speedMult: st.speedMult, wind: st.wind,
                                   avoidRadius: st.avoid, reduceMotion: st.reduceMotion, energySaving: st.energySaving,
-                                  settle: st.settle, layer: st.snowLayer, rampStart: st.snowRampStart))
-        if st.snowOn || !snow.isEmpty { snow.setVisible(true) }
+                                  settle: st.settle && effectsOn, layer: st.snowLayer, rampStart: st.snowRampStart, piles: effectsOn))
+        if (st.snowOn && effectsOn) || !snow.isEmpty { snow.setVisible(true) }
         wake()
     }
 
@@ -234,7 +236,7 @@ final class ScreenOverlay {
             barBusy = atTop || barShown
         }
 
-        let pointer: CGPoint? = screen.frame.contains(mouse) ? mouse : nil
+        let pointer: CGPoint? = screen.frame.insetBy(dx: -100, dy: -100).contains(mouse) ? mouse : nil   // auch knapp außerhalb: Ausweichen an der Kante zwischen Bildschirmen
         var level = max(menubar.update(time: now, dt: dt, pointer: pointer), dock.update(time: now, dt: dt, pointer: pointer))
         let chainMoving = level >= 2
         var snowBusy = false

@@ -1576,6 +1576,17 @@ final class ScreenLayoutTests: XCTestCase {
         XCTAssertNil(s[2]); XCTAssertEqual(s[3]?.offset, 0)   // der mittlere ohne Leiste trennt die beiden
     }
 
+    func testStackedScreenDoesNotBreakTheNeighboursOnTheSameRow() {
+        // links L, darüber U (gleiches minX), rechts R: L und R bleiben eine Girlande
+        let s = ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 0, 1080, 1920, 1080), g(3, 1920, 0, 1920, 1080)])
+        XCTAssertEqual(s[1], StripPlacement(offset: 0, total: 3840)); XCTAssertEqual(s[3], StripPlacement(offset: 1920, total: 3840))
+        XCTAssertEqual(s[2], StripPlacement(offset: 0, total: 1920))
+    }
+
+    func testBarHeightsMustMatchForOneRaster() {
+        XCTAssertEqual(ScreenLayout.strips([g(1, 0, 0, 1920, 1080, bar: 24), g(2, 1920, 0, 1920, 1080, bar: 22)])[2]?.offset, 0)
+    }
+
     func testMainOnlyShowsEffectsOnlyOnTheMainDisplay() {
         XCTAssertTrue(ScreenLayout.showsEffects(isMain: false, mainOnly: false))
         XCTAssertTrue(ScreenLayout.showsEffects(isMain: true, mainOnly: true))

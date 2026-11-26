@@ -98,6 +98,7 @@ final class AppController: NSObject {
         #if DIRECT
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         #endif
+        ws.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in self?.reconcileScreens() }
         dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         dockProbe.onResult = { [weak self] r in
             #if DEBUG
@@ -159,6 +160,15 @@ final class AppController: NSObject {
         if p != permission { permission = p; updateDockTracking(); scheduleApply() }
         permissionModel.refresh()
         #endif
+        let sig = NSScreen.screens.map { NSStringFromRect($0.visibleFrame) }.joined(separator: "|")
+        if sig != visibleSignature {   // Dock oder Leiste auf einem anderen Bildschirm (Dock folgt dem Zeiger): neu messen und anwenden
+            visibleSignature = sig
+            dockProbe.burst()
+            #if DIRECT
+            dockTracker.burst()
+            #endif
+            reconcileScreens(); scheduleApply()
+        }
         let before = runtimeState
         refreshSystem()
         if runtimeState != before { scheduleApply() }
@@ -189,6 +199,7 @@ final class AppController: NSObject {
     @objc private func sleepChanged(_ n: Notification) {
         let asleep = n.name == NSWorkspace.willSleepNotification || n.name == NSWorkspace.screensDidSleepNotification
         screensAsleep = asleep
+        if !asleep { lastWake = CACurrentMediaTime() }
         refreshSystem(); scheduleApply()
     }
     @objc private func lockChanged(_ n: Notification) {
@@ -232,24 +243,33 @@ final class AppController: NSObject {
     }
 
     private var knownScreens: [Int: ScreenGeom] = [:]
-    private var startedScreens = false
+    private var lastBarHeight: [Int: Double] = [:]
+    private var lastWake = -100.0
+    private var visibleSignature = ""
 
     private func geoms() -> [ScreenGeom] {
-        NSScreen.screens.map { ScreenGeom(id: Int($0.displayID), frame: $0.frame, scale: Double($0.backingScaleFactor), menuBarHeight: MenuBar.info(for: $0)?.height ?? 0) }
+        NSScreen.screens.map { sc in
+            let id = Int(sc.displayID)
+            // Die Leistenhöhe eines Bildschirms in einer Vollbild-App (kein sichtbarer Inset) bleibt die zuletzt bekannte, damit die Girlande der anderen nicht springt
+            let measured = MenuBar.info(for: sc)?.height
+            if let m = measured { lastBarHeight[id] = m }
+            let hasBar = NSScreen.screensHaveSeparateSpaces || sc.displayID == NSScreen.screens.first?.displayID
+            return ScreenGeom(id: id, frame: sc.frame, scale: Double(sc.backingScaleFactor), menuBarHeight: measured ?? (hasBar ? (lastBarHeight[id] ?? 0) : 0))
+        }
     }
 
     /// Bildschirme anstecken, abstecken und verändern ohne Neustart: Neue werden begrüßt, geänderte ohne Begrüßung neu aufgebaut, entfernte abgebaut.
     private func reconcileScreens() {
         let current = geoms()
         let diff = ScreenLayout.diff(known: knownScreens, current: current)
-        let byID = Dictionary(uniqueKeysWithValues: NSScreen.screens.map { (Int($0.displayID), $0) })
+        let byID = Dictionary(NSScreen.screens.map { (Int($0.displayID), $0) }, uniquingKeysWith: { a, _ in a })
         for id in diff.removed { overlays[CGDirectDisplayID(id)]?.teardown(); overlays[CGDirectDisplayID(id)] = nil }
         for id in diff.recreated + diff.added {
             guard let s = byID[id] else { continue }
             overlays[CGDirectDisplayID(id)]?.teardown()
-            overlays[CGDirectDisplayID(id)] = ScreenOverlay(screen: s, greet: diff.added.contains(id))
+            overlays[CGDirectDisplayID(id)] = ScreenOverlay(screen: s, greet: diff.added.contains(id) && (knownScreens.isEmpty || (!screensAsleep && CACurrentMediaTime() - lastWake > 5)))
         }
-        knownScreens = Dictionary(uniqueKeysWithValues: current.map { ($0.id, $0) })
+        knownScreens = Dictionary(current.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let strips = ScreenLayout.strips(current)
         for (id, o) in overlays { o.strip = strips[Int(id)] }
     }
