@@ -2,9 +2,15 @@
 
 Christmas lights for your Mac: a garland under the menu bar, lights on the Dock, and snow that piles up on your windows. Free and open source.
 
+![FestiveLights on a Mac: pine garland with baubles under the menu bar, lights on the Dock, falling snow](Store/screenshots/en-1-tanne-bunt.png)
+
 **[Download for macOS 14 or later](https://github.com/krystofbe/festive-lights/releases/latest/download/FestiveLights.dmg)** · [Website](https://www.blackbox.ms/festive/en/) · [30 second video](https://youtube.com/shorts/xGinuTRNNHA) · Mac App Store: coming soon
 
 ![The lights move out of the way when the pointer comes near](Art/readme/dodge.gif)
+
+| Fir, colorful | Fir, warm gold | Classic |
+|---|---|---|
+| <img src="Store/screenshots/en-1-tanne-bunt.png" width="260" alt="Fir, colorful"> | <img src="Store/screenshots/en-2-tanne-warmgold.png" width="260" alt="Fir, warm gold"> | <img src="Store/screenshots/en-3-klassisch.png" width="260" alt="Classic"> |
 
 ## What it does
 
@@ -14,8 +20,6 @@ Christmas lights for your Mac: a garland under the menu bar, lights on the Dock,
 - Works on several displays and follows the Dock when it moves. A full-screen app hides the lights only on its own display.
 - Pause everything from the menu bar, for example during a presentation. In Low Power Mode it gets calmer on its own.
 - English and German.
-
-![Snow piled up on a window](Art/readme/snow-on-window.jpg)
 
 ![Snowstorm](Art/readme/storm.gif)
 
