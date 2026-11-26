@@ -182,6 +182,26 @@ final class LayoutTests: XCTestCase {
         XCTAssertLessThan(l.bulbPositions.last!, 1500)
     }
 
+    func testIrregularGoldHasFewerBulbsWithVaryingGaps() {
+        let even = ChainLayout(length: 1920, spacing: 45), irr = ChainLayout(length: 1920, spacing: 45, irregular: true)
+        let ratio = Double(irr.bulbCount) / Double(even.bulbCount)
+        XCTAssertEqual(ratio, 0.6, accuracy: 0.1)
+        let gaps = zip(irr.bulbPositions.dropFirst(), irr.bulbPositions).map { $0 - $1 }
+        let mean = gaps.reduce(0, +) / Double(gaps.count)
+        XCTAssertGreaterThan(gaps.max()! - gaps.min()!, 0.3 * mean, "Abstände variieren")
+        XCTAssertGreaterThan(gaps.min()!, 0.3 * mean, "Mindestabstand, nie übereinander")
+        XCTAssertEqual(irr.bulbPositions, ChainLayout(length: 1920, spacing: 45, irregular: true).bulbPositions, "deterministisch")
+        XCTAssertGreaterThan(irr.bulbPositions.first!, 0); XCTAssertLessThan(irr.bulbPositions.last!, 1920)
+        XCTAssertEqual(Set(irr.bulbPositions.map { ($0 * 10).rounded() }).count, irr.bulbCount)
+    }
+
+    func testIrregularJittersStayWithinTenPercent() {
+        for i in 0..<500 {
+            XCTAssertEqual(ChainLayout.sizeJitter(index: i), 1, accuracy: 0.1 + 1e-9)
+            XCTAssertEqual(ChainLayout.brightJitter(index: i), 1, accuracy: 0.1 + 1e-9)
+        }
+    }
+
     func testSagIsZeroAtJoinsAndOneInMiddle() {
         let l = ChainLayout(length: 1000, spacing: 50)
         XCTAssertEqual(l.sagFactor(at: l.arcLength), 0, accuracy: 1e-9)

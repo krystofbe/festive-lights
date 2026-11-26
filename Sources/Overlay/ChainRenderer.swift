@@ -134,7 +134,7 @@ final class ChainRenderer {
     private var bunt: Bool { style.kind == .firColor }
     /// Größenfaktor der Tannen-Grafiken (Tanne bunt bezieht sich auf die Menüleiste des Zielbilds, sonst 24 pt Birnenhöhe).
     private func unitScale(_ sp: ChainSpec) -> Double { sp.bulbH / (bunt ? Garland.tbRefBulbH : 24) }
-    private var glowAlpha: Double { bunt ? 0.6 : 0.9 }
+    private var glowAlpha: Double { bunt ? 0.6 : (style.kind == .firGold ? 0.75 : 0.9) }
 
     func setVisible(_ on: Bool, layer: DisplayLayer, intro now: Double?) {
         window.setLayer(layer)
@@ -187,7 +187,7 @@ final class ChainRenderer {
     private func rebuildBulbs(_ sp: ChainSpec) {
         // Bei einer durchgehenden Girlande liegt das Raster über der ganzen Länge, jeder Bildschirm zeigt seinen Abschnitt
         stripOff = sp.stripTotal > 0 ? sp.stripOffset : 0
-        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6)
+        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6, irregular: style.kind == .firGold)
         let all = layout.bulbPositions
         let first = all.firstIndex { $0 >= stripOff } ?? all.count
         localBulbs = all.filter { $0 >= stripOff && $0 < stripOff + sp.length }.map { $0 - stripOff }
@@ -458,8 +458,9 @@ final class ChainRenderer {
             CATransaction.setDisableActions(true)
             for (i, b) in bulbs.enumerated() {
                 let bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: style.pattern, tempo: 1)
-                b.lit.opacity = Float(bright)
-                b.glow.opacity = Float(bright * glowAlpha)
+                let gain = style.kind == .firGold ? ChainLayout.brightJitter(index: bulbBase + i) : 1
+                b.lit.opacity = Float(min(1, bright * gain))
+                b.glow.opacity = Float(bright * gain * glowAlpha)
             }
             CATransaction.commit()
             return 1
@@ -530,9 +531,10 @@ final class ChainRenderer {
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (i, b) in bulbs.enumerated() {
             let u = beads.pos[i]
-            b.container.position = local(sp.point(u: u, v: cableV(sp, u)))
+            let gold = style.kind == .firGold
+            b.container.position = local(sp.point(u: u, v: cableV(sp, u) + (gold ? ChainLayout.depthJitter(index: bulbBase + i) * sp.bulbH : 0)))
             let theta = atan2(cableV(sp, u + 3) - cableV(sp, u - 3), 6)
-            let tilt = ChainLayout.tilt(index: i) * .pi / 180
+            let tilt = ChainLayout.tilt(index: bulbBase + i) * .pi / 180
             let target = tilt + 0.5 * theta * sp.cross - sp.cross * min(max(beads.vel[i] / 900, -0.6), 0.6)
             var angle = target
             if !reduce {
@@ -543,7 +545,7 @@ final class ChainRenderer {
                 }
                 angle = b.sway.value
             } else { b.sway = Spring(value: target, velocity: 0) }
-            let grow = magnify(sp, u)
+            let grow = magnify(sp, u) * (gold ? ChainLayout.sizeJitter(index: bulbBase + i) : 1)
             b.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1), grow, grow, 1)
 
             var bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
@@ -551,8 +553,9 @@ final class ChainRenderer {
                 let s = min(max((intro - Double(bulbBase + i) / Double(bulbTotal) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
             }
-            b.lit.opacity = Float(bright)
-            b.glow.opacity = Float(bright * glowAlpha)
+            let gain = gold ? ChainLayout.brightJitter(index: bulbBase + i) : 1
+            b.lit.opacity = Float(min(1, bright * gain))
+            b.glow.opacity = Float(bright * gain * glowAlpha)
         }
         if moving || swayActive || cableDirtyForGarland || garlandSwaying {
             garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin)

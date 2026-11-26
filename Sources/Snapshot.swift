@@ -98,6 +98,13 @@ enum Snapshot {
         db.update(time: 20, dt: 0.016, pointer: nil)
         write(db.window.rootLayer, size: db.window.frame.size, background: light, to: "\(dir)/chain-dock-bottom-warm.png")
 
+        // Dock unten, Tanne warmgold
+        let dg = ChainRenderer()
+        dg.configure(spec: bspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false, kind: .firGold), scale: 2)
+        dg.setVisible(true, layer: .above, intro: nil); dg.window.rootLayer.opacity = 1
+        dg.update(time: 20, dt: 0.016, pointer: nil)
+        write(dg.window.rootLayer, size: dg.window.frame.size, background: dark, to: "\(dir)/gold-dock.png")
+
         // Schnee, danach mit Schneeschicht auf einem Fenster
         let field = SnowField(screen: screen)
         var cfg = SnowConfig(); cfg.settle = true

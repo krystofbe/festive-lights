@@ -33,7 +33,7 @@ enum FirSprites {
 
     /// Birnenfarbe und Scheinfarbe je Stil und laufender Nummer.
     static func colors(_ kind: ChainStyleKind, index: Int) -> (bulb: RGB, glow: RGB) {
-        if kind == .firGold { return (rgb(0xFFC766), rgb(0xFFB547)) }
+        if kind == .firGold { return (rgb(0xFFC25C), rgb(0xFFAA3C)) }
         let bulbs = [0xFFF3B0, 0xFF595E, 0xFFCA3A]
         let c = rgb(bulbs[colorIndex(kind, index)])
         return (c, c)
