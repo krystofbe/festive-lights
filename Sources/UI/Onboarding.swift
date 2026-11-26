@@ -151,6 +151,11 @@ struct OnboardingView: View {
                 card(.classic, "Classic", "style-classic")
             }
             .padding(.top, 8)
+            HStack(spacing: 22) {
+                onbSwitch("Menu bar", isOn: $s.lightsEnabled)
+                onbSwitch("Dock", isOn: $s.dockLights)
+            }
+            .padding(.top, 4)
         case .reach:
             illustrationMenuBar
             heading("onb.reach.title", "onb.reach.body")
@@ -165,6 +170,7 @@ struct OnboardingView: View {
             .disabled(motion.on)
             .opacity(motion.on ? 0.5 : 1)
             .accessibilityHint(Text(motion.on ? "onb.storm.disabled" : ""))
+            onbSwitch("Snow", isOn: $s.snowEnabled)
         case .access:
             #if DIRECT
             Image(systemName: "dock.rectangle").font(.system(size: 40)).foregroundColor(OnbStyle.red).accessibilityHidden(true)
@@ -188,6 +194,12 @@ struct OnboardingView: View {
             }
             .toggleStyle(.switch).tint(OnbStyle.red).fixedSize()
         }
+    }
+
+    /// Kleiner Schalter im Stil der Einführung (Weinrot, wenn an). Wirkt sofort und ist mit Menü und Einstellungen synchron, weil er an `Settings` hängt.
+    private func onbSwitch(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) { Text(LocalizedStringKey(title)).font(OnbStyle.body(13)).foregroundColor(OnbStyle.ink) }
+            .toggleStyle(.switch).tint(OnbStyle.wine).controlSize(.small).fixedSize()
     }
 
     private func card(_ kind: ChainStyleKind, _ name: String, _ image: String) -> some View {
@@ -337,14 +349,21 @@ enum OnboardingSnapshot {
         let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
         w.appearance = NSAppearance(named: .aqua)
         w.contentView = host
-        for i in 0..<model.steps.count {
+        func shot(_ i: Int, _ suffix: String) {
             model.index = i
             host.layoutSubtreeIfNeeded()
             RunLoop.current.run(until: Date().addingTimeInterval(0.4))
-            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
             host.cacheDisplay(in: host.bounds, to: rep)
-            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(dir)/\(variant)-\(lang)-\(i + 1)-\(model.steps[i]).png"))
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(dir)/\(variant)-\(lang)-\(i + 1)-\(model.steps[i])\(suffix).png"))
         }
+        let st = Settings.shared
+        let old = (st.lightsEnabled, st.dockLights, st.snowEnabled)
+        st.lightsEnabled = true; st.dockLights = true; st.snowEnabled = true
+        for i in 0..<model.steps.count { shot(i, "") }
+        st.lightsEnabled = false; st.dockLights = false; st.snowEnabled = false   // Schalter aus (nur Willkommen und Schnee zeigen sie)
+        for i in 0..<model.steps.count where model.steps[i] == .welcome || model.steps[i] == .snow { shot(i, "-aus") }
+        (st.lightsEnabled, st.dockLights, st.snowEnabled) = old
     }
 }
 #endif

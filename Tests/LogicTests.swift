@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 import Combine
 
 final class PatternTests: XCTestCase {
@@ -1766,5 +1767,22 @@ final class DockHidingTests: XCTestCase {
         XCTAssertEqual(DockProbeCore.evaluate(none, snap(true)) { _ in 0 }.obs, .hidden, "kein Rückfall auf durchgehend")
         XCTAssertEqual(DockProbeCore.evaluate(none, snap(false)) { _ in 0 }.obs, .unavailable)
         XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .hidden), .hidden)
+    }
+}
+
+final class OnboardingSwitchesTests: XCTestCase {
+    func testSwitchesAreTheSameSettingsAsMenuAndSettingsUse() {
+        // Die Schalter der Einführung binden direkt an Settings: Menü und Einstellungen sehen jede Änderung in beide Richtungen
+        let s = Settings.shared
+        let old = (s.lightsEnabled, s.dockLights, s.snowEnabled)
+        defer { (s.lightsEnabled, s.dockLights, s.snowEnabled) = old }
+        var changes = 0
+        let c = s.objectWillChange.sink { changes += 1 }
+        let lights = Binding(get: { s.lightsEnabled }, set: { s.lightsEnabled = $0 })
+        lights.wrappedValue = !lights.wrappedValue
+        s.dockLights.toggle(); s.snowEnabled.toggle()
+        XCTAssertEqual(changes, 3, "jede Änderung erreicht die Beobachter (Fenster, Menü, Anwendung)")
+        XCTAssertEqual(lights.wrappedValue, s.lightsEnabled)
+        c.cancel()
     }
 }
