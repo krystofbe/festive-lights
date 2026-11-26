@@ -420,7 +420,8 @@ final class AppController: NSObject {
             w.isReleasedWhenClosed = false
             w.setContentSize(NSSize(width: 470, height: 480))   // erst die Größe festlegen, die Position hängt von ihr ab
             // Erste Position mittig und mindestens 120 pt unter der Menüleiste, danach die gemerkte (wenn sie auf einem vorhandenen Bildschirm liegt)
-            let key = "settingsWindowOrigin"
+            WindowPositionMigration.run(.standard)
+            let key = WindowPositionMigration.originKey
             let saved = UserDefaults.standard.string(forKey: key).map { NSPointFromString($0) }
             if let o = WindowPlacement.restoredOrigin(saved: saved, size: w.frame.size, screens: NSScreen.screens.map(\.visibleFrame)) {
                 w.setFrameOrigin(o)

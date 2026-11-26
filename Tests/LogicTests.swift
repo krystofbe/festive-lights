@@ -1516,3 +1516,29 @@ final class WindowPlacementTests: XCTestCase {
         XCTAssertNil(WindowPlacement.restoredOrigin(saved: CGPoint(x: -440, y: 300), size: size, screens: [main]))
     }
 }
+
+final class WindowPositionMigrationTests: XCTestCase {
+    private func suite() -> UserDefaults { UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")! }
+    let size = CGSize(width: 470, height: 512)
+    let main = CGRect(x: 0, y: 99, width: 1920, height: 951)
+
+    func testOldSavedPositionIsDroppedOnceSoTheWindowOpensCentered() {
+        let d = suite()
+        d.set("{960.0, 700.0}", forKey: WindowPositionMigration.originKey)   // alter, falscher Wert aus einer früheren Version
+        d.set("725 600 470 480 0 0 1920 1080", forKey: "NSWindow Frame FestiveLights Settings")
+        WindowPositionMigration.run(d)
+        XCTAssertNil(d.string(forKey: WindowPositionMigration.originKey)); XCTAssertNil(d.string(forKey: "NSWindow Frame FestiveLights Settings"))
+        let saved = d.string(forKey: WindowPositionMigration.originKey).map { NSPointFromString($0) }
+        let o = WindowPlacement.restoredOrigin(saved: saved, size: size, screens: [main]) ?? WindowPlacement.initialOrigin(size: size, visible: main)
+        XCTAssertEqual(o, WindowPlacement.initialOrigin(size: size, visible: main), "ohne gemerkte Position mittig")
+    }
+
+    func testPositionSavedAfterTheMigrationSurvivesFurtherStarts() {
+        let d = suite()
+        WindowPositionMigration.run(d)
+        d.set("{300.0, 200.0}", forKey: WindowPositionMigration.originKey)   // vom Nutzer verschoben
+        WindowPositionMigration.run(d)                                       // nächster Start
+        XCTAssertEqual(d.string(forKey: WindowPositionMigration.originKey), "{300.0, 200.0}")
+        XCTAssertEqual(WindowPlacement.restoredOrigin(saved: NSPointFromString(d.string(forKey: WindowPositionMigration.originKey)!), size: size, screens: [main]), CGPoint(x: 300, y: 200))
+    }
+}

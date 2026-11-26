@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 /// Fensterposition (Cocoa-Koordinaten, Ursprung unten links): erste Platzierung und Wiederherstellung einer gemerkten Position.
 enum WindowPlacement {
@@ -33,5 +34,19 @@ enum WindowPlacement {
         // zu großes Fenster: oben bündig, links bündig
         let maxX = visible.maxX - size.width, maxY = visible.maxY - size.height
         return CGPoint(x: max(visible.minX, min(p.x, maxX)) , y: max(visible.minY, min(p.y, maxY)))
+    }
+}
+
+/// Einmalig: Fensterpositionen, die eine Version vor 1.0.2 gespeichert hat (eigener Schlüssel und AppKits automatische Frame-Werte), werden verworfen,
+/// damit das Einstellungsfenster nach einem Update mittig öffnet. Danach gemerkte Positionen bleiben.
+enum WindowPositionMigration {
+    static let doneKey = "windowPositionMigrated102"
+    static let originKey = "settingsWindowOrigin"
+
+    static func run(_ d: UserDefaults) {
+        guard d.object(forKey: doneKey) == nil else { return }
+        d.removeObject(forKey: originKey)
+        for k in d.dictionaryRepresentation().keys where k.hasPrefix("NSWindow Frame") { d.removeObject(forKey: k) }
+        d.set(true, forKey: doneKey)
     }
 }
