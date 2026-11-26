@@ -437,7 +437,6 @@ final class ChainRenderer {
             lastPatternTime = time
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            let n = bulbs.count
             for (i, b) in bulbs.enumerated() {
                 let bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: style.pattern, tempo: 1)
                 b.lit.opacity = Float(bright)
@@ -508,7 +507,6 @@ final class ChainRenderer {
 
         // Birnen: Position entlang des Kabels aus der Perlenkette, Neigung aus der Geschwindigkeit
         let intro = introStart.map { time - $0 } ?? 10
-        let n = bulbs.count
         var swayActive = false
         let baseAngle = atan2(Double(sp.hang.dy), Double(sp.hang.dx)) + .pi / 2
         for (i, b) in bulbs.enumerated() {

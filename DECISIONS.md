@@ -208,3 +208,11 @@ Test-Build: `xcodebuild -configuration Test` ist Release mit `DEBUG`-Bedingung (
 - Die Stilwahl setzt Menüleiste und Dock zugleich (`applyOnboardingStyle`). Schriften (Poppins, Mountains of Christmas) liegen mit ihren Lizenzen in `Art/fonts` im Bundle und werden beim Start für den Prozess registriert (`CTFontManagerRegisterFontsForURL`). Grafiken aus `Art/onboarding`.
 - Bedienung: Return löst den Hauptbutton aus, Esc und "Überspringen" schließen, alle Bedienelemente haben Beschriftungen (Fortschrittspunkte als ein Element mit Wert "n / m", Stilkarten mit Auswahl-Eigenschaft), Dekoration ist für VoiceOver verborgen. Schnee der Einführung ist im Sparmodus und bei "Bewegung reduzieren" statisch.
 - Bilder ohne Bildschirm: `FestiveLights --render-onboarding <Ordner> -AppleLanguages "(de)"` (nur Test-Build), für Store und Direkt.
+
+## Mehrere Bildschirme (1.1, SPEC F4a)
+- Rechenlogik ohne AppKit in `ScreenLayout`: Girlanden-Gruppen aus nebeneinander liegenden Bildschirmen mit Menüleiste und bündigen Oberkanten (höchstens 2 pt, gleiche Leistenhöhe), Auswahl "Nur Hauptbildschirm", Abgleich angesteckt, abgesteckt, geändert (`diff`). Getestet, auch gemischtes 1x/2x und Lücken zwischen Bildschirmen.
+- Durchgehende Girlande: `ChainSpec.stripOffset/stripTotal`. Das Birnenraster, die Bögen, die Wellen und die Musterindizes laufen über die Gesamtlänge, jeder Bildschirm zeigt seinen Abschnitt, das Kabel liegt am Rand auf gleicher Höhe. Die Musterzeit ist je Kettenart gemeinsam (`PatternClockHub`). Auf dem Mini (Oberkanten bündig, 1080 und 1152 pt Höhe) belegt ein vergrößerter Ausschnitt der Kante.
+- Begrüßung: Neue Bildschirme (`diff.added`) und der App-Start schalten die Birnen nacheinander ein, geänderte Rahmen oder Retina-Faktoren bauen ohne Begrüßung neu auf, Aufwachen ändert nichts.
+- Einstellung "Bildschirme" (Alle, Nur Hauptbildschirm) in Allgemein, Standard Alle, vom Zurücksetzen erfasst. Die Dock-Kette bleibt beim Dock.
+- Die Diagnose je Bildschirm (`state.txt`) und alle Schreibzugriffe nach `~/festivelights-test` liegen hinter `#if DEBUG`, im Release-Binary kommt der Pfad nicht vor (geprüft).
+- Offen (nur mit Bedienung): Dock springt auf den zweiten Bildschirm (`CGEvent`-Zeigerbewegung löst es nicht aus) und Vollbild auf dem zweiten Bildschirm (osascript braucht eine Automationsberechtigung, die nicht erteilt wurde).
