@@ -10,7 +10,7 @@ Christmas lights for your Mac: a garland under the menu bar, lights on the Dock,
 
 | Fir, colorful | Fir, warm gold | Classic |
 |---|---|---|
-| <img src="Store/screenshots/en-1-tanne-bunt.png" width="260" alt="Fir, colorful"> | <img src="Store/screenshots/en-2-tanne-warmgold.png" width="260" alt="Fir, warm gold"> | <img src="Store/screenshots/en-3-klassisch.png" width="260" alt="Classic"> |
+| <img src="Art/readme/style-firColor.jpg" width="260" alt="Fir, colorful"> | <img src="Art/readme/style-firGold.jpg" width="260" alt="Fir, warm gold"> | <img src="Art/readme/style-classic.jpg" width="260" alt="Classic"> |
 
 ## What it does
 
