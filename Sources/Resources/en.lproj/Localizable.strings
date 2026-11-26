@@ -86,15 +86,12 @@
 "onb.go" = "Let's go";
 "onb.welcome.title" = "Happy holidays!";
 "onb.welcome.body" = "FestiveLights hangs lights on your menu bar and Dock and lets it snow softly. Pick a style:";
-"onb.reach.title" = "Always within reach";
-"onb.reach.body" = "Click the icon to pause everything, for example during presentations, and to open the settings. Clicks always pass through lights and snow.";
 "onb.snow.title" = "Snow";
 "onb.snow.body" = "Snow settles on windows. Shake a window to clear it, or sweep the pointer through to stir it up.";
 "onb.storm" = "Start a snowstorm";
 "onb.access.title" = "Lights on the Dock, snow on windows";
 "onb.access.body" = "For this FestiveLights sees where the Dock and your windows are. No contents, no input.";
 "onb.done.title" = "All set";
-"onb.done.body" = "You can find FestiveLights in the menu bar at any time.";
 "menu.welcome" = "Welcome Guide…";
 "onb.storm.disabled" = "Not available while Reduce Motion is on.";
 "Displays" = "Displays";
@@ -104,3 +101,8 @@
 "Sag" = "Sag";
 "sag.tight" = "Tight";
 "sag.loose" = "Loose";
+"onb.menubar.title" = "Menu bar";
+"onb.menubar.body" = "The lights hang under your menu bar. Move the pointer under them and they make room.";
+"onb.dock.title" = "Dock";
+"onb.dock.body" = "Your Dock gets a string of lights too. It follows the Dock whenever it changes.";
+"onb.done.body" = "Click the icon to pause everything, for example during presentations, and to open the settings. Clicks always pass through lights and snow.";

@@ -1433,6 +1433,14 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(OnbStep.all.first, .welcome); XCTAssertEqual(OnbStep.all.last, .done)
     }
 
+    func testStepOrderHasOneStepPerFeatureAndNoReachStep() {
+        let all = OnbStep.all
+        let core: [OnbStep] = [.welcome, .menuBar, .dock, .snow]
+        XCTAssertEqual(Array(all.prefix(4)), core)
+        XCTAssertEqual(all.last, .done)
+        XCTAssertEqual(all.count, AppVariant.isStore ? 5 : 6, "Direkt hat zusätzlich den Bedienungshilfen-Schritt vor Fertig")
+    }
+
     func testNavigationStaysInRange() {
         let m = OnboardingModel()
         m.back(); XCTAssertEqual(m.index, 0)
@@ -1461,7 +1469,7 @@ final class OnboardingTests: XCTestCase {
     func testAllOnboardingAndMenuStringsExistInGermanAndEnglish() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/Resources")
         let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
-                    "onb.welcome.title", "onb.welcome.body", "onb.reach.title", "onb.reach.body", "onb.snow.title", "onb.snow.body",
+                    "onb.welcome.title", "onb.welcome.body", "onb.menubar.title", "onb.menubar.body", "onb.dock.title", "onb.dock.body", "onb.snow.title", "onb.snow.body",
                     "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled"]
         for lang in ["de", "en"] {
             let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)

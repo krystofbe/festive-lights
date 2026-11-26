@@ -151,17 +151,18 @@ struct OnboardingView: View {
                 card(.classic, "Classic", "style-classic")
             }
             .padding(.top, 8)
-            HStack(spacing: 22) {
-                onbSwitch("Menu bar", isOn: $s.lightsEnabled)
-                onbSwitch("Dock", isOn: $s.dockLights)
-            }
-            .padding(.top, 4)
-        case .reach:
-            illustrationMenuBar
-            heading("onb.reach.title", "onb.reach.body")
+        case .menuBar:
+            illustrationGarland(dock: false)
+            heading("onb.menubar.title", "onb.menubar.body")
+            onbSwitch("Lights on the menu bar", isOn: $s.lightsEnabled)
+        case .dock:
+            illustrationGarland(dock: true)
+            heading("onb.dock.title", "onb.dock.body")
+            onbSwitch("Lights on the Dock", isOn: $s.dockLights)
         case .snow:
             illustrationWindow
             heading("onb.snow.title", "onb.snow.body")
+            HStack(spacing: 18) {
             Button(action: startStorm) {
                 Text("onb.storm").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).padding(.vertical, 7)
                     .background(Capsule().fill(Color(hex: 0xF6E2DA)))
@@ -171,6 +172,7 @@ struct OnboardingView: View {
             .opacity(motion.on ? 0.5 : 1)
             .accessibilityHint(Text(motion.on ? "onb.storm.disabled" : ""))
             onbSwitch("Snow", isOn: $s.snowEnabled)
+            }
         case .access:
             #if DIRECT
             Image(systemName: "dock.rectangle").font(.system(size: 40)).foregroundColor(OnbStyle.red).accessibilityHidden(true)
@@ -187,7 +189,7 @@ struct OnboardingView: View {
             .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in perm.refresh() }
             #endif
         case .done:
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 40)).foregroundColor(OnbStyle.red).accessibilityHidden(true)
+            illustrationMenuBar
             heading("onb.done.title", "onb.done.body")
             Toggle(isOn: Binding(get: { login.enabled }, set: { login.set($0) })) {
                 Text("Start at login").font(OnbStyle.body(14)).foregroundColor(OnbStyle.ink)
@@ -217,6 +219,25 @@ struct OnboardingView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(LocalizedStringKey(name)))
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// Girlande unter der Menüleiste oder Lichter am Dock, aus der Girlande der Einführung zusammengesetzt.
+    private func illustrationGarland(dock: Bool) -> some View {
+        let garland = Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().scaledToFill().frame(width: 300, height: 44, alignment: .top).clipped()
+        return VStack(spacing: 0) {
+            if dock {
+                garland.mask(RoundedRectangle(cornerRadius: 6))
+                HStack(spacing: 7) {
+                    ForEach([0xE9604F, 0xF2B33D, 0x4C9A6A, 0x5B8FD1, 0x9B6BC8], id: \.self) { RoundedRectangle(cornerRadius: 5).fill(Color(hex: $0)).frame(width: 24, height: 24) }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 8).background(RoundedRectangle(cornerRadius: 12).fill(OnbStyle.ink.opacity(0.9)))
+            } else {
+                RoundedRectangle(cornerRadius: 8).fill(OnbStyle.ink).frame(width: 300, height: 20)
+                garland.mask(RoundedRectangle(cornerRadius: 6))
+            }
+        }
+        .frame(height: 76, alignment: dock ? .bottom : .top)
+        .accessibilityHidden(true)
     }
 
     private var illustrationMenuBar: some View {
@@ -362,7 +383,7 @@ enum OnboardingSnapshot {
         st.lightsEnabled = true; st.dockLights = true; st.snowEnabled = true
         for i in 0..<model.steps.count { shot(i, "") }
         st.lightsEnabled = false; st.dockLights = false; st.snowEnabled = false   // Schalter aus (nur Willkommen und Schnee zeigen sie)
-        for i in 0..<model.steps.count where model.steps[i] == .welcome || model.steps[i] == .snow { shot(i, "-aus") }
+        for i in 0..<model.steps.count where [.menuBar, .dock, .snow].contains(model.steps[i]) { shot(i, "-aus") }
         (st.lightsEnabled, st.dockLights, st.snowEnabled) = old
     }
 }

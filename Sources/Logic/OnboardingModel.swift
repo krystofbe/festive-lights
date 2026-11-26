@@ -2,7 +2,7 @@ import Foundation
 import Combine
 
 enum OnbStep: Int, CaseIterable {
-    case welcome, reach, snow, access, done
+    case welcome, menuBar, dock, snow, access, done
 
     /// Der Freigabe-Schritt gibt es nur in der Direkt-Variante.
     static var all: [OnbStep] { allCases.filter { $0 != .access || !AppVariant.isStore } }

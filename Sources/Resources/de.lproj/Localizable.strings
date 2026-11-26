@@ -86,15 +86,12 @@
 "onb.go" = "Los geht's";
 "onb.welcome.title" = "Frohe Festtage!";
 "onb.welcome.body" = "FestiveLights hängt Lichter an deine Menüleiste und ans Dock und lässt es leise schneien. Such dir einen Stil aus:";
-"onb.reach.title" = "Immer erreichbar";
-"onb.reach.body" = "Über das Symbol pausierst du alles mit einem Klick, zum Beispiel für Präsentationen, und öffnest die Einstellungen. Klicks gehen immer durch Lichter und Schnee hindurch.";
 "onb.snow.title" = "Schnee";
 "onb.snow.body" = "Schnee bleibt auf Fenstern liegen. Schüttle ein Fenster, um es zu befreien, oder fahr schnell mit dem Zeiger durch, um ihn aufzuwirbeln.";
 "onb.storm" = "Schneesturm starten";
 "onb.access.title" = "Lichter ans Dock und Schnee auf Fenstern";
 "onb.access.body" = "Dafür sieht FestiveLights, wo das Dock und deine Fenster sind. Keine Inhalte, keine Eingaben.";
 "onb.done.title" = "Fertig";
-"onb.done.body" = "Du findest FestiveLights jederzeit oben in der Menüleiste.";
 "menu.welcome" = "Einführung…";
 "onb.storm.disabled" = "Bei aktivierter Einstellung Bewegung reduzieren nicht verfügbar.";
 "Displays" = "Bildschirme";
@@ -104,3 +101,8 @@
 "Sag" = "Durchhang";
 "sag.tight" = "Straff";
 "sag.loose" = "Locker";
+"onb.menubar.title" = "Menüleiste";
+"onb.menubar.body" = "Die Lichter hängen unter deiner Menüleiste. Fährst du mit der Maus darunter, machen sie Platz.";
+"onb.dock.title" = "Dock";
+"onb.dock.body" = "Auch dein Dock bekommt eine Lichterkette. Sie folgt ihm, wenn es sich verändert.";
+"onb.done.body" = "Über das Symbol pausierst du alles mit einem Klick, zum Beispiel für Präsentationen, und öffnest die Einstellungen. Klicks gehen immer durch Lichter und Schnee hindurch.";
