@@ -59,6 +59,11 @@ enum OnbStyle {
     }()
 }
 
+/// Der erste Klick auf ein inaktives Fenster löst gleich die Aktion aus.
+final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
 extension Color {
     init(hex: Int) { self.init(red: Double((hex >> 16) & 255) / 255, green: Double((hex >> 8) & 255) / 255, blue: Double(hex & 255) / 255) }
 }
@@ -85,9 +90,9 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             OnbStyle.cream
-            SnowDots().accessibilityHidden(true).zIndex(0)
+            SnowDots().accessibilityHidden(true).allowsHitTesting(false).zIndex(0)
             VStack(spacing: 0) {
-                Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().frame(width: 560, height: 96).accessibilityHidden(true)
+                Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().frame(width: 560, height: 96).accessibilityHidden(true).allowsHitTesting(false)
                 Spacer(minLength: 0)
             }
             VStack {
@@ -103,7 +108,7 @@ struct OnboardingView: View {
                 }
                 .frame(height: 100, alignment: .bottom)
             }
-            .accessibilityHidden(true)
+            .accessibilityHidden(true).allowsHitTesting(false)
             VStack(spacing: 0) {
                 Spacer().frame(height: 100)
                 // Inhalt im freien Raum zentriert, Punkte und Buttonzeile darunter an fester Stelle
@@ -245,6 +250,7 @@ struct OnboardingView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? OnbStyle.red : Color.clear, lineWidth: 3))
             .shadow(color: .black.opacity(0.08), radius: 5, y: 2)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(LocalizedStringKey(name)))
@@ -373,12 +379,12 @@ final class OnboardingController: NSObject, NSWindowDelegate {
         login.refresh()
         if window == nil {
             let view = OnboardingView(model: model, s: settings, login: login, close: { [weak self] in self?.window?.close() }, startStorm: startStorm)
-            let host = NSHostingView(rootView: view)
+            let host = FirstMouseHostingView(rootView: view)
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 440), styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
             w.contentView = host
             w.titleVisibility = .hidden
             w.titlebarAppearsTransparent = true
-            w.isMovableByWindowBackground = true
+            w.isMovableByWindowBackground = false   // sonst wird ein Klick mit leichter Mausbewegung zum Fensterzug und der Schalter reagiert nicht
             w.appearance = NSAppearance(named: .aqua)
             w.backgroundColor = NSColor(srgbRed: 1, green: 0.98, blue: 0.94, alpha: 1)
             w.isReleasedWhenClosed = false
