@@ -27,6 +27,8 @@ AUTH=()
 [[ -n ${AUTH_KEY_PATH:-} ]] && AUTH=(-authenticationKeyPath "$AUTH_KEY_PATH" -authenticationKeyID "$AUTH_KEY_ID" -authenticationKeyIssuerID "$AUTH_ISSUER_ID")
 
 [[ -n $OUT && $OUT != / && $OUT != "$ROOT" && $OUT != "$HOME" ]] || { echo "Unzulässiger Ausgabeordner: $OUT" >&2; exit 1; }
+NOTES="$ROOT/ReleaseNotes/$VERSION.html"
+[[ -f $NOTES ]] || { echo "Release Notes fehlen: $NOTES" >&2; exit 1; }
 rm -rf "$OUT"; mkdir -p "$OUT/dmg"
 echo "== Projekt erzeugen"
 if command -v xcodegen >/dev/null; then
@@ -100,9 +102,14 @@ else
 fi
 rm -rf "$STAGE"
 
+echo "== Release Notes und Verlauf"
+cp "$NOTES" "$OUT/dmg/FestiveLights-$VERSION.html"   # neben der DMG, generate_appcast bettet sie in die appcast.xml ein
+# bisherigen Verlauf laden, damit frühere Einträge erhalten bleiben (beim ersten Release gibt es noch keinen)
+curl -fsL -o "$OUT/appcast.xml" "https://github.com/krystofbe/festive-lights/releases/latest/download/appcast.xml" || { rm -f "$OUT/appcast.xml"; echo "(kein früherer appcast.xml)"; }
+
 echo "== appcast.xml"
 "$SPARKLE_BIN/generate_appcast" --account festivelights --download-url-prefix "$DOWNLOAD_PREFIX" -o "$OUT/appcast.xml" "$OUT/dmg"
-mv "$DMG" "$OUT/"; rmdir "$OUT/dmg"
+mv "$DMG" "$OUT/"; mv "$OUT/dmg/FestiveLights-$VERSION.html" "$OUT/"; rmdir "$OUT/dmg"
 cp "$OUT/FestiveLights-$VERSION.dmg" "$OUT/FestiveLights.dmg"   # feste URL releases/latest/download/FestiveLights.dmg
 
 echo "== Prüfung"
@@ -111,3 +118,4 @@ xcrun stapler validate "$APP" 2>&1 || true
 echo "Ausgabeordner: $OUT"
 echo "DMG: $OUT/FestiveLights-$VERSION.dmg"
 echo "Appcast: $OUT/appcast.xml"
+echo "Release Notes: $OUT/FestiveLights-$VERSION.html"

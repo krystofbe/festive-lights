@@ -418,7 +418,17 @@ final class AppController: NSObject {
             w.title = String(localized: "settings.title")
             w.styleMask = [.titled, .closable, .miniaturizable]
             w.isReleasedWhenClosed = false
-            if let v = NSScreen.screens.first?.visibleFrame { w.setFrameTopLeftPoint(NSPoint(x: v.midX - 235, y: v.maxY - 200)) }
+            // Erste Position mittig und mindestens 120 pt unter der Menüleiste, danach die gemerkte (wenn sie auf einem vorhandenen Bildschirm liegt)
+            let key = "settingsWindowOrigin"
+            let saved = UserDefaults.standard.string(forKey: key).map { NSPointFromString($0) }
+            if let o = WindowPlacement.restoredOrigin(saved: saved, size: w.frame.size, screens: NSScreen.screens.map(\.visibleFrame)) {
+                w.setFrameOrigin(o)
+            } else if let v = NSScreen.screens.first?.visibleFrame {
+                w.setFrameOrigin(WindowPlacement.initialOrigin(size: w.frame.size, visible: v))
+            }
+            NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: w, queue: .main) { [weak w] _ in
+                if let w { UserDefaults.standard.set(NSStringFromPoint(w.frame.origin), forKey: key) }
+            }
             settingsWindow = w
         }
         if settingsWindow?.isVisible != true { settingsNav.tab = .general }

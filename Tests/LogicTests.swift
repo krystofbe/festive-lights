@@ -1468,3 +1468,51 @@ final class OnboardingTests: XCTestCase {
         }
     }
 }
+
+final class WindowPlacementTests: XCTestCase {
+    let size = CGSize(width: 470, height: 512)
+    // 1920 x 1080, Menüleiste 30 pt, Dock 99 pt unten
+    let main = CGRect(x: 0, y: 99, width: 1920, height: 951)
+
+    func testInitialIsCenteredAndAtLeast120BelowTheMenuBar() {
+        let o = WindowPlacement.initialOrigin(size: size, visible: main)
+        XCTAssertEqual(o.x + size.width / 2, main.midX, accuracy: 0.5)
+        XCTAssertGreaterThanOrEqual(main.maxY - (o.y + size.height), 120)
+        XCTAssertGreaterThanOrEqual(o.y, main.minY)
+    }
+
+    func testInitialUsesUpperThirdOnATallScreen() {
+        let tall = CGRect(x: 0, y: 0, width: 2560, height: 1400)
+        let o = WindowPlacement.initialOrigin(size: size, visible: tall)
+        XCTAssertEqual(tall.maxY - (o.y + size.height), (1400 - 512) / 3, accuracy: 0.5)
+    }
+
+    func testSmallScreenKeepsTheWindowInsideInsteadOfPushingItOut() {
+        let small = CGRect(x: 0, y: 0, width: 1280, height: 600)
+        let o = WindowPlacement.initialOrigin(size: size, visible: small)
+        XCTAssertGreaterThanOrEqual(o.y, small.minY); XCTAssertLessThanOrEqual(o.y + size.height, small.maxY)
+        XCTAssertGreaterThanOrEqual(o.x, small.minX); XCTAssertLessThanOrEqual(o.x + size.width, small.maxX)
+        let tiny = CGRect(x: 0, y: 0, width: 400, height: 300)   // kleiner als das Fenster: oben links bündig
+        let t = WindowPlacement.initialOrigin(size: size, visible: tiny)
+        XCTAssertEqual(t.x, 0); XCTAssertEqual(t.y, 0)
+    }
+
+    func testSecondScreenWithOffsetOrigin() {
+        let second = CGRect(x: 1920, y: -200, width: 1440, height: 875)   // rechts, tiefer als der erste
+        let o = WindowPlacement.initialOrigin(size: size, visible: second)
+        XCTAssertEqual(o.x + size.width / 2, second.midX, accuracy: 0.5)
+        XCTAssertTrue(second.contains(CGRect(origin: o, size: size)))
+        XCTAssertTrue(main.contains(CGRect(origin: WindowPlacement.centeredOrigin(size: CGSize(width: 560, height: 472), visible: main), size: CGSize(width: 560, height: 472))))
+    }
+
+    func testSavedPositionIsKeptOnAnExistingScreenAndDroppedOtherwise() {
+        let screens = [main, CGRect(x: 1920, y: -200, width: 1440, height: 875)]
+        XCTAssertEqual(WindowPlacement.restoredOrigin(saved: CGPoint(x: 2100, y: 100), size: size, screens: screens), CGPoint(x: 2100, y: 100))
+        XCTAssertEqual(WindowPlacement.restoredOrigin(saved: CGPoint(x: 300, y: 200), size: size, screens: screens), CGPoint(x: 300, y: 200))
+        XCTAssertNil(WindowPlacement.restoredOrigin(saved: CGPoint(x: 2100, y: 100), size: size, screens: [main]), "zweiter Bildschirm abgesteckt")
+        XCTAssertNil(WindowPlacement.restoredOrigin(saved: CGPoint(x: 5000, y: 5000), size: size, screens: screens))
+        XCTAssertNil(WindowPlacement.restoredOrigin(saved: nil, size: size, screens: screens))
+        // nur ein schmaler Rand der Titelleiste noch sichtbar: verworfen
+        XCTAssertNil(WindowPlacement.restoredOrigin(saved: CGPoint(x: -440, y: 300), size: size, screens: [main]))
+    }
+}

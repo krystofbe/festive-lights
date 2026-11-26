@@ -316,7 +316,7 @@ final class OnboardingController: NSObject, NSWindowDelegate {
             window = w
         }
         model.index = 0
-        window?.center()
+        if let w = window, let v = NSScreen.screens.first?.visibleFrame { w.setFrameOrigin(WindowPlacement.centeredOrigin(size: w.frame.size, visible: v)) }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }
