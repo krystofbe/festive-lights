@@ -56,3 +56,11 @@ A/B Dock-Kette mit halber Funkelrate (25.11.2026, Mini mit neuem Standbild-Hinte
 Neue Grenzen (SPEC §10, Entscheidung des Auftraggebers, 25.11.2026): Mit Ketten an Menüleiste und Dock liegt die App unter 7 % und der WindowServer höchstens 6 Prozentpunkte über der Referenz (43,8). Gemessen mit den Standardeinstellungen (Tanne bunt an beiden Ketten, Schnee, Funkeln): App 5,7 bis 6,0 %, WindowServer 48,6 bis 48,9 %, also +4,8 bis +5,1 über der Referenz. Beide Grenzen sind damit erfüllt. Es wird nicht weiter optimiert, die halbe Funkelrate am Dock bleibt.
 
 8-Stunden-Lauf (25.11.2026): Neustart um 20:41 Uhr auf dem Mini mit dem Sandbox-Build (Standardeinstellungen, ohne Argumente), Messung alle 5 Minuten in `~/festivelights-test/long.log`. Zwischenstand beim Start: 13 MB Footprint, 3,8 % CPU, Energie 8,0. Das Ergebnis steht nach dem Lauf in diesem Abschnitt. Der Build wurde um 21:0x auf f0080ff aktualisiert, der Logger folgt dem neuen Prozess.
+
+8-Stunden-Dauerlauf (25./26.11.2026, Mini, Sandbox-Test-Build f0080ff, Standardeinstellungen ohne Argumente, Tanne bunt an Menüleiste und Dock, Schnee, Funkeln; Messung alle 5 Minuten, 95 Messpunkte von 20:41 bis 04:36, Ende 04:41):
+- CPU der App: Mittel 3,97 %, Spitze 4,4 %. Grenze SPEC §10 (Ketten an Menüleiste und Dock, Funkeln plus Schnee): unter 7 %. Erfüllt.
+- Speicher: resident 45,3 MB am Anfang, 45,2 MB am Ende (Höchstwert 45,3 MB), Footprint 12 bis 13 MB über die ganze Zeit. Kein Anstieg, also kein Leck. Grenze unter 150 MB erfüllt.
+- Energie-Einfluss (Spalte aus `top`): Mittel 7,5, Spitze 9,6, über die Zeit stabil.
+- Zwei Prozesse im Verlauf (Neustart des Builds um etwa 20:50 Uhr), der Lauf auf dem zweiten Prozess dauert 7 Stunden 45 Minuten ohne Abbruch oder Absturz.
+- WindowServer wurde im Dauerlauf nicht mitgeloggt, dafür gelten die Einzelmessungen oben (48,6 bis 48,9 % gegen Referenz 43,8, also +4,8 bis +5,1, Grenze +6).
+- Einschränkung: Der Mini zeigte ein Standbild, ausgeblendete Apps und keine Eingaben. Das ist ein Dauerlauf bei ruhender Oberfläche, nicht mit 30 offenen Fenstern oder aktiver Nutzung.
