@@ -102,7 +102,8 @@
 "sag.tight" = "Tight";
 "sag.loose" = "Loose";
 "onb.menubar.title" = "Menu bar";
-"onb.menubar.body" = "The lights hang under your menu bar. Move the pointer under them and they make room.";
 "onb.dock.title" = "Dock";
-"onb.dock.body" = "Your Dock gets a string of lights too. It follows the Dock whenever it changes.";
 "onb.done.body" = "Click the icon to pause everything, for example during presentations, and to open the settings. Clicks always pass through lights and snow.";
+"onb.on" = "On";
+"onb.dock.body" = "Your Dock gets lights too. They follow along when it changes.";
+"onb.menubar.body" = "The lights hang under your menu bar and make room when the pointer comes near.";

@@ -17,12 +17,37 @@ final class ReduceMotionMonitor: ObservableObject {
     deinit { if let t = token { NSWorkspace.shared.notificationCenter.removeObserver(t) } }
 }
 
+/// Schalter im Stil von macOS (runder Knopf), weinrot wenn an, neutrales Grau wenn aus, als ganze Karte bedienbar.
+struct OnbCardToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button { configuration.isOn.toggle() } label: {
+            HStack {
+                configuration.label
+                Spacer(minLength: 8)
+                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                    Capsule().fill(configuration.isOn ? OnbStyle.wine : Color(hex: 0xA9A397)).frame(width: 42, height: 24)
+                    Circle().fill(Color.white).frame(width: 20, height: 20).shadow(color: .black.opacity(0.25), radius: 1, y: 1).padding(.horizontal, 2)
+                }
+                .animation(.easeInOut(duration: 0.15), value: configuration.isOn)
+            }
+            .padding(.horizontal, 16).frame(minHeight: 44)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: 0xEADFCB), lineWidth: 1))
+            .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(Text(LocalizedStringKey(configuration.isOn ? "onb.on" : "Off")))
+    }
+}
+
 enum OnbStyle {
     static let cream = Color(hex: 0xFFFAF0), snow = Color(hex: 0xF3EAD8), flake = Color(hex: 0x9CC3DD)
     static let red = Color(hex: 0xD8432F), wine = Color(hex: 0x86241A), ink = Color(hex: 0x2B363F), muted = Color(hex: 0x5D6A72), dotOff = Color(hex: 0xE7DCCB)
 
     static func title(_ size: CGFloat = 30) -> Font { .custom("MountainsofChristmas-Bold", size: size) }
     static func body(_ size: CGFloat = 13.5) -> Font { .custom("Poppins-Regular", size: size) }
+    static func medium(_ size: CGFloat = 14) -> Font { .custom("Poppins-Medium", size: size) }
     static func strong(_ size: CGFloat = 14) -> Font { .custom("Poppins-SemiBold", size: size) }
 
     /// Eingebettete Schriften für diesen Prozess registrieren (einmal).
@@ -79,10 +104,11 @@ struct OnboardingView: View {
             }
             .accessibilityHidden(true)
             VStack(spacing: 0) {
-                Spacer().frame(height: 108)
+                Spacer().frame(height: 100)
                 // Inhalt im freien Raum zentriert, Punkte und Buttonzeile darunter an fester Stelle
                 VStack(spacing: 6) { content }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.bottom, model.step == .welcome || model.step == .access ? 6 : 22)   // etwa 24 pt zwischen Karte und Fortschrittspunkten
                 dots.frame(height: 12)
                 Spacer().frame(height: 16)
                 buttons.frame(height: 44)
@@ -134,10 +160,12 @@ struct OnboardingView: View {
 
     private func heading(_ key: String, _ body: String) -> some View {
         VStack(spacing: 6) {
+            // Die Schrift hat Überhänge: Rand rundherum, damit nichts abgeschnitten wird
             Text(LocalizedStringKey(key)).font(OnbStyle.title()).foregroundColor(OnbStyle.red).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.8)
+                .padding(.horizontal, 14).padding(.vertical, 4)
                 .accessibilityAddTraits(.isHeader)
             Text(LocalizedStringKey(body)).font(OnbStyle.body()).foregroundColor(OnbStyle.muted).multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: 440)
+                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: 360)
         }
     }
 
@@ -162,16 +190,17 @@ struct OnboardingView: View {
         case .snow:
             illustrationWindow
             heading("onb.snow.title", "onb.snow.body")
-            HStack(spacing: 18) {
-            Button(action: startStorm) {
-                Text("onb.storm").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).padding(.vertical, 7)
-                    .background(Capsule().fill(Color(hex: 0xF6E2DA)))
-            }
-            .buttonStyle(.plain)
-            .disabled(motion.on)
-            .opacity(motion.on ? 0.5 : 1)
-            .accessibilityHint(Text(motion.on ? "onb.storm.disabled" : ""))
-            onbSwitch("Snow", isOn: $s.snowEnabled)
+            HStack(spacing: 12) {
+                onbSwitch("Snow", isOn: $s.snowEnabled, width: 190)
+                Button(action: startStorm) {
+                    Text("onb.storm").font(OnbStyle.strong(13)).foregroundColor(OnbStyle.wine).padding(.horizontal, 18).frame(height: 44)
+                        .background(Capsule().fill(Color(hex: 0xF6E2DA)))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 18)
+                .disabled(motion.on)
+                .opacity(motion.on ? 0.5 : 1)
+                .accessibilityHint(Text(motion.on ? "onb.storm.disabled" : ""))
             }
         case .access:
             #if DIRECT
@@ -191,17 +220,17 @@ struct OnboardingView: View {
         case .done:
             illustrationMenuBar
             heading("onb.done.title", "onb.done.body")
-            Toggle(isOn: Binding(get: { login.enabled }, set: { login.set($0) })) {
-                Text("Start at login").font(OnbStyle.body(14)).foregroundColor(OnbStyle.ink)
-            }
-            .toggleStyle(.switch).tint(OnbStyle.red).fixedSize()
+            onbSwitch("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
         }
     }
 
-    /// Kleiner Schalter im Stil der Einführung (Weinrot, wenn an). Wirkt sofort und ist mit Menü und Einstellungen synchron, weil er an `Settings` hängt.
-    private func onbSwitch(_ title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) { Text(LocalizedStringKey(title)).font(OnbStyle.body(13)).foregroundColor(OnbStyle.ink) }
-            .toggleStyle(.switch).tint(OnbStyle.wine).controlSize(.small).fixedSize()
+    /// Schalter als eigene Bedienzeile: weiße Karte mit feinem Rand, Beschriftung links, Schalter rechts. Wirkt sofort und ist mit Menü und Einstellungen
+    /// synchron, weil er an `Settings` hängt.
+    private func onbSwitch(_ title: String, isOn: Binding<Bool>, width: CGFloat = 300) -> some View {
+        Toggle(isOn: isOn) { Text(LocalizedStringKey(title)).font(OnbStyle.medium(14)).foregroundColor(OnbStyle.ink) }
+            .toggleStyle(OnbCardToggleStyle())
+            .frame(width: width)
+            .padding(.top, 18)   // zusammen mit dem Abstand der Überschrift etwa 24 pt zum Text
     }
 
     private func card(_ kind: ChainStyleKind, _ name: String, _ image: String) -> some View {
@@ -224,19 +253,27 @@ struct OnboardingView: View {
     /// Girlande unter der Menüleiste oder Lichter am Dock, aus der Girlande der Einführung zusammengesetzt.
     private func illustrationGarland(dock: Bool) -> some View {
         let garland = Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().scaledToFill().frame(width: 300, height: 44, alignment: .top).clipped()
-        return VStack(spacing: 0) {
+        return Group {
             if dock {
-                garland.mask(RoundedRectangle(cornerRadius: 6))
-                HStack(spacing: 7) {
+                // Die Girlande liegt auf der Oberkante des Docks (gleiche Breite), Birnen und Kugeln hängen leicht über die Symbole und blenden aus
+                HStack(spacing: 12) {
                     ForEach([0xE9604F, 0xF2B33D, 0x4C9A6A, 0x5B8FD1, 0x9B6BC8], id: \.self) { RoundedRectangle(cornerRadius: 5).fill(Color(hex: $0)).frame(width: 24, height: 24) }
                 }
-                .padding(.horizontal, 12).padding(.vertical, 8).background(RoundedRectangle(cornerRadius: 12).fill(OnbStyle.ink.opacity(0.9)))
+                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8).background(RoundedRectangle(cornerRadius: 12).fill(OnbStyle.ink.opacity(0.9)))
+                .overlay(alignment: .top) {
+                    Image(nsImage: NSImage(named: "garland-header") ?? NSImage()).resizable().scaledToFill().frame(width: 212, height: 44, alignment: .top).clipped()
+                        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55), .init(color: .clear, location: 0.9)], startPoint: .top, endPoint: .bottom))
+                        .offset(y: -14)
+                }
+                .padding(.top, 14)
             } else {
-                RoundedRectangle(cornerRadius: 8).fill(OnbStyle.ink).frame(width: 300, height: 20)
-                garland.mask(RoundedRectangle(cornerRadius: 6))
+                VStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: 8).fill(OnbStyle.ink).frame(width: 300, height: 20)
+                    garland.mask(RoundedRectangle(cornerRadius: 6))
+                }
             }
         }
-        .frame(height: 76, alignment: dock ? .bottom : .top)
+        .frame(height: 64, alignment: dock ? .bottom : .top)
         .accessibilityHidden(true)
     }
 
