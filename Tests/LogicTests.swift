@@ -1709,3 +1709,39 @@ final class SagTests: XCTestCase {
         XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [(id: 1, cgRect: r)], windows: [overlay, app], ownPID: 1), [1])
     }
 }
+
+final class DockSagCapTests: XCTestCase {
+    func capped(level: Int, bulbLevel: Int, tile: Double = 73, fir: Bool = true) -> (sag: Double, mid: Double, bulb: Double) {
+        let h = Garland.dockBulbHeight(tile: tile, bulbLevel: bulbLevel)
+        let mid = h * (fir ? Garland.dockSag : Garland.dockClassicSag)
+        let req = mid * Garland.dockSagFactor(level: level, continuous: false)
+        return (Garland.dockExactSag(requested: req, midSag: mid, bulbH: h, tile: tile), mid, h)
+    }
+
+    func testLevelFiveNeverHangsDeeperThanTheMiddleWhereTheMiddleAlreadyExceedsAQuarter() {
+        for bulb in 0..<5 {
+            let r = capped(level: 4, bulbLevel: bulb)
+            XCTAssertLessThanOrEqual(r.sag, max(r.mid, max(0, 73.0 / 4 - r.bulb)) + 1e-9)
+        }
+        let big = capped(level: 4, bulbLevel: 4)   // größte Birnengröße
+        XCTAssertEqual(big.sag, big.mid, accuracy: 1e-9, "größte Birnen: schon die Birne allein ist über dem Viertel, Stufe 5 bleibt bei der Mittelstellung")
+    }
+
+    func testMiddleAndFlatterLevelsAreUnchanged() {
+        for level in 0...2 {
+            let r = capped(level: level, bulbLevel: 2)
+            XCTAssertEqual(r.sag, r.mid * Garland.dockSagFactor(level: level, continuous: false), accuracy: 1e-9)
+        }
+    }
+
+    func testSmallBulbsMayUseTheQuarterBudgetOnHighLevels() {
+        let r = capped(level: 4, bulbLevel: 0)   // kleinste Birnen: Platz im oberen Viertel
+        XCTAssertLessThanOrEqual(r.sag + r.bulb, max(73.0 / 4, r.mid + r.bulb) + 1e-9)
+        XCTAssertGreaterThanOrEqual(r.sag, r.mid)
+    }
+
+    func testTheMiddleSettingAlreadyExceedsAQuarterOfTheIconHeight() {
+        let r = capped(level: 2, bulbLevel: 2)
+        XCTAssertGreaterThan(r.sag + r.bulb, 73.0 / 4, "Hinweis für die Spezifikation: Birne plus Mittel-Durchhang liegt schon über einem Viertel")
+    }
+}

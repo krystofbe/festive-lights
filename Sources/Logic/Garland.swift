@@ -90,6 +90,13 @@ enum Garland {
         return continuous ? f : 1 + (f - 1) / 2
     }
 
+    /// Durchhang am Dock bei "genau am Dock": nie tiefer als die Mittelstellung, solange diese das obere Viertel der Symbole (Birne plus Durchhang)
+    /// schon überschreitet, und sonst höchstens bis zum Viertel. Die Mittelstellung selbst und flachere Stufen bleiben unverändert.
+    static func dockExactSag(requested: Double, midSag: Double, bulbH: Double, tile: Double) -> Double {
+        let quarterBudget = max(0, tile / 4 - bulbH)
+        return min(requested, max(midSag, quarterBudget))
+    }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.

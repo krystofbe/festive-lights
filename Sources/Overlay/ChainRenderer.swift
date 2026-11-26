@@ -102,6 +102,7 @@ final class ChainRenderer {
     private var lastPatternTime = 0.0
     /// Musterzeit, je Bild um Zeitschritt mal Tempo vorgerückt: Ein geändertes Tempo lässt das Muster nicht springen.
     private var patternClock = 0.0
+    private var frameSag = 0.0     // Durchhang, nach dem das Fenster bemessen ist (beim Verkleinern erst nach dem Gleiten)
     private var sagShown: Double?   // angezeigter Durchhang: gleitet in etwa 0,3 s zum neuen Wert
     private var localBulbs: [Double] = []
     private var bulbBase = 0
@@ -138,6 +139,7 @@ final class ChainRenderer {
     func setVisible(_ on: Bool, layer: DisplayLayer, intro now: Double?) {
         window.setLayer(layer)
         guard on != wantVisible else { return }
+        if on { sagShown = nil }   // wieder sichtbar: direkt der aktuelle Durchhang, kein Gleiten vom alten Wert
         wantVisible = on
         if on, introStart == nil, let now { introStart = now }
         if on { window.orderFrontRegardless() }
@@ -160,7 +162,10 @@ final class ChainRenderer {
         guard needsRebuild else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        window.place(new.windowFrame)
+        var frameSpec = new
+        if let cur = sagShown, cur > new.sag { frameSpec.sag = cur }   // während des Gleitens nicht unten abschneiden
+        frameSag = frameSpec.sag
+        window.place(frameSpec.windowFrame)
         content.frame = CGRect(origin: .zero, size: window.frame.size)
         cable.strokeColor = newStyle.kind == .firColor ? FirSprites.buntCableColor : newStyle.kind.isFir ? CGColor(srgbRed: 0.1, green: 0.24, blue: 0.14, alpha: 0.95)
             : (newStyle.dark ? CGColor(gray: 0.8, alpha: 0.95) : CGColor(gray: 0.17, alpha: 0.95))
@@ -430,7 +435,15 @@ final class ChainRenderer {
         if let cur = sagShown, abs(cur - sp.sag) > 0.01 {
             sagShown = reduce ? sp.sag : cur + (sp.sag - cur) * min(1, dt / 0.1)
             cableDirty = true; cableDirtyForGarland = true; gliding = true
-        } else { sagShown = sp.sag }
+        } else {
+            sagShown = sp.sag
+            if frameSag > sp.sag + 0.01 {   // Gleiten beendet: Fenster auf das neue Maß verkleinern
+                CATransaction.begin(); CATransaction.setDisableActions(true)
+                window.place(sp.windowFrame); content.frame = CGRect(origin: .zero, size: window.frame.size)
+                CATransaction.commit()
+                frameSag = sp.sag; cableDirty = true; cableDirtyForGarland = true
+            }
+        }
         patternClock = PatternClockHub.value(isDock: sp.isDock, time: time, tempo: style.tempo)   // alle Bildschirme im selben Takt
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts

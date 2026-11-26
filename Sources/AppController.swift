@@ -278,11 +278,14 @@ final class AppController: NSObject {
         if !force, energySaving, now - lastFullScreenCheck < 3 { return }   // im Sparmodus nur alle 3 s
         lastFullScreenCheck = now
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+        var regularByPID: [Int: Bool] = [:]   // je Abfrage nur einmal pro Prozess nachschlagen
         let wins: [WindowLite] = list.compactMap { w in
             guard let layer = w[kCGWindowLayer as String] as? Int, let pid = w[kCGWindowOwnerPID as String] as? Int,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: bd) else { return nil }
-            return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1,
-                              regular: NSRunningApplication(processIdentifier: pid_t(pid))?.activationPolicy == .regular)
+            guard layer == 0 else { return WindowLite(layer: layer, pid: pid, bounds: r, alpha: 1, regular: false) }   // nur normale Fenster zählen
+            let regular = regularByPID[pid] ?? (NSRunningApplication(processIdentifier: pid_t(pid))?.activationPolicy == .regular)
+            regularByPID[pid] = regular
+            return WindowLite(layer: layer, pid: pid, bounds: r, alpha: (w[kCGWindowAlpha as String] as? Double) ?? 1, regular: regular)
         }
         let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
         let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })

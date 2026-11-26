@@ -204,17 +204,19 @@ final class ScreenOverlay {
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
             let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel)
-            let dockSagK = Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
+            let dockSagMid = dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag
+            let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
+            let dockSagValue = d.continuous ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: (dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag) * dockSagK, liftSign: -1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: -1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: (dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag) * dockSagK, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: (dockFir ? h * Garland.dockSag : h * Garland.dockClassicSag) * dockSagK, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: dockFir ? Garland.dockDepth * h / Garland.dockRefBulbH : 0, dockTile: tile, dockMaxGrow: grow)
             }
             dock.configure(spec: spec, style: style(st.dockKind, warm: st.dockWarm, pattern: st.dockPattern, tempo: st.dockTempo), scale: scale)
             dock.setVisible(true, layer: st.dockLayer, intro: nil)
