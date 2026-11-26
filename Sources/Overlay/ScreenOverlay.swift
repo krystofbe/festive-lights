@@ -16,6 +16,7 @@ struct AppState: Equatable {
     var reduceMotion = false, energySaving = false, dark = true, suspended = false
     var dock: DockGeometry?
     var snowRampStart: Double?
+    var mainOnly = false
 }
 
 enum MenuBar {
@@ -60,8 +61,16 @@ final class ScreenOverlay {
     private var dockContinuous: Bool?
     private var dockSwitchUntil = 0.0
 
-    init(screen: NSScreen) {
+    /// Lage in einer durchgehenden Girlande über mehrere Bildschirme (nil: Kette für sich).
+    var strip: StripPlacement?
+    /// Begrüßung beim ersten Einschalten (App-Start und neu angesteckte Bildschirme, nicht nach Auflösungswechsel oder Aufwachen).
+    private let greet: Bool
+    var isMain: Bool { screen.displayID == NSScreen.screens.first?.displayID }
+    private var effectsOn: Bool { ScreenLayout.showsEffects(isMain: isMain, mainOnly: state.mainOnly) }
+
+    init(screen: NSScreen, greet: Bool = true) {
         self.screen = screen
+        self.greet = greet
         snow = SnowField(screen: screen)
         Engine.shared.fields.append(snow)
         link = screen.displayLink(target: self, selector: #selector(tick(_:)))
@@ -134,7 +143,7 @@ final class ScreenOverlay {
             return
         }
         configureChains()
-        snow.configure(SnowConfig(enabled: st.snowOn, amount: st.amount, sizeMult: st.sizeMult, speedMult: st.speedMult, wind: st.wind,
+        snow.configure(SnowConfig(enabled: st.snowOn && effectsOn, amount: st.amount, sizeMult: st.sizeMult, speedMult: st.speedMult, wind: st.wind,
                                   avoidRadius: st.avoid, reduceMotion: st.reduceMotion, energySaving: st.energySaving,
                                   settle: st.settle, layer: st.snowLayer, rampStart: st.snowRampStart))
         if st.snowOn || !snow.isEmpty { snow.setVisible(true) }
@@ -159,9 +168,10 @@ final class ScreenOverlay {
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
                                  length: Double(screen.frame.width), bulbH: h, sag: fir ? h * Garland.sag(st.kind) : h, liftSign: -1, isMenuBar: true, liftMax: 0,
                                  spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1),
-                                 garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0)
+                                 garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0,
+                                 stripOffset: strip?.offset ?? 0, stripTotal: strip?.total ?? 0)
             menubar.configure(spec: spec, style: style(st.kind, warm: st.warm, pattern: st.pattern, tempo: st.tempo), scale: scale)
-            menubar.setVisible(st.lightsOn, layer: st.lightsLayer, intro: CACurrentMediaTime())
+            menubar.setVisible(st.lightsOn && effectsOn, layer: st.lightsLayer, intro: greet ? CACurrentMediaTime() : nil)
         } else {
             barDynamic = false
             menubar.setVisible(false, layer: st.lightsLayer, intro: nil)

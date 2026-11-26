@@ -97,3 +97,6 @@
 "onb.done.body" = "Du findest FestiveLights jederzeit oben in der Menüleiste.";
 "menu.welcome" = "Einführung…";
 "onb.storm.disabled" = "Bei aktivierter Einstellung Bewegung reduzieren nicht verfügbar.";
+"Displays" = "Bildschirme";
+"All" = "Alle";
+"Main display only" = "Nur Hauptbildschirm";

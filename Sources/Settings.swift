@@ -3,6 +3,8 @@ import Combine
 
 enum ColorMode: String, CaseIterable { case multicolor, warm }
 enum DisplayLayer: String, CaseIterable { case above, desktop }
+/// Bildschirme (ab 1.1): Lichter und Schnee auf allen oder nur auf dem Hauptbildschirm.
+enum DisplayScope: String, CaseIterable { case all, mainOnly }
 /// Sparmodus: automatisch (Stromsparmodus, Akku unter 20 %), immer oder nie.
 enum PowerMode: String, CaseIterable { case automatic, always, off }
 
@@ -48,6 +50,7 @@ final class Settings: ObservableObject {
     @Published var snowLayer = DisplayLayer.above { didSet { write("snowLayer", snowLayer.rawValue) } }
     @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
+    @Published var displays = DisplayScope.all { didSet { write("displays", displays.rawValue) } }
     @Published var powerMode = PowerMode.automatic { didSet { write("powerMode", powerMode.rawValue) } }
     @Published var paused = false { didSet { write("paused", paused) } }
     @Published var welcomeShown = false { didSet { write("welcomeShown", welcomeShown) } }
@@ -72,7 +75,7 @@ final class Settings: ObservableObject {
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
-                       "powerMode", "paused", "welcomeShown"]
+                       "powerMode", "displays", "paused", "welcomeShown"]
 
     private func level(_ key: String, _ def: Int) -> Int {
         d.object(forKey: key) == nil ? def : min(max(d.integer(forKey: key), 0), 4)
@@ -136,6 +139,7 @@ final class Settings: ObservableObject {
         set(\.snowLayer, raw("snowLayer", .above))
         set(\.settleSnow, bool("settleSnow", true))
         set(\.powerMode, raw("powerMode", .automatic))
+        set(\.displays, raw("displays", .all))
         set(\.paused, bool("paused", false))
         set(\.welcomeShown, bool("welcomeShown", false))
     }
@@ -148,7 +152,7 @@ final class Settings: ObservableObject {
         dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
         dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
-        powerMode = .automatic
+        powerMode = .automatic; displays = .all
     }
 
     /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.

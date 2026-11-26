@@ -192,6 +192,10 @@ struct SettingsView: View {
     private var general: some View {
         Form {
             Toggle("Start at login", isOn: Binding(get: { login.enabled }, set: { login.set($0) }))
+            Picker("Displays", selection: $s.displays) {
+                Text("All").tag(DisplayScope.all)
+                Text("Main display only").tag(DisplayScope.mainOnly)
+            }.pickerStyle(.segmented)
             PowerModeRows(s: s, status: PowerStatus.shared)
             #if DIRECT
             Toggle("Automatically check for updates", isOn: Binding(get: { updates.automatic }, set: { updates.automatic = $0 }))

@@ -231,17 +231,27 @@ final class AppController: NSObject {
                                         onBattery: onBattery, batteryFraction: fraction)
     }
 
+    private var knownScreens: [Int: ScreenGeom] = [:]
+    private var startedScreens = false
+
+    private func geoms() -> [ScreenGeom] {
+        NSScreen.screens.map { ScreenGeom(id: Int($0.displayID), frame: $0.frame, scale: Double($0.backingScaleFactor), menuBarHeight: MenuBar.info(for: $0)?.height ?? 0) }
+    }
+
+    /// Bildschirme anstecken, abstecken und verändern ohne Neustart: Neue werden begrüßt, geänderte ohne Begrüßung neu aufgebaut, entfernte abgebaut.
     private func reconcileScreens() {
-        let screens = NSScreen.screens
-        var keep: Set<CGDirectDisplayID> = []
-        for s in screens {
-            let id = s.displayID
-            keep.insert(id)
-            if let o = overlays[id], o.screen.frame == s.frame, o.screen.backingScaleFactor == s.backingScaleFactor { continue }
-            overlays[id]?.teardown()
-            overlays[id] = ScreenOverlay(screen: s)
+        let current = geoms()
+        let diff = ScreenLayout.diff(known: knownScreens, current: current)
+        let byID = Dictionary(uniqueKeysWithValues: NSScreen.screens.map { (Int($0.displayID), $0) })
+        for id in diff.removed { overlays[CGDirectDisplayID(id)]?.teardown(); overlays[CGDirectDisplayID(id)] = nil }
+        for id in diff.recreated + diff.added {
+            guard let s = byID[id] else { continue }
+            overlays[CGDirectDisplayID(id)]?.teardown()
+            overlays[CGDirectDisplayID(id)] = ScreenOverlay(screen: s, greet: diff.added.contains(id))
         }
-        for id in overlays.keys where !keep.contains(id) { overlays[id]?.teardown(); overlays[id] = nil }
+        knownScreens = Dictionary(uniqueKeysWithValues: current.map { ($0.id, $0) })
+        let strips = ScreenLayout.strips(current)
+        for (id, o) in overlays { o.strip = strips[Int(id)] }
     }
 
     private func scheduleApply() {
@@ -304,6 +314,7 @@ final class AppController: NSObject {
         st.suspended = suspended
         st.dock = dockGeo
         st.snowRampStart = snowRampStart
+        st.mainOnly = s.displays == .mainOnly
         Engine.shared.settleActive = settle
         Engine.shared.reduceMotion = reduceMotion
         PileStore.shared.setActive(settle, time: now)

@@ -13,6 +13,8 @@ struct ChainSpec: Equatable {
     var spacing: Double
     var garlandDepth = 0.0   // Tiefe der Girlande unter dem Kabel, für die Fenstergröße
     var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
+    var stripOffset = 0.0    // Abstand des Kabelanfangs vom Anfang einer durchgehenden Girlande über mehrere Bildschirme (F4a 8)
+    var stripTotal = 0.0     // Länge der ganzen Girlande, 0: Kette für sich
     var dockMaxGrow = 1.0    // größtes Wachstum bei der Vergrößerung (largesize durch tilesize), für Fenstergröße und scharfe Sprites
     var isDock: Bool { !isMenuBar }
 
@@ -41,6 +43,17 @@ struct ChainStyle: Equatable {
     var dark = true
     var reduceMotion = false
     var kind = ChainStyleKind.classic
+}
+
+/// Gemeinsame Musterzeit je Kettenart (Menüleiste, Dock): Mehrere Bildschirme laufen im selben Takt.
+enum PatternClockHub {
+    private static var state: [Bool: (value: Double, stamp: Double)] = [:]
+    static func value(isDock: Bool, time: Double, tempo: Double) -> Double {
+        var st = state[isDock] ?? (0, time)
+        if time > st.stamp { st.value += min(time - st.stamp, 0.25) * tempo; st.stamp = time }
+        state[isDock] = st
+        return st.value
+    }
 }
 
 final class ChainRenderer {
@@ -89,7 +102,10 @@ final class ChainRenderer {
     private var lastPatternTime = 0.0
     /// Musterzeit, je Bild um Zeitschritt mal Tempo vorgerückt: Ein geändertes Tempo lässt das Muster nicht springen.
     private var patternClock = 0.0
-    private var lastClockTime: Double?
+    private var localBulbs: [Double] = []
+    private var bulbBase = 0
+    private var bulbTotal = 1
+    private var stripOff = 0.0
     private var builtKey = ""
     private var introStart: Double?
     private var wantVisible = false
@@ -151,7 +167,7 @@ final class ChainRenderer {
         strand.strokeColor = FirSprites.strandColor
         strand.lineWidth = 8 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH
         cable.zPosition = 2
-        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)"
+        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)"
         if key != builtKey {
             builtKey = key
             rebuildBulbs(new)
@@ -163,9 +179,15 @@ final class ChainRenderer {
     }
 
     private func rebuildBulbs(_ sp: ChainSpec) {
-        layout = ChainLayout(length: sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6)
+        // Bei einer durchgehenden Girlande liegt das Raster über der ganzen Länge, jeder Bildschirm zeigt seinen Abschnitt
+        stripOff = sp.stripTotal > 0 ? sp.stripOffset : 0
+        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6)
+        let all = layout.bulbPositions
+        let first = all.firstIndex { $0 >= stripOff } ?? all.count
+        localBulbs = all.filter { $0 >= stripOff && $0 < stripOff + sp.length }.map { $0 - stripOff }
+        bulbBase = first; bulbTotal = max(all.count, 1)
         bulbs.forEach { $0.container.removeFromSuperlayer() }
-        bulbs = (0..<layout.bulbCount).map { _ in Bulb() }
+        bulbs = (0..<localBulbs.count).map { _ in Bulb() }
         let fir = style.kind.isFir
         let fs = unitScale(sp)
         // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
@@ -179,7 +201,7 @@ final class ChainRenderer {
         let glowR = bunt ? 1.6 * h : (fir ? 1.5 * h : h)
         let glowPx = max(16, Int((glowR * 2 * scale * reserve).rounded()))
         let glowCenter = bunt ? 1 - 14.0 / 22.0 : (fir ? 1 - 14.0 / 21.0 : 0.45)
-        beads = BeadChain(rest: layout.bulbPositions, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
+        beads = BeadChain(rest: localBulbs, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)
         for (i, b) in bulbs.enumerated() {
             b.container.bounds = CGRect(x: 0, y: 0, width: w, height: h)
             b.container.contentsScale = scale
@@ -217,7 +239,7 @@ final class ChainRenderer {
             if bunt { return dock ? Garland.tbDockScale * dk * br.scale : Garland.tbUnit * fs * br.scale }
             return dock ? Garland.dockBranchScale * dk : (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
         }
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? (bunt ? sp.bulbH / Garland.dockRefBulbH : Garland.dockAnchorScale) : fs, style: style.kind, dock: dock, bulbPositions: layout.bulbPositions)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: dock ? (bunt ? sp.bulbH / Garland.dockRefBulbH : Garland.dockAnchorScale) : fs, style: style.kind, dock: dock, bulbPositions: localBulbs)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -339,8 +361,8 @@ final class ChainRenderer {
     private func magnify(_ sp: ChainSpec, _ u: Double) -> Double { sp.isDock && sp.dockTile > 0 ? min(Garland.dockMagnification(lift: liftAt(u), tile: sp.dockTile), sp.dockMaxGrow) : 1 }
 
     private func cableV(_ sp: ChainSpec, _ u: Double, wave: Bool = true) -> Double {
-        var v = sp.sag * layout.sagFactor(at: min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
-        if wave, bunt, sp.isMenuBar { v += 3.5 * sp.bulbH / Garland.tbRefBulbH * sin(2 * .pi * u / (layout.arcLength * 0.62) + 0.8) }
+        var v = sp.sag * layout.sagFactor(at: stripOff + min(max(u, 0), sp.length - 0.001)) + sp.liftSign * liftAt(u)
+        if wave, bunt, sp.isMenuBar { v += 3.5 * sp.bulbH / Garland.tbRefBulbH * sin(2 * .pi * (u + stripOff) / (layout.arcLength * 0.62) + 0.8) }
         return v
     }
 
@@ -403,8 +425,7 @@ final class ChainRenderer {
     func update(time: Double, dt: Double, pointer: CGPoint?) -> Int {
         guard let sp = spec, !bulbs.isEmpty, wantVisible || window.rootLayer.presentation()?.opacity ?? 0 > 0.01 else { return 0 }
         let reduce = style.reduceMotion
-        if let lt = lastClockTime { patternClock += min(max(time - lt, 0), 0.25) * style.tempo }
-        lastClockTime = time
+        patternClock = PatternClockHub.value(isDock: sp.isDock, time: time, tempo: style.tempo)   // alle Bildschirme im selben Takt
 
         // Schnellpfad: ohne Bewegung nur das Muster mit etwa 22 Bildern pro Sekunde, im Stillstand gar nichts
         let patternOn = style.pattern != .steady && !reduce
@@ -418,7 +439,7 @@ final class ChainRenderer {
             CATransaction.setDisableActions(true)
             let n = bulbs.count
             for (i, b) in bulbs.enumerated() {
-                let bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: style.pattern, tempo: 1)
+                let bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: style.pattern, tempo: 1)
                 b.lit.opacity = Float(bright)
                 b.glow.opacity = Float(bright * glowAlpha)
             }
@@ -508,9 +529,9 @@ final class ChainRenderer {
             let grow = magnify(sp, u)
             b.container.transform = CATransform3DScale(CATransform3DMakeRotation(baseAngle + angle, 0, 0, 1), grow, grow, 1)
 
-            var bright = PatternSchedule.brightness(index: i, count: n, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
+            var bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: reduce ? .steady : style.pattern, tempo: 1)
             if intro < Self.introDuration {
-                let s = min(max((intro - Double(i) / Double(n) * 1.2) / 0.3, 0), 1)
+                let s = min(max((intro - Double(bulbBase + i) / Double(bulbTotal) * 1.2) / 0.3, 0), 1)
                 bright = min(bright, s * s * (3 - 2 * s))
             }
             b.lit.opacity = Float(bright)

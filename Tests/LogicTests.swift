@@ -1542,3 +1542,65 @@ final class WindowPositionMigrationTests: XCTestCase {
         XCTAssertEqual(WindowPlacement.restoredOrigin(saved: NSPointFromString(d.string(forKey: WindowPositionMigration.originKey)!), size: size, screens: [main]), CGPoint(x: 300, y: 200))
     }
 }
+
+final class ScreenLayoutTests: XCTestCase {
+    func g(_ id: Int, _ x: Double, _ y: Double, _ w: Double, _ h: Double, scale: Double = 2, bar: Double = 30) -> ScreenGeom {
+        ScreenGeom(id: id, frame: CGRect(x: x, y: y, width: w, height: h), scale: scale, menuBarHeight: bar)
+    }
+
+    func testMiniLayoutWithFlushTopEdgesFormsOneGarland() {
+        // Mini: 1920x1080 und 2048x1152, rechts davon, tiefer versetzt, aber Oberkanten bündig (maxY 1080)
+        let s = ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(3, 1920, -72, 2048, 1152)])
+        XCTAssertEqual(s[1], StripPlacement(offset: 0, total: 3968)); XCTAssertEqual(s[3], StripPlacement(offset: 1920, total: 3968))
+    }
+
+    func testTopEdgesWithin2ptStillFlushBeyondDoNot() {
+        XCTAssertEqual(ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 1920, 0, 1920, 1081.5)])[1]?.total, 3840)
+        let apart = ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 1920, 0, 1920, 1090)])
+        XCTAssertEqual(apart[1], StripPlacement(offset: 0, total: 1920)); XCTAssertEqual(apart[2], StripPlacement(offset: 0, total: 1920))
+    }
+
+    func testGapBetweenScreensOrDifferentBarsBreaksTheGarland() {
+        XCTAssertEqual(ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 2000, 0, 1920, 1080)])[2]?.offset, 0)
+        XCTAssertEqual(ScreenLayout.strips([g(1, 0, 0, 1920, 1080, bar: 30), g(2, 1920, 0, 1920, 1080, bar: 37)])[2]?.offset, 0)
+    }
+
+    func testThreeScreensTwoFlushOneNot() {
+        let s = ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 1920, 180, 1440, 900), g(3, 3360, 100, 1920, 1080)])
+        XCTAssertEqual(s[1]?.total, 3360); XCTAssertEqual(s[2]?.offset, 1920); XCTAssertEqual(s[3], StripPlacement(offset: 0, total: 1920))
+    }
+
+    func testScreenWithoutMenuBarGetsNoChainAndIsNotPartOfAGarland() {
+        XCTAssertFalse(ScreenLayout.hasChain(menuBarHeight: 0)); XCTAssertTrue(ScreenLayout.hasChain(menuBarHeight: 30))
+        let s = ScreenLayout.strips([g(1, 0, 0, 1920, 1080), g(2, 1920, 0, 1920, 1080, bar: 0), g(3, 3840, 0, 1920, 1080)])
+        XCTAssertNil(s[2]); XCTAssertEqual(s[3]?.offset, 0)   // der mittlere ohne Leiste trennt die beiden
+    }
+
+    func testMainOnlyShowsEffectsOnlyOnTheMainDisplay() {
+        XCTAssertTrue(ScreenLayout.showsEffects(isMain: false, mainOnly: false))
+        XCTAssertTrue(ScreenLayout.showsEffects(isMain: true, mainOnly: true))
+        XCTAssertFalse(ScreenLayout.showsEffects(isMain: false, mainOnly: true))
+    }
+
+    func testPlugUnplugAndChangeAreSeparated() {
+        let a = g(1, 0, 0, 1920, 1080), b = g(2, 1920, 0, 1920, 1080)
+        var d = ScreenLayout.diff(known: [:], current: [a, b])
+        XCTAssertEqual(d.added, [1, 2], "App-Start: alle begrüßen")
+        d = ScreenLayout.diff(known: [1: a, 2: b], current: [a, b])
+        XCTAssertEqual(d, ScreenLayout.Diff(), "nichts geändert (zum Beispiel Aufwachen): keine Begrüßung, kein Neuaufbau")
+        d = ScreenLayout.diff(known: [1: a, 2: b], current: [a, g(2, 1920, 0, 2560, 1440)])
+        XCTAssertEqual(d.recreated, [2]); XCTAssertTrue(d.added.isEmpty, "Auflösungswechsel ohne Begrüßung")
+        d = ScreenLayout.diff(known: [1: a, 2: b], current: [a, g(2, 1920, 0, 1920, 1080, scale: 1)])
+        XCTAssertEqual(d.recreated, [2], "Retina-Wechsel baut neu auf")
+        d = ScreenLayout.diff(known: [1: a], current: [a, b])
+        XCTAssertEqual(d.added, [2], "angesteckt: begrüßen")
+        d = ScreenLayout.diff(known: [1: a, 2: b], current: [a])
+        XCTAssertEqual(d.removed, [2], "abgesteckt: abbauen")
+    }
+
+    func testMixedRetinaScalesGiveSamePointSizes() {
+        // Punkte bleiben Punkte: Die Rechenlogik rechnet nur in pt, der Retina-Faktor ändert den Rahmen nicht
+        let s = ScreenLayout.strips([g(1, 0, 0, 1920, 1080, scale: 1), g(2, 1920, -37, 1728, 1117, scale: 2)])
+        XCTAssertEqual(s[1]?.total, 3648)
+    }
+}
