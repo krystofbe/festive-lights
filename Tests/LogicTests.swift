@@ -1615,3 +1615,36 @@ final class ScreenLayoutTests: XCTestCase {
         XCTAssertEqual(s[1]?.total, 3648)
     }
 }
+
+final class FullScreenDetectTests: XCTestCase {
+    let a = (id: 1, cgRect: CGRect(x: 0, y: 0, width: 2560, height: 1440))
+    let b = (id: 3, cgRect: CGRect(x: 2560, y: 0, width: 2560, height: 1440))
+
+    func testFullFrameWindowOfAnotherProcessMarksOnlyItsScreen() {
+        let w = [WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 2560, y: 0, width: 2560, height: 1440))]
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [a, b], windows: w, ownPID: 1), [3])
+    }
+
+    func testNormalMaximizedWindowBelowTheMenuBarIsNoFullScreen() {
+        let w = [WindowLite(layer: 0, pid: 500, bounds: CGRect(x: 0, y: 30, width: 2560, height: 1410))]
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a, b], windows: w, ownPID: 1).isEmpty)
+    }
+
+    func testOwnWindowsAndOtherLayersAreIgnored() {
+        let full = CGRect(x: 0, y: 0, width: 2560, height: 1440)
+        let w = [WindowLite(layer: 0, pid: 1, bounds: full), WindowLite(layer: 22, pid: 500, bounds: full), WindowLite(layer: -2147483623, pid: 600, bounds: full)]
+        XCTAssertTrue(FullScreenDetect.fullScreenIDs(screens: [a], windows: w, ownPID: 1).isEmpty, "eigene Overlays, Overlay-Ebenen und der Schreibtisch zählen nicht")
+    }
+
+    func testBothScreensCanBeFullScreenAtOnce() {
+        let w = [WindowLite(layer: 0, pid: 500, bounds: a.cgRect), WindowLite(layer: 0, pid: 501, bounds: b.cgRect)]
+        XCTAssertEqual(FullScreenDetect.fullScreenIDs(screens: [a, b], windows: w, ownPID: 1), [1, 3])
+    }
+
+    func testFullScreenSettingDefaultsOffAndResetRestoresIt() {
+        let s = Settings.shared
+        XCTAssertFalse(s.showInFullScreen)
+        s.showInFullScreen = true; s.resetToDefaults()
+        XCTAssertFalse(s.showInFullScreen)
+    }
+}

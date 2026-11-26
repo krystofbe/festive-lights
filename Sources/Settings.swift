@@ -50,6 +50,7 @@ final class Settings: ObservableObject {
     @Published var snowLayer = DisplayLayer.above { didSet { write("snowLayer", snowLayer.rawValue) } }
     @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
+    @Published var showInFullScreen = false { didSet { write("showInFullScreen", showInFullScreen) } }
     @Published var displays = DisplayScope.all { didSet { write("displays", displays.rawValue) } }
     @Published var powerMode = PowerMode.automatic { didSet { write("powerMode", powerMode.rawValue) } }
     @Published var paused = false { didSet { write("paused", paused) } }
@@ -75,7 +76,7 @@ final class Settings: ObservableObject {
     private var observer: DefaultsObserver?
     static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
-                       "powerMode", "displays", "paused", "welcomeShown"]
+                       "powerMode", "displays", "showInFullScreen", "paused", "welcomeShown"]
 
     private func level(_ key: String, _ def: Int) -> Int {
         d.object(forKey: key) == nil ? def : min(max(d.integer(forKey: key), 0), 4)
@@ -140,6 +141,7 @@ final class Settings: ObservableObject {
         set(\.settleSnow, bool("settleSnow", true))
         set(\.powerMode, raw("powerMode", .automatic))
         set(\.displays, raw("displays", .all))
+        set(\.showInFullScreen, bool("showInFullScreen", false))
         set(\.paused, bool("paused", false))
         set(\.welcomeShown, bool("welcomeShown", false))
     }
@@ -152,7 +154,7 @@ final class Settings: ObservableObject {
         dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
         dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
-        powerMode = .automatic; displays = .all
+        powerMode = .automatic; displays = .all; showInFullScreen = false
     }
 
     /// Schreibt nur den geänderten Schlüssel. Beim Laden von außen wird nichts zurückgeschrieben.

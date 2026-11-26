@@ -196,6 +196,7 @@ struct SettingsView: View {
                 Text("All").tag(DisplayScope.all)
                 Text("Main display only").tag(DisplayScope.mainOnly)
             }.pickerStyle(.segmented)
+            Toggle("Show in full-screen apps", isOn: $s.showInFullScreen)
             PowerModeRows(s: s, status: PowerStatus.shared)
             #if DIRECT
             Toggle("Automatically check for updates", isOn: Binding(get: { updates.automatic }, set: { updates.automatic = $0 }))

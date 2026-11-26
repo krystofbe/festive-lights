@@ -17,6 +17,8 @@ struct AppState: Equatable {
     var dock: DockGeometry?
     var snowRampStart: Double?
     var mainOnly = false
+    var fullScreenIDs: Set<CGDirectDisplayID> = []   // Bildschirme mit Vollbild-App
+    var showInFullScreen = false
 }
 
 enum MenuBar {
@@ -68,7 +70,9 @@ final class ScreenOverlay {
     /// Begrüßung beim ersten Einschalten (App-Start und neu angesteckte Bildschirme, nicht nach Auflösungswechsel oder Aufwachen).
     private let greet: Bool
     var isMain: Bool { screen.displayID == NSScreen.screens.first?.displayID }
-    private var effectsOn: Bool { ScreenLayout.showsEffects(isMain: isMain, mainOnly: state.mainOnly) }
+    /// Vollbild-App auf diesem Bildschirm und nicht gewünscht: Lichter, Dock-Kette und Schnee ausblenden, die anderen Bildschirme leuchten weiter.
+    private var fullScreenHidden: Bool { state.fullScreenIDs.contains(screen.displayID) && !state.showInFullScreen }
+    private var effectsOn: Bool { ScreenLayout.showsEffects(isMain: isMain, mainOnly: state.mainOnly) && !fullScreenHidden }
 
     init(screen: NSScreen, greet: Bool = true) {
         self.screen = screen
@@ -148,7 +152,7 @@ final class ScreenOverlay {
         snow.configure(SnowConfig(enabled: st.snowOn && effectsOn, amount: st.amount, sizeMult: st.sizeMult, speedMult: st.speedMult, wind: st.wind,
                                   avoidRadius: st.avoid, reduceMotion: st.reduceMotion, energySaving: st.energySaving,
                                   settle: st.settle && effectsOn, layer: st.snowLayer, rampStart: st.snowRampStart, piles: effectsOn))
-        if (st.snowOn && effectsOn) || !snow.isEmpty { snow.setVisible(true) }
+        if fullScreenHidden { snow.setVisible(false) } else if (st.snowOn && effectsOn) || !snow.isEmpty { snow.setVisible(true) }
         wake()
     }
 
@@ -178,7 +182,7 @@ final class ScreenOverlay {
             barDynamic = false
             menubar.setVisible(false, layer: st.lightsLayer, intro: nil)
         }
-        if st.dockLightsOn, let d = st.dock, d.screenID == screen.displayID {
+        if st.dockLightsOn, !fullScreenHidden, let d = st.dock, d.screenID == screen.displayID {
             // Formwechsel (zum Beispiel Berechtigung entzogen): sanft aus- und in der neuen Form wieder einblenden
             let now = CACurrentMediaTime()
             if now < dockSwitchUntil { return }
@@ -240,7 +244,7 @@ final class ScreenOverlay {
         var level = max(menubar.update(time: now, dt: dt, pointer: pointer), dock.update(time: now, dt: dt, pointer: pointer))
         let chainMoving = level >= 2
         var snowBusy = false
-        if state.snowOn || !snow.isEmpty {
+        if (state.snowOn || !snow.isEmpty) && !fullScreenHidden {
             snowBusy = snow.tick(time: now, dt: dt, pointerGlobal: mouse, stormFactor: engine.stormFactor(now), targets: engine.targets(for: screen), store: PileStore.shared)
             if !state.snowOn && snow.isEmpty { snow.setVisible(false); snowBusy = false }
         }

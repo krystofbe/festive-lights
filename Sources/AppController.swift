@@ -98,7 +98,7 @@ final class AppController: NSObject {
         #if DIRECT
         dockTracker.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         #endif
-        ws.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in self?.reconcileScreens() }
+        ws.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in self?.reconcileScreens(); self?.refreshFullScreen() }
         dockProbe.onSpans = { [weak self] spans, edge in self?.overlays.values.forEach { $0.setDockSpans(spans, edge: edge) } }
         dockProbe.onResult = { [weak self] r in
             #if DEBUG
@@ -169,6 +169,7 @@ final class AppController: NSObject {
             #endif
             reconcileScreens(); scheduleApply()
         }
+        refreshFullScreen()
         let before = runtimeState
         refreshSystem()
         if runtimeState != before { scheduleApply() }
@@ -243,6 +244,7 @@ final class AppController: NSObject {
     }
 
     private var knownScreens: [Int: ScreenGeom] = [:]
+    private var fullScreenIDs: Set<CGDirectDisplayID> = []
     private var lastBarHeight: [Int: Double] = [:]
     private var lastWake = -100.0
     private var visibleSignature = ""
@@ -256,6 +258,19 @@ final class AppController: NSObject {
             let hasBar = NSScreen.screensHaveSeparateSpaces || sc.displayID == NSScreen.screens.first?.displayID
             return ScreenGeom(id: id, frame: sc.frame, scale: Double(sc.backingScaleFactor), menuBarHeight: measured ?? (hasBar ? (lastBarHeight[id] ?? 0) : 0))
         }
+    }
+
+    /// Vollbild-Apps je Bildschirm aus der Fensterliste (ohne Berechtigung). Bei Änderung neu anwenden.
+    private func refreshFullScreen() {
+        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+        let wins: [WindowLite] = list.compactMap { w in
+            guard let layer = w[kCGWindowLayer as String] as? Int, let pid = w[kCGWindowOwnerPID as String] as? Int,
+                  let bd = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: bd) else { return nil }
+            return WindowLite(layer: layer, pid: pid, bounds: r)
+        }
+        let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
+        let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })
+        if ids != fullScreenIDs { fullScreenIDs = ids; scheduleApply() }
     }
 
     /// Bildschirme anstecken, abstecken und verändern ohne Neustart: Neue werden begrüßt, geänderte ohne Begrüßung neu aufgebaut, entfernte abgebaut.
@@ -335,6 +350,8 @@ final class AppController: NSObject {
         st.dock = dockGeo
         st.snowRampStart = snowRampStart
         st.mainOnly = s.displays == .mainOnly
+        st.fullScreenIDs = fullScreenIDs
+        st.showInFullScreen = s.showInFullScreen
         Engine.shared.settleActive = settle
         Engine.shared.reduceMotion = reduceMotion
         PileStore.shared.setActive(settle, time: now)
