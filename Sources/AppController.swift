@@ -119,7 +119,7 @@ final class AppController: NSObject {
             if let h = FileHandle(forWritingAtPath: NSHomeDirectory() + "/festivelights-test/dock.log") { h.seekToEndOfFile(); h.write(l.data(using: .utf8)!); h.closeFile() }
             else { try? l.write(toFile: NSHomeDirectory() + "/festivelights-test/dock.log", atomically: true, encoding: .utf8) }
             #endif
-            let hidden = (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
+            let hidden = DockHiding.effectiveAutohide(autohidePref: (CFPreferencesCopyAppValue("autohide" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false, fullScreenActive: !(self?.detectedFullScreen.isEmpty ?? true))
             self?.dockGeometry = g
             if let g { self?.exactResult = .visible(g) } else { self?.exactResult = hidden ? .hidden : .unavailable }
             self?.scheduleApply()
@@ -248,7 +248,8 @@ final class AppController: NSObject {
     }
 
     private var knownScreens: [Int: ScreenGeom] = [:]
-    private var fullScreenIDs: Set<CGDirectDisplayID> = []
+    private var fullScreenIDs: Set<CGDirectDisplayID> = []        // Bildschirme, auf denen ausgeblendet wird (aus bei "Auch in Vollbild-Apps zeigen")
+    private var detectedFullScreen: Set<CGDirectDisplayID> = []   // Bildschirme mit Vollbild-App, immer erkannt (für das Dock)
     private var lastBarHeight: [Int: Double] = [:]
     private var lastWake = -100.0
     private var visibleSignature = ""
@@ -271,8 +272,8 @@ final class AppController: NSObject {
         let now = CACurrentMediaTime()
         // Nichts zu verdecken oder zu pausieren: nicht abfragen und nichts ausblenden
         let nothingShown = !settings.lightsEnabled && !settings.dockLights && !settings.snowEnabled && Engine.shared.storm == nil
-        if settings.showInFullScreen || settings.paused || suspended || nothingShown {
-            if !fullScreenIDs.isEmpty { fullScreenIDs = []; scheduleApply() }
+        if settings.paused || suspended || nothingShown {
+            if !fullScreenIDs.isEmpty || !detectedFullScreen.isEmpty { fullScreenIDs = []; detectedFullScreen = []; dockProbe.fullScreenHint = false; scheduleApply() }
             return
         }
         if !force, energySaving, now - lastFullScreenCheck < 3 { return }   // im Sparmodus nur alle 3 s
@@ -289,7 +290,15 @@ final class AppController: NSObject {
         }
         let screens = NSScreen.screens.map { (id: Int($0.displayID), cgRect: CGRect(origin: $0.cgOrigin, size: $0.frame.size)) }
         let ids = Set(FullScreenDetect.fullScreenIDs(screens: screens, windows: wins, ownPID: Int(ProcessInfo.processInfo.processIdentifier)).map { CGDirectDisplayID($0) })
-        if ids != fullScreenIDs { fullScreenIDs = ids; scheduleApply() }
+        let hide = settings.showInFullScreen ? [] : ids
+        if ids != detectedFullScreen || hide != fullScreenIDs {
+            detectedFullScreen = ids; fullScreenIDs = hide
+            dockProbe.fullScreenHint = !ids.isEmpty
+            #if DIRECT
+            dockTracker.burst()
+            #endif
+            scheduleApply()
+        }
     }
 
     /// Bildschirme anstecken, abstecken und verändern ohne Neustart: Neue werden begrüßt, geänderte ohne Begrüßung neu aufgebaut, entfernte abgebaut.

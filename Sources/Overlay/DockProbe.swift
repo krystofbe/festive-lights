@@ -55,6 +55,11 @@ final class DockProbe {
                probeRuns > 0 ? probeMsSum / Double(probeRuns) : 0, probeMsMax, probeRuns)
     }
 
+    /// Vollbild-App auf einem Bildschirm: das Dock ist dann ausgeblendet wie bei Autohide (Nichtfinden heißt "ausgeblendet", nicht "unplausibel").
+    var fullScreenHint = false {
+        didSet { if oldValue != fullScreenHint { burst() } }
+    }
+
     func start() {
         guard !running else { return }
         running = true
@@ -150,7 +155,7 @@ final class DockProbe {
         return Snapshot(screens: NSScreen.screens.map { ScreenInfo(frame: $0.frame, visible: $0.visibleFrame) },
                         primaryHeight: Double(NSScreen.screens.first?.frame.height ?? 0),
                         orientation: pref("orientation") ?? "bottom",
-                        autohide: pref("autohide") ?? false,
+                        autohide: DockHiding.effectiveAutohide(autohidePref: pref("autohide") ?? false, fullScreenActive: fullScreenHint),
                         tile: pref("tilesize") ?? 64,
                         large: pref("largesize") ?? 128,
                         magnification: pref("magnification") ?? false)

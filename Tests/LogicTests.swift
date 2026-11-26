@@ -1748,3 +1748,23 @@ final class DockSagCapTests: XCTestCase {
         XCTAssertGreaterThan(r.sag + r.bulb, 73.0 / 4)
     }
 }
+
+final class DockHidingTests: XCTestCase {
+    func testFullScreenTreatsTheDockLikeAutohide() {
+        XCTAssertTrue(DockHiding.effectiveAutohide(autohidePref: false, fullScreenActive: true))
+        XCTAssertTrue(DockHiding.effectiveAutohide(autohidePref: true, fullScreenActive: false))
+        XCTAssertFalse(DockHiding.effectiveAutohide(autohidePref: false, fullScreenActive: false))
+    }
+
+    func testNothingFoundMeansHiddenNotUnavailableWhenTheDockIsHiddenByFullScreen() {
+        let screen = ScreenInfo(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), visible: CGRect(x: 0, y: 0, width: 1920, height: 1050))
+        func snap(_ hide: Bool) -> DockProbeCore.Snapshot {
+            DockProbeCore.Snapshot(screens: [screen], primaryHeight: 1080, orientation: "bottom", autohide: DockHiding.effectiveAutohide(autohidePref: false, fullScreenActive: hide),
+                                   tile: 64, large: 96, magnification: false)
+        }
+        let none = DockProbeCore.Measured(placed: nil, plausible: false)
+        XCTAssertEqual(DockProbeCore.evaluate(none, snap(true)) { _ in 0 }.obs, .hidden, "kein Rückfall auf durchgehend")
+        XCTAssertEqual(DockProbeCore.evaluate(none, snap(false)) { _ in 0 }.obs, .unavailable)
+        XCTAssertEqual(DockForm.resolve(choice: .exact, exact: .hidden), .hidden)
+    }
+}

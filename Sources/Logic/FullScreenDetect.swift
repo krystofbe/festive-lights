@@ -46,3 +46,9 @@ enum FullScreenDetect {
         return reach >= screen.maxX - tolerance && sorted.first!.minX <= screen.minX + tolerance
     }
 }
+
+/// Das Dock gilt als ausgeblendet, wenn es automatisch ausgeblendet ist oder auf einem Bildschirm eine Vollbild-App läuft (macOS blendet es dort aus,
+/// bis der Zeiger an den Rand fährt). Dann ist die Dock-Kette nur sichtbar, solange das Dock erscheint, und fällt nie auf "durchgehend" zurück.
+enum DockHiding {
+    static func effectiveAutohide(autohidePref: Bool, fullScreenActive: Bool) -> Bool { autohidePref || fullScreenActive }
+}
