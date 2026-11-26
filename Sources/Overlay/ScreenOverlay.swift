@@ -79,6 +79,15 @@ final class ScreenOverlay {
 
     private var occluded = false
 
+    #if DEBUG
+    /// Diagnose je Bildschirm für mehrere Monitore: Rahmen, Menüleiste, Fenster und Zustand der Bildschleife.
+    var debugInfo: String {
+        let bar = MenuBar.info(for: screen)
+        func w(_ x: NSWindow) -> String { "vis=\(x.isVisible) occ=\(x.occlusionState.contains(.visible)) lvl=\(x.level.rawValue) fr=\(NSStringFromRect(x.frame))" }
+        return "screen[\(screen.displayID) fr=\(NSStringFromRect(screen.frame)) vis=\(NSStringFromRect(screen.visibleFrame)) scale=\(screen.backingScaleFactor) bar=\(bar.map { "\($0.height)@\($0.bottomY)" } ?? "nil") occluded=\(occluded) paused=\(link?.isPaused ?? true) lightsOn=\(state.lightsOn) snowOn=\(state.snowOn) menubar{\(w(menubar.window))} snow{\(w(snow.window))}]"
+    }
+    #endif
+
     private func anyOverlayVisible() -> Bool {
         [menubar.window, dock.window, snow.window].contains { $0.isVisible && $0.occlusionState.contains(.visible) }
     }
