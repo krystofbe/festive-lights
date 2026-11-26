@@ -4,7 +4,7 @@ Christmas lights for your Mac: a garland under the menu bar, lights on the Dock,
 
 ![FestiveLights on a Mac: pine garland with baubles under the menu bar, lights on the Dock, falling snow](Store/screenshots/en-1-tanne-bunt.png)
 
-**[Download for macOS 14 or later](https://github.com/krystofbe/festive-lights/releases/latest/download/FestiveLights.dmg)** · [Website](https://www.blackbox.ms/festive/en/) · [30 second video](https://youtube.com/shorts/xGinuTRNNHA) · Mac App Store: coming soon
+**[Download for macOS 14 or later](https://github.com/krystofbe/festive-lights/releases/latest/download/FestiveLights.dmg)** · [Website](https://www.blackbox.ms/festive/) · [30 second video](https://youtube.com/shorts/xGinuTRNNHA) · Mac App Store: coming soon
 
 ![The lights move out of the way when the pointer comes near](Art/readme/dodge.gif)
 
@@ -32,7 +32,7 @@ No account, no analytics, no tracking. The app only reads where windows are and 
 
 ## Price
 
-Free. No in-app purchases, no subscription, MIT licensed. If you like it, [send us a Christmas card](https://www.blackbox.ms/festive/en/).
+Free. No in-app purchases, no subscription, MIT licensed. If you like it, [send us a Christmas card](https://www.blackbox.ms/festive/).
 
 ## Deutsch
 
