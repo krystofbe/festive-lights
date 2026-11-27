@@ -197,17 +197,17 @@ final class ScreenOverlay {
             dockContinuous = d.continuous
             // Dock-Kette nach der Symbolgröße: Mittelstellung = ein Viertel der Symbolhöhe, der Regler wirkt relativ dazu
             let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
-            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel, barHeight: lastBar?.height ?? 24)
+            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel, barHeight: lastBar?.height ?? 24, kind: st.dockKind)
             let magnify = (CFPreferencesCopyAppValue("magnification" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
             let large = (CFPreferencesCopyAppValue("largesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 128
             let grow = magnify ? Garland.dockMaxGrow(large: large, tile: tile) : 1
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
-            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel) * (st.dockKind == .firColor ? Garland.tbSpacingFactor : 1)
+            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel)
             let dockSagMid = Garland.dockMidSag(st.dockKind, bulbH: h)
             let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
-            let dockSagValue = d.continuous || dockFir ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
-            let depth = dockFir ? Garland.depthPer24(st.dockKind) * (h / 24) : 0
+            let dockSagValue = d.continuous || (dockFir && st.dockKind != .firColor) ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
+            let depth = st.dockKind == .firColor ? Garland.dockDepth * h / Garland.dockRefBulbH : (dockFir ? Garland.depthPer24(st.dockKind) * (h / 24) : 0)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),

@@ -188,7 +188,7 @@ final class ChainRenderer {
     private func rebuildBulbs(_ sp: ChainSpec) {
         // Bei einer durchgehenden Girlande liegt das Raster über der ganzen Länge, jeder Bildschirm zeigt seinen Abschnitt
         stripOff = sp.stripTotal > 0 ? sp.stripOffset : 0
-        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt ? 5 : 6, irregular: style.kind == .firGold)
+        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6, irregular: style.kind == .firGold)
         let all = layout.bulbPositions
         let first = all.firstIndex { $0 >= stripOff } ?? all.count
         localBulbs = all.filter { $0 >= stripOff && $0 < stripOff + sp.length }.map { $0 - stripOff }
@@ -198,7 +198,7 @@ final class ChainRenderer {
         let fir = style.kind.isFir
         let fs = unitScale(sp)
         // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
-        let bs = FirSprites.bulbSizePt(style.kind, fs: fs)
+        let bs = bunt && sp.isDock ? CGSize(width: sp.bulbH * 12.0 / 22, height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
         let h = fir ? bs.height : sp.bulbH
         let w = fir ? bs.width : h * 0.6
         // Am Dock werden die Sprites für die größte Vergrößerung gerendert, damit sie beim Mitwachsen scharf bleiben
@@ -244,10 +244,10 @@ final class ChainRenderer {
         let bunt = self.bunt
         if bunt { content.addSublayer(strand) }
         func branchScale(_ br: GarlandBranch) -> Double {
-            if bunt { return Garland.tbUnit * fs * br.scale }
+            if bunt { return dock ? Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * br.scale : Garland.tbUnit * fs * br.scale }
             return (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
         }
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: fs, style: style.kind, dock: dock, bulbPositions: localBulbs)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: bunt && dock ? sp.bulbH / Garland.dockRefBulbH : fs, style: style.kind, dock: dock, bulbPositions: localBulbs)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -272,7 +272,7 @@ final class ChainRenderer {
             let z: CGFloat = br.layer == .back ? 0 : (br.layer == .front ? 3 : 1)
             if bunt {
                 let px = max(8, Int((FirSprites.clusterSize.height * Garland.tbUnit * 1.25 * fs * scale).rounded()))
-                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: max(8, Int(Double(px) * (dock ? sp.dockMaxGrow : 1)))),
+                branches.append(piece(FirSprites.pdfImage("tb-cluster", size: FirSprites.clusterSize, pixelHeight: dock ? max(8, Int(FirSprites.clusterSize.height * Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * 1.25 * scale * sp.dockMaxGrow)) : px),
                                       size: FirSprites.clusterSize, anchor: FirSprites.clusterAnchor, z: z, u: br.u, rotationDeg: br.rotation, mirrored: br.mirrored, scale: k))
                 continue
             }

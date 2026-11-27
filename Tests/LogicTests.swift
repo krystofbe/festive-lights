@@ -1401,13 +1401,14 @@ final class DockSizeTests: XCTestCase {
         XCTAssertEqual(Garland.dockMaxGrow(large: 50, tile: 64), 1, "nie unter 1")
     }
 
-    func testDockUsesTheSameStyleDefinitionAsTheMenuBar() {
-        let bunt = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firColor, dock: true)
-        XCTAssertFalse(bunt.baubles.isEmpty); XCTAssertFalse(bunt.cones.isEmpty)
+    func testWarmGoldDockUsesTheMenuBarStyleDefinitionButBuntKeepsTheOldDockLook() {
         let gold = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firGold, dock: true)
         XCTAssertFalse(gold.cones.isEmpty); XCTAssertFalse(gold.bows.isEmpty); XCTAssertTrue(gold.branches.contains { $0.layer == .hang })
-        XCTAssertEqual(Garland.dockMidSag(.firColor, bulbH: 16), 16 * Garland.tbSag)
         XCTAssertEqual(Garland.dockMidSag(.firGold, bulbH: 16), 16 * Garland.sag)
+        let bunt = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firColor, dock: true)
+        XCTAssertTrue(bunt.baubles.isEmpty && bunt.cones.isEmpty && bunt.branches.allSatisfy { $0.layer == .cluster }, "Tanne bunt am Dock: nur kleine Büschel wie in 1.2.1")
+        XCTAssertEqual(Garland.dockMidSag(.firColor, bulbH: 16), 16 * Garland.dockSag)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: 37, kind: .firColor), 16, accuracy: 1e-9, "Tanne bunt: ein Viertel der Symbolgröße wie in 1.2.1")
     }
 
     func testBuntDockClustersFollowTheBulbSize() {

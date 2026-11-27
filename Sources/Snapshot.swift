@@ -102,7 +102,7 @@ enum Snapshot {
 
         // Vergleich je Stil im echten Größenverhältnis: Menüleiste dieses Macs und Dock unten (Symbolgröße 64) nebeneinander, gleicher Maßstab, dunkel
         for kind in [ChainStyleKind.firColor, .firGold, .classic] {
-            let mh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: bar.height)
+            let mh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: bar.height, kind: kind)
             func render(_ sp: ChainSpec) -> CALayer {
                 let r = ChainRenderer()
                 r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false, kind: kind), scale: 2)
