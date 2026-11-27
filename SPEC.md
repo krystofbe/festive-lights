@@ -168,6 +168,7 @@ Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hi
 - **Menüleiste:** Schalter, Stil, "Auftritt", Muster (bei "klassisch" zusätzlich Farben).
 - **Dock:** Schalter, Stil, "Auftritt" (bei "klassisch" zusätzlich Farben).
 - **Schnee:** Schalter, Menge, "Liegt auf Fenstern" (bisher "Schnee bleibt auf Fenstern liegen"), "Nur in Pausen".
+- "Weitere Optionen" klappt mit einem Klick irgendwo auf die ganze Zeile auf und zu (Pfeil und Text, auch wenn das Fenster noch nicht aktiv ist), der Pfeil dreht sich mit. Bug in 1.3-Testbuild: ließ sich nicht anklicken.
 - Unter "Weitere Optionen" (Englisch "More Options", zugeklappt, merkt sich nichts) steht nur noch: Menüleiste und Dock Tempo und Ebene, beim Dock zusätzlich Länge; Schnee Flockengröße, Tempo, Wind, Ausweichen, Ebene. Die Regler Größe, Abstand und Durchhang entfallen ganz (Krystof, 27.11.: "alles zu kompliziert"). Größe, Birnenabstand und Durchhang ergeben sich allein aus Stil und Auftritt in Mittelstellung wie in Anhang A. Früher gespeicherte Werte dieser drei Regler werden ignoriert und beim ersten Start von 1.3 gelöscht.
 
 **"Auftritt"** (Englisch "Look"), Segmentschalter "Dezent", "Festlich", "Volle Pracht" (Englisch "Subtle", "Festive", "Lavish"), je Kette eigener Wert. Er bestimmt zusammen, wie tief die Kette hängt, wie viel Schmuck sie trägt und wie groß sie ist:
