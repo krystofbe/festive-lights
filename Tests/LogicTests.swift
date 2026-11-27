@@ -1411,6 +1411,12 @@ final class DockSizeTests: XCTestCase {
         XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: 37, kind: .firColor), 16, accuracy: 1e-9, "Tanne bunt: ein Viertel der Symbolgröße wie in 1.2.1")
     }
 
+    func testBuntMenuBarIsOneSizeStepSmallerAndOtherStylesAreUnchanged() {
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firColor, barHeight: 33, level: 2), ChainLayout.bulbHeight(menuBarHeight: 33, level: 1), accuracy: 1e-9, "Mittelstellung = Größenstufe 2 des bisherigen Reglers")
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firColor, barHeight: 33, level: 4), ChainLayout.bulbHeight(menuBarHeight: 33, level: 4) * 0.85, accuracy: 1e-9, "die anderen Stufen rücken mit")
+        for k in [ChainStyleKind.firGold, .classic] { XCTAssertEqual(Garland.menuBarBulbHeight(k, barHeight: 33, level: 2), ChainLayout.bulbHeight(menuBarHeight: 33, level: 2)) }
+    }
+
     func testBuntDockClustersFollowTheBulbSize() {
         let small = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 12 / Garland.dockRefBulbH, style: .firColor, dock: true)
         let big = Garland.plan(length: 800, arcLength: 100, arcCount: 8, scale: 25 / Garland.dockRefBulbH, style: .firColor, dock: true)

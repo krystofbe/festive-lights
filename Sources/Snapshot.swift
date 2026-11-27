@@ -102,7 +102,7 @@ enum Snapshot {
 
         // Vergleich je Stil im echten Größenverhältnis: Menüleiste dieses Macs und Dock unten (Symbolgröße 64) nebeneinander, gleicher Maßstab, dunkel
         for kind in [ChainStyleKind.firColor, .firGold, .classic] {
-            let mh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: bar.height, kind: kind)
+            let mh = Garland.menuBarBulbHeight(kind, barHeight: bar.height, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: bar.height, kind: kind)
             func render(_ sp: ChainSpec) -> CALayer {
                 let r = ChainRenderer()
                 r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false, kind: kind), scale: 2)
@@ -122,6 +122,26 @@ enum Snapshot {
             ml.frame.origin = CGPoint(x: 0, y: size.height - ml.bounds.height); dl.frame.origin = CGPoint(x: ml.bounds.width + 20, y: size.height - dl.bounds.height)
             sheet.addSublayer(dl); sheet.addSublayer(ml)
             write(sheet, size: size, background: dark, to: "\(dir)/compare-\(kind.rawValue).png")
+        }
+
+        // Kontrollbilder für Vergleiche auf echten Bildschirmfotos: Menüleiste (Tanne bunt, Leistenhöhe 33) und Dock unten (Symbolgröße 58), mit Fensterrahmen
+        func control(_ name: String, _ sp: ChainSpec, _ kind: ChainStyleKind, light: Bool) {
+            let r = ChainRenderer()
+            r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
+            r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
+            r.update(time: 20, dt: 0.016, pointer: nil)
+            let fr = r.window.frame
+            write(r.window.rootLayer, size: fr.size, background: CGColor(gray: 0, alpha: 0), to: "\(dir)/control-\(name).png")
+            try? "\(fr.minX) \(fr.minY) \(fr.width) \(fr.height)".write(toFile: "\(dir)/control-\(name).txt", atomically: true, encoding: .utf8)
+        }
+        do {
+            let k = ChainStyleKind.firColor
+            let mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2)
+            control("menubar-bunt", ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh, sag: mh * Garland.sag(k), liftSign: -1, isMenuBar: true, liftMax: 0,
+                                              spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * Garland.tbSpacingFactor, garlandDepth: Garland.depthPer24(k) * mh / 24), k, light: true)
+            let dh = Garland.dockBulbHeight(tile: 58, bulbLevel: 2, barHeight: 37, kind: k)
+            control("dock-bunt", ChainSpec(p0: CGPoint(x: 41.5, y: 81), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1643.5, bulbH: dh, sag: Garland.dockMidSag(k, bulbH: dh), liftSign: -1, isMenuBar: false, liftMax: 110,
+                                           spacing: ChainLayout.spacing(bulbHeight: dh, level: 2), garlandDepth: Garland.dockDepth * dh / Garland.dockRefBulbH, dockTile: 58, dockMaxGrow: 1), k, light: false)
         }
 
         // Dock unten, Tanne warmgold

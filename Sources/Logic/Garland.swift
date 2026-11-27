@@ -106,6 +106,12 @@ enum Garland {
     /// Durchhang-Mittelstellung am Dock: Tanne wie an der Menüleiste (gleiche Stildefinition), klassisch wie bisher.
     static func dockMidSag(_ k: ChainStyleKind, bulbH: Double) -> Double { k == .firColor ? bulbH * dockSag : (k.isFir ? bulbH * sag(k) : bulbH * dockClassicSag) }
 
+    /// "Tanne bunt" an der Menüleiste: eine Größenstufe kleiner als der Regler (Mittelstellung = Stufe 2 mit Faktor 0,85), damit Tabs und Titel lesbar bleiben.
+    static let tbSizeFactor = 0.85
+    static func menuBarBulbHeight(_ k: ChainStyleKind, barHeight: Double, level: Int) -> Double {
+        ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1)
+    }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
