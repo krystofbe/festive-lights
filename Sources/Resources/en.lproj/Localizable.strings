@@ -16,9 +16,6 @@
 "Size" = "Size";
 "Small" = "Small";
 "Large" = "Large";
-"Spacing" = "Spacing";
-"Tight" = "Tight";
-"Wide" = "Wide";
 "Layer" = "Layer";
 "Above all windows" = "Above all windows";
 "Desktop only" = "Desktop only";
@@ -98,9 +95,6 @@
 "All" = "All";
 "Main display only" = "Main display only";
 "Show in full-screen apps" = "Show in full-screen apps";
-"Sag" = "Sag";
-"sag.tight" = "Tight";
-"sag.loose" = "Loose";
 "onb.menubar.title" = "Menu bar";
 "onb.dock.title" = "Dock";
 "onb.done.body" = "Click the icon to pause everything, for example during presentations, and to open the settings. Clicks always pass through lights and snow.";

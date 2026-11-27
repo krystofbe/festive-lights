@@ -9,7 +9,6 @@ struct AppState: Equatable {
     var dockKind = ChainStyleKind.classic
     var pattern = LightPattern.twinkle, dockPattern = LightPattern.twinkle
     var tempo = 1.0, dockTempo = 1.0
-    var bulbLevel = 2, spacingLevel = 2, dockBulbLevel = 2, dockSpacingLevel = 2
     var amount = 80.0, sizeMult = 1.0, speedMult = 1.0
     var wind = Wind.off
     var avoid = 80.0
@@ -17,7 +16,6 @@ struct AppState: Equatable {
     var dock: DockGeometry?
     var snowRampStart: Double?
     var mainOnly = false
-    var sagLevel = 2, dockSagLevel = 2
     var fullScreenIDs: Set<CGDirectDisplayID> = []   // Bildschirme mit Vollbild-App
     var showInFullScreen = false
     var look = Look.festive, dockLook = Look.festive
@@ -172,11 +170,11 @@ final class ScreenOverlay {
             barDynamic = bar.dynamic
             lastBar = bar
             barShown = bar.dynamic && abs(bar.bottomY - Double(screen.frame.maxY)) > 0.5
-            let h = Garland.menuBarBulbHeight(st.kind, barHeight: bar.height, level: st.bulbLevel)
+            let h = Garland.menuBarBulbHeight(st.kind, barHeight: bar.height, level: 2)
             let prof = LookProfile.make(st.kind, st.look, dock: false)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(screen.frame.width), bulbH: h, sag: h * prof.sag * Levels.value(Levels.sag, st.sagLevel), liftSign: -1, isMenuBar: true, liftMax: 0,
-                                 spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1) * prof.spacingK,
+                                 length: Double(screen.frame.width), bulbH: h, sag: h * prof.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
+                                 spacing: ChainLayout.spacing(bulbHeight: h, level: 2) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1) * prof.spacingK,
                                  garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0,
                                  stripOffset: strip?.offset ?? 0, stripTotal: strip?.total ?? 0, look: st.look)
             menubar.configure(spec: spec, style: style(st.kind, warm: st.warm, pattern: st.pattern, tempo: st.tempo), scale: scale)
@@ -199,16 +197,16 @@ final class ScreenOverlay {
             dockContinuous = d.continuous
             // Dock-Kette nach der Symbolgröße: Mittelstellung = ein Viertel der Symbolhöhe, der Regler wirkt relativ dazu
             let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
-            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel, barHeight: lastBar?.height ?? 24, kind: st.dockKind)
+            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: 2, barHeight: lastBar?.height ?? 24, kind: st.dockKind)
             let magnify = (CFPreferencesCopyAppValue("magnification" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
             let large = (CFPreferencesCopyAppValue("largesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 128
             let grow = magnify ? Garland.dockMaxGrow(large: large, tile: tile) : 1
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
-            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel) * LookProfile.make(st.dockKind, st.dockLook, dock: true).spacingK
+            let sp = ChainLayout.spacing(bulbHeight: h, level: 2) * LookProfile.make(st.dockKind, st.dockLook, dock: true).spacingK
             let dockSagMid = Garland.dockMidSag(st.dockKind, bulbH: h, look: st.dockLook)
-            let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
-            let dockSagValue = d.continuous || (dockFir && st.dockKind != .firColor) ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
+            let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: 2, continuous: d.continuous)
+            let dockSagValue = d.continuous || (dockFir && st.dockKind != .firColor) ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: 2)
             let depth = st.dockKind == .firColor ? Garland.dockDepth * h / Garland.dockRefBulbH : (dockFir ? Garland.depthPer24(st.dockKind) * (h / 24) : 0)
             switch d.edge {
             case .bottom:

@@ -856,12 +856,12 @@ final class SeparateChainSettingsTests: XCTestCase {
     func testMigrationCopiesSharedValuesToTheDockAndResolvesSameAsBar() {
         let d = suite()
         d.set("firColor", forKey: "chainStyle"); d.set("warm", forKey: "colorMode"); d.set("chase", forKey: "pattern")
-        d.set(4, forKey: "lightsTempo"); d.set(0, forKey: "bulbSize"); d.set(3, forKey: "spacing"); d.set("desktop", forKey: "lightsLayer")
+        d.set(4, forKey: "lightsTempo"); d.set("desktop", forKey: "lightsLayer")
         d.set("sameAsBar", forKey: "dockStyle")
         Settings.migrate(d)
         XCTAssertEqual(d.string(forKey: "dockStyle"), "firColor", "wie Menüleiste wird zum Stil der Menüleiste")
         XCTAssertEqual(d.string(forKey: "dockColorMode"), "warm"); XCTAssertEqual(d.string(forKey: "dockPattern"), "chase")
-        XCTAssertEqual(d.integer(forKey: "dockTempo"), 4); XCTAssertEqual(d.integer(forKey: "dockBulbSize"), 0); XCTAssertEqual(d.integer(forKey: "dockSpacing"), 3)
+        XCTAssertEqual(d.integer(forKey: "dockTempo"), 4)
         XCTAssertEqual(d.string(forKey: "dockLayer"), "desktop")
     }
 
@@ -893,11 +893,9 @@ final class SeparateChainSettingsTests: XCTestCase {
         defer { s.resetToDefaults() }
         s.chainStyle = .firColor; s.dockStyle = .classic
         s.pattern = .steady; s.dockPattern = .chase
-        s.bulbSize = 4; s.dockBulbSize = 0
         s.lightsLayer = .desktop; s.dockLayer = .above
         XCTAssertEqual(s.chainStyle, .firColor); XCTAssertEqual(s.dockStyle, .classic)
         XCTAssertEqual(s.pattern, .steady); XCTAssertEqual(s.dockPattern, .chase)
-        XCTAssertEqual(s.bulbSize, 4); XCTAssertEqual(s.dockBulbSize, 0)
         XCTAssertEqual(UserDefaults.standard.string(forKey: "dockPattern"), "chase")
         XCTAssertEqual(UserDefaults.standard.string(forKey: "pattern"), "steady")
         s.load()
@@ -906,10 +904,10 @@ final class SeparateChainSettingsTests: XCTestCase {
 
     func testResetRestoresTheDockValuesToo() {
         let s = Settings.shared
-        s.dockStyle = .firGold; s.dockColorMode = .warm; s.dockPattern = .chase; s.dockTempo = 4; s.dockBulbSize = 4; s.dockSpacing = 4; s.dockLayer = .desktop
+        s.dockStyle = .firGold; s.dockColorMode = .warm; s.dockPattern = .chase; s.dockTempo = 4; s.dockLayer = .desktop
         s.resetToDefaults()
         XCTAssertEqual(s.dockStyle, .firColor); XCTAssertEqual(s.dockColorMode, .multicolor); XCTAssertEqual(s.dockPattern, .twinkle)
-        XCTAssertEqual([s.dockTempo, s.dockBulbSize, s.dockSpacing], [2, 2, 2]); XCTAssertEqual(s.dockLayer, .above)
+        XCTAssertEqual(s.dockTempo, 2); XCTAssertEqual(s.dockLayer, .above)
     }
 }
 
@@ -1185,7 +1183,7 @@ final class ResetTests: XCTestCase {
     func testResetRestoresTheTableFromSection3AndKeepsTheExceptions() {
         let s = Settings.shared
         // alles verstellen
-        s.lightsEnabled = false; s.chainStyle = .firGold; s.colorMode = .warm; s.pattern = .chase; s.lightsTempo = 4; s.bulbSize = 0; s.spacing = 4
+        s.lightsEnabled = false; s.chainStyle = .firGold; s.colorMode = .warm; s.pattern = .chase; s.lightsTempo = 4
         s.lightsLayer = .desktop; s.dockLights = false; s.dockStyle = .firColor; s.dockShape = .continuous
         s.snowEnabled = false; s.snowAmount = 4; s.flakeSize = 0; s.snowSpeed = 4; s.wind = .left; s.snowAvoid = 0; s.snowLayer = .desktop; s.settleSnow = false
         s.powerMode = .always
@@ -1193,7 +1191,7 @@ final class ResetTests: XCTestCase {
         s.welcomeShown = true; s.paused = true
         s.resetToDefaults()
         XCTAssertTrue(s.lightsEnabled); XCTAssertEqual(s.chainStyle, .firColor, "Standardstil ist Tanne bunt"); XCTAssertEqual(s.colorMode, .multicolor); XCTAssertEqual(s.pattern, .twinkle)
-        XCTAssertEqual([s.lightsTempo, s.bulbSize, s.spacing], [2, 2, 2], "Mittelstellung")
+        XCTAssertEqual(s.lightsTempo, 2, "Mittelstellung")
         XCTAssertEqual(s.lightsLayer, .above); XCTAssertTrue(s.dockLights); XCTAssertEqual(s.dockStyle, .firColor); XCTAssertEqual(s.dockShape, .exact)
         XCTAssertTrue(s.snowEnabled); XCTAssertEqual([s.snowAmount, s.flakeSize, s.snowSpeed, s.snowAvoid], [2, 2, 2, 2])
         XCTAssertEqual(s.wind, .off); XCTAssertEqual(s.snowLayer, .above); XCTAssertTrue(s.settleSnow); XCTAssertEqual(s.powerMode, .automatic)
@@ -1746,10 +1744,20 @@ final class SagTests: XCTestCase {
         XCTAssertLessThan(Garland.dockSagFactor(level: 4, continuous: false) - 1, (Levels.value(Levels.sag, 4) - 1) * 0.51)
     }
 
-    func testSagDefaultsToTheMiddleAndResetRestoresIt() {
-        let s = Settings.shared
-        s.sag = 4; s.dockSag = 0; s.resetToDefaults()
-        XCTAssertEqual([s.sag, s.dockSag], [2, 2])
+    func testStoredSizeSpacingAndSagValuesAreDeletedOnceAndTheMiddleIsUsed() {
+        // Mac des Nutzers: bulbSize=0 und spacing=0 gespeichert
+        let d = UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")!
+        for k in ["bulbSize", "spacing", "sag", "dockBulbSize", "dockSpacing", "dockSag"] { d.set(0, forKey: k) }
+        d.set(true, forKey: "welcomeShown")
+        Settings.migrate(d)
+        for k in ["bulbSize", "spacing", "sag", "dockBulbSize", "dockSpacing", "dockSag"] { XCTAssertNil(d.object(forKey: k), "\(k) ist gelöscht") }
+        XCTAssertFalse(Settings.keys.contains { ["bulbSize", "spacing", "sag", "dockBulbSize", "dockSpacing", "dockSag"].contains($0) }, "wird nie mehr gelesen")
+        d.set(0, forKey: "bulbSize"); Settings.migrate(d)   // ein später geschriebener Wert wird nicht noch einmal angefasst, aber auch nie gelesen
+        XCTAssertEqual(d.integer(forKey: "bulbSize"), 0)
+        // Größe, Abstand und Durchhang hängen nur an Stil und Auftritt: Mittelstellung
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firGold, barHeight: 33, level: 2), 33)
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firColor, barHeight: 33, level: 2), 33 * Garland.tbSizeFactor, accuracy: 1e-9)
+        XCTAssertEqual(ChainLayout.spacing(bulbHeight: 33, level: 2), 33 * 1.95, accuracy: 1e-9)
     }
 
     func testOverlayAppsWithoutDockIconNeverCountAsFullScreen() {

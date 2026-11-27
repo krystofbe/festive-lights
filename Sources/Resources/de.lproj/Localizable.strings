@@ -16,9 +16,6 @@
 "Size" = "Größe";
 "Small" = "Klein";
 "Large" = "Groß";
-"Spacing" = "Abstand";
-"Tight" = "Eng";
-"Wide" = "Weit";
 "Layer" = "Ebene";
 "Above all windows" = "Über allen Fenstern";
 "Desktop only" = "Nur auf dem Schreibtisch";
@@ -98,9 +95,6 @@
 "All" = "Alle";
 "Main display only" = "Nur Hauptbildschirm";
 "Show in full-screen apps" = "Auch in Vollbild-Apps zeigen";
-"Sag" = "Durchhang";
-"sag.tight" = "Straff";
-"sag.loose" = "Locker";
 "onb.menubar.title" = "Menüleiste";
 "onb.dock.title" = "Dock";
 "onb.done.body" = "Über das Symbol pausierst du alles mit einem Klick, zum Beispiel für Präsentationen, und öffnest die Einstellungen. Klicks gehen immer durch Lichter und Schnee hindurch.";

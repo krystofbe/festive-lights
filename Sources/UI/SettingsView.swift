@@ -129,7 +129,7 @@ struct SettingsView: View {
             lookPicker($s.look)
             patternPicker($s.pattern)
         } more: {
-            moreRows(tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, sag: $s.sag, layer: $s.lightsLayer)
+            moreRows(tempo: $s.lightsTempo, layer: $s.lightsLayer)
         }
     }
 
@@ -138,7 +138,7 @@ struct SettingsView: View {
             styleRows(style: $s.dockStyle, colors: $s.dockColorMode)
             lookPicker($s.dockLook)
         } more: {
-            moreRows(tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, sag: $s.dockSag, layer: $s.dockLayer)
+            moreRows(tempo: $s.dockTempo, layer: $s.dockLayer)
             let side = dockOnSide
             Picker("Length", selection: $s.dockShape) {
                 Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
@@ -180,11 +180,8 @@ struct SettingsView: View {
 
     /// Weitere Optionen von Menüleiste und Dock, jede Kette mit eigenen Werten.
     @ViewBuilder
-    private func moreRows(tempo: Binding<Int>, size: Binding<Int>, spacing: Binding<Int>, sag: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
+    private func moreRows(tempo: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
         LevelSlider(title: "Speed", value: tempo, low: "Slow", high: "Fast")
-        LevelSlider(title: "Size", value: size, low: "Small", high: "Large")
-        LevelSlider(title: "Spacing", value: spacing, low: "Tight", high: "Wide")
-        LevelSlider(title: "Sag", value: sag, low: "sag.tight", high: "sag.loose")
         layerPicker(layer)
     }
 

@@ -28,18 +28,12 @@ final class Settings: ObservableObject {
     @Published var colorMode = ColorMode.multicolor { didSet { write("colorMode", colorMode.rawValue) } }
     @Published var pattern = LightPattern.twinkle { didSet { write("pattern", pattern.rawValue) } }
     @Published var lightsTempo = 2 { didSet { write("lightsTempo", lightsTempo) } }
-    @Published var bulbSize = 2 { didSet { write("bulbSize", bulbSize) } }
-    @Published var spacing = 2 { didSet { write("spacing", spacing) } }
-    @Published var sag = 2 { didSet { write("sag", sag) } }
-    @Published var dockSag = 2 { didSet { write("dockSag", dockSag) } }
     @Published var lightsLayer = DisplayLayer.above { didSet { write("lightsLayer", lightsLayer.rawValue) } }
     @Published var dockLights = true { didSet { write("dockLights", dockLights) } }
     @Published var dockStyle = ChainStyleKind.firColor { didSet { write("dockStyle", dockStyle.rawValue) } }
     @Published var dockColorMode = ColorMode.multicolor { didSet { write("dockColorMode", dockColorMode.rawValue) } }
     @Published var dockPattern = LightPattern.twinkle { didSet { write("dockPattern", dockPattern.rawValue) } }
     @Published var dockTempo = 2 { didSet { write("dockTempo", dockTempo) } }
-    @Published var dockBulbSize = 2 { didSet { write("dockBulbSize", dockBulbSize) } }
-    @Published var dockSpacing = 2 { didSet { write("dockSpacing", dockSpacing) } }
     @Published var dockLayer = DisplayLayer.above { didSet { write("dockLayer", dockLayer.rawValue) } }
     @Published var look = Look.festive { didSet { write("look", look.rawValue) } }
     @Published var dockLook = Look.festive { didSet { write("dockLook", dockLook.rawValue) } }
@@ -79,7 +73,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "sag", "dockSag", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape", "look", "dockLook", "snowOnlyBreaks",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockLayer", "dockShape", "look", "dockLook", "snowOnlyBreaks",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "powerMode", "displays", "showInFullScreen", "paused", "welcomeShown"]
 
@@ -100,6 +94,11 @@ final class Settings: ObservableObject {
             d.set(old ? PowerMode.always.rawValue : PowerMode.automatic.rawValue, forKey: "powerMode")
             d.removeObject(forKey: "alwaysSaveEnergy")
         }
+        // 1.3: Größe, Abstand und Durchhang ergeben sich aus Stil und Auftritt. Gespeicherte Regler werden einmal gelöscht und nie mehr gelesen.
+        if d.object(forKey: "sizeKeysRemoved") == nil {
+            for k in ["bulbSize", "spacing", "sag", "dockBulbSize", "dockSpacing", "dockSag"] { d.removeObject(forKey: k) }
+            d.set(true, forKey: "sizeKeysRemoved")
+        }
         // 1.3: Auftritt. Bestehende Nutzer bekommen "Volle Pracht" (Aussehen bleibt), neue "Festlich".
         if d.object(forKey: "lookMigrated") == nil {
             let existing = Settings.keys.contains { d.object(forKey: $0) != nil } || d.object(forKey: "dockMigrated") != nil
@@ -109,8 +108,7 @@ final class Settings: ObservableObject {
             d.set(true, forKey: "lookMigrated")
         }
         guard d.object(forKey: "dockMigrated") == nil else { return }
-        for (bar, dock) in [("colorMode", "dockColorMode"), ("pattern", "dockPattern"), ("lightsTempo", "dockTempo"), ("bulbSize", "dockBulbSize"),
-                            ("spacing", "dockSpacing"), ("lightsLayer", "dockLayer")] {
+        for (bar, dock) in [("colorMode", "dockColorMode"), ("pattern", "dockPattern"), ("lightsTempo", "dockTempo"), ("lightsLayer", "dockLayer")] {
             if let v = d.object(forKey: bar) { d.set(v, forKey: dock) }
         }
         if let old = d.string(forKey: "dockStyle"), ChainStyleKind(rawValue: old) != nil {
@@ -132,18 +130,12 @@ final class Settings: ObservableObject {
         set(\.colorMode, raw("colorMode", .multicolor))
         set(\.pattern, raw("pattern", .twinkle))
         set(\.lightsTempo, level("lightsTempo", 2))
-        set(\.bulbSize, level("bulbSize", 2))
-        set(\.spacing, level("spacing", 2))
-        set(\.sag, level("sag", 2))
-        set(\.dockSag, level("dockSag", 2))
         set(\.lightsLayer, raw("lightsLayer", .above))
         set(\.dockLights, bool("dockLights", true))
         set(\.dockStyle, raw("dockStyle", .firColor))
         set(\.dockColorMode, raw("dockColorMode", .multicolor))
         set(\.dockPattern, raw("dockPattern", .twinkle))
         set(\.dockTempo, level("dockTempo", 2))
-        set(\.dockBulbSize, level("dockBulbSize", 2))
-        set(\.dockSpacing, level("dockSpacing", 2))
         set(\.dockLayer, raw("dockLayer", .above))
         set(\.dockShape, raw("dockShape", .exact))
         set(\.look, Look(rawValue: level("look", 1)) ?? .festive)
@@ -168,9 +160,9 @@ final class Settings: ObservableObject {
     /// Berechtigung liegen außerhalb dieser Klasse und sind nicht betroffen. Wirkt sofort, weil jeder Wert veröffentlicht wird.
     func resetToDefaults() {
         lightsEnabled = true; chainStyle = .firColor; colorMode = .multicolor; pattern = .twinkle
-        lightsTempo = 2; bulbSize = 2; spacing = 2; sag = 2; dockSag = 2; lightsLayer = .above
+        lightsTempo = 2; lightsLayer = .above
         dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
-        dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact; look = .festive; dockLook = .festive
+        dockTempo = 2; dockLayer = .above; dockShape = .exact; look = .festive; dockLook = .festive
         snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true; snowOnlyBreaks = false
         powerMode = .automatic; displays = .all; showInFullScreen = false
     }

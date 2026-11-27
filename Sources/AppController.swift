@@ -387,12 +387,8 @@ final class AppController: NSObject {
         st.dockWarm = s.dockColorMode == .warm
         st.dockPattern = s.dockPattern
         st.dockTempo = Levels.value(Levels.tempo, s.dockTempo)
-        st.dockBulbLevel = s.dockBulbSize
-        st.dockSpacingLevel = s.dockSpacing
         st.pattern = s.pattern
         st.tempo = Levels.value(Levels.tempo, s.lightsTempo)
-        st.bulbLevel = s.bulbSize
-        st.spacingLevel = s.spacing
         st.amount = Levels.value(Levels.snowAmount, s.snowAmount)
         st.sizeMult = Levels.value(Levels.flakeSize, s.flakeSize)
         st.speedMult = Levels.value(Levels.snowSpeed, s.snowSpeed)
@@ -405,7 +401,6 @@ final class AppController: NSObject {
         st.dock = dockGeo
         st.snowRampStart = snowRampStart
         st.mainOnly = s.displays == .mainOnly
-        st.sagLevel = s.sag; st.dockSagLevel = s.dockSag
         st.look = s.look; st.dockLook = s.dockLook
         st.fullScreenIDs = fullScreenIDs
         st.showInFullScreen = s.showInFullScreen
