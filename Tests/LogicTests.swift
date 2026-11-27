@@ -1452,24 +1452,16 @@ final class AppVariantTests: XCTestCase {
 }
 
 final class OnboardingTests: XCTestCase {
-    func testStepsDependOnTheVariant() {
-        XCTAssertEqual(OnbStep.all.contains(.access), !AppVariant.isStore, "Freigabe-Schritt nur in der Direkt-Variante")
-        XCTAssertEqual(OnbStep.all.first, .welcome); XCTAssertEqual(OnbStep.all.last, .done)
-    }
-
-    func testStepOrderHasOneStepPerFeatureAndNoReachStep() {
-        let all = OnbStep.all
-        let core: [OnbStep] = [.welcome, .menuBar, .dock, .snow]
-        XCTAssertEqual(Array(all.prefix(4)), core)
-        XCTAssertEqual(all.last, .done)
-        XCTAssertEqual(all.count, AppVariant.isStore ? 5 : 6, "Direkt hat zusätzlich den Bedienungshilfen-Schritt vor Fertig")
+    func testThreeStepsInBothVariants() {
+        XCTAssertEqual(OnbStep.all, [.pick, .glow, .finish], "Ab 1.3 drei Schritte, die Freigabe steckt im zweiten Schritt der Direkt-Variante")
+        XCTAssertEqual(OnboardingModel().steps.count, 3)
     }
 
     func testNavigationStaysInRange() {
         let m = OnboardingModel()
         m.back(); XCTAssertEqual(m.index, 0)
         for _ in 0..<20 { m.next() }
-        XCTAssertTrue(m.isLast); XCTAssertEqual(m.step, .done)
+        XCTAssertTrue(m.isLast); XCTAssertEqual(m.step, .finish)
         m.back(); XCTAssertFalse(m.isLast)
     }
 
@@ -1492,10 +1484,10 @@ final class OnboardingTests: XCTestCase {
 
     func testAllOnboardingAndMenuStringsExistInGermanAndEnglish() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/Resources")
-        let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
-                    "onb.welcome.title", "onb.welcome.body", "onb.menubar.title", "onb.menubar.body", "onb.dock.title", "onb.dock.body", "onb.snow.title", "onb.snow.body",
-                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled",
-                    "Look", "Subtle", "Festive", "Lavish", "More Options", "Settles on windows", "Only during breaks", "breaks.hint", "onb.on", "expanded", "collapsed"]
+        let keys = ["menu.welcome", "onb.back", "onb.next", "onb.go", "onb.progress", "onb.window", "onb.up", "onb.pick.title", "onb.pick.sub", "onb.look.label",
+                    "onb.look.subtle", "onb.look.festive", "onb.look.lavish", "onb.where.title", "onb.where.sub", "onb.off", "onb.on", "onb.access.row", "onb.access.sub", "onb.access.button",
+                    "onb.finish.title", "onb.finish.hint",
+                    "Look", "Subtle", "Festive", "Lavish", "More Options", "Settles on windows", "Only during breaks", "breaks.hint", "expanded", "collapsed"]
         for lang in ["de", "en"] {
             let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)
             for k in keys { XCTAssertTrue(text.contains("\"\(k)\" ="), "\(k) fehlt in \(lang)") }

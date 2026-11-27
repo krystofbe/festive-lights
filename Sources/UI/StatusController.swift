@@ -21,6 +21,11 @@ final class StatusController: NSObject, NSMenuDelegate {
         updateIcon()
     }
 
+    /// Hebt das Menüleisten-Symbol kurz hervor (Einführung, letzter Schritt).
+    func pulse() {
+        for i in 0..<6 { DispatchQueue.main.asyncAfter(deadline: .now() + 0.3 + Double(i) * 0.35) { [weak self] in self?.item.button?.highlight(i % 2 == 0) } }
+    }
+
     func setAnimating(_ on: Bool) {
         timer?.invalidate(); timer = nil
         shown = nil

@@ -38,7 +38,7 @@ final class AppController: NSObject {
     private var timers: [Timer] = []
     private let loginModel = LoginModel()
     private let settingsNav = SettingsNav()
-    private lazy var onboarding = OnboardingController(settings: settings, login: loginModel, startStorm: { [weak self] in self?.startStorm() })
+    private lazy var onboarding = OnboardingController(settings: settings, login: loginModel, pulse: { [weak self] in self?.status.pulse() })
     func showOnboarding() { onboarding.show() }
     #if DIRECT
     private let updates = UpdateController()

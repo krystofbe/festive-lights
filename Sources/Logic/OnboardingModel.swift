@@ -1,11 +1,10 @@
 import Foundation
 import Combine
 
+/// Ab 1.3 drei Schritte: Kette aussuchen, wo es leuchten soll (in der Direkt-Variante mit optionaler Freigabe), Frohe Festtage.
 enum OnbStep: Int, CaseIterable {
-    case welcome, menuBar, dock, snow, access, done
-
-    /// Der Freigabe-Schritt gibt es nur in der Direkt-Variante.
-    static var all: [OnbStep] { allCases.filter { $0 != .access || !AppVariant.isStore } }
+    case pick, glow, finish
+    static var all: [OnbStep] { allCases }
 }
 
 final class OnboardingModel: ObservableObject {
