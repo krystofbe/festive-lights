@@ -172,15 +172,13 @@ final class ScreenOverlay {
             barDynamic = bar.dynamic
             lastBar = bar
             barShown = bar.dynamic && abs(bar.bottomY - Double(screen.frame.maxY)) > 0.5
-            let h = Garland.menuBarBulbHeight(st.kind, barHeight: bar.height, level: st.bulbLevel, look: st.look)
-            let depth = fir ? Garland.depthPer24(st.kind) * (h / 24) : 0
-            let fit = Look.garlandFit(natural: depth, limit: st.look.menuDepth)
+            let h = Garland.menuBarBulbHeight(st.kind, barHeight: bar.height, level: st.bulbLevel)
+            let prof = LookProfile.make(st.kind, st.look, dock: false)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(screen.frame.width), bulbH: h, sag: Look.sagCap((fir ? h * Garland.sag(st.kind) : h) * Levels.value(Levels.sag, st.sagLevel), limit: st.look.menuDepth), liftSign: -1, isMenuBar: true, liftMax: 0,
-                                 spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1),
-                                 garlandDepth: depth * fit,
-                                 stripOffset: strip?.offset ?? 0, stripTotal: strip?.total ?? 0,
-                                 garlandFit: fit, ornamentKeep: st.look.ornamentKeep, hangBranches: st.look.hasHangingBranches)
+                                 length: Double(screen.frame.width), bulbH: h, sag: h * prof.sag * Levels.value(Levels.sag, st.sagLevel), liftSign: -1, isMenuBar: true, liftMax: 0,
+                                 spacing: ChainLayout.spacing(bulbHeight: h, level: st.spacingLevel) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1) * prof.spacingK,
+                                 garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0,
+                                 stripOffset: strip?.offset ?? 0, stripTotal: strip?.total ?? 0, look: st.look)
             menubar.configure(spec: spec, style: style(st.kind, warm: st.warm, pattern: st.pattern, tempo: st.tempo), scale: scale)
             menubar.setVisible(st.lightsOn && effectsOn, layer: st.lightsLayer, intro: greet ? CACurrentMediaTime() : nil)
         } else {
@@ -201,32 +199,27 @@ final class ScreenOverlay {
             dockContinuous = d.continuous
             // Dock-Kette nach der Symbolgröße: Mittelstellung = ein Viertel der Symbolhöhe, der Regler wirkt relativ dazu
             let tile = (CFPreferencesCopyAppValue("tilesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 64
-            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel, barHeight: lastBar?.height ?? 24, kind: st.dockKind, look: st.dockLook)
+            let h = Garland.dockBulbHeight(tile: tile, bulbLevel: st.dockBulbLevel, barHeight: lastBar?.height ?? 24, kind: st.dockKind)
             let magnify = (CFPreferencesCopyAppValue("magnification" as CFString, "com.apple.dock" as CFString) as? Bool) ?? false
             let large = (CFPreferencesCopyAppValue("largesize" as CFString, "com.apple.dock" as CFString) as? Double) ?? 128
             let grow = magnify ? Garland.dockMaxGrow(large: large, tile: tile) : 1
             let pad = d.continuous ? 0.0 : 6.0
             var spec: ChainSpec
-            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel)
-            let dockSagMid = Garland.dockMidSag(st.dockKind, bulbH: h)
+            let sp = ChainLayout.spacing(bulbHeight: h, level: st.dockSpacingLevel) * LookProfile.make(st.dockKind, st.dockLook, dock: true).spacingK
+            let dockSagMid = Garland.dockMidSag(st.dockKind, bulbH: h, look: st.dockLook)
             let dockSagRequested = dockSagMid * Garland.dockSagFactor(level: st.dockSagLevel, continuous: d.continuous)
-            // Tiefengrenze des Auftritts; Tanne bunt Festlich ist exakt das Aussehen von 1.2.1
-            let dockLimit = (st.dockKind == .firColor && st.dockLook == .festive) ? nil : st.dockLook.dockDepthFraction.map { $0 * tile }
-            let dockSagValue0 = d.continuous || (dockFir && st.dockKind != .firColor) ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
-            let dockSagValue = Look.sagCap(dockSagValue0, limit: dockLimit)
-            let depth0 = st.dockKind == .firColor ? Garland.dockDepth * h / Garland.dockRefBulbH : (dockFir ? Garland.depthPer24(st.dockKind) * (h / 24) : 0)
-            let fit = Look.garlandFit(natural: depth0, limit: dockLimit)
-            let depth = depth0 * fit
+            let dockSagValue = d.continuous || (dockFir && st.dockKind != .firColor) ? dockSagRequested : Garland.dockExactSag(requested: dockSagRequested, midSag: dockSagMid, bulbH: h, tile: tile, level: st.dockSagLevel)
+            let depth = st.dockKind == .firColor ? Garland.dockDepth * h / Garland.dockRefBulbH : (dockFir ? Garland.depthPer24(st.dockKind) * (h / 24) : 0)
             switch d.edge {
             case .bottom:
                 spec = ChainSpec(p0: CGPoint(x: d.rect.minX - pad, y: d.edgeLine), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
-                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: -1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, garlandFit: fit, ornamentKeep: st.dockLook.ornamentKeep, hangBranches: st.dockLook.hasHangingBranches, dockBaubles: st.dockKind == .firColor && st.dockLook == .lavish, dockMaxGrow: grow)
+                                 length: Double(d.rect.width) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: -1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, look: st.dockLook, dockMaxGrow: grow)
             case .left:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: 1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, garlandFit: fit, ornamentKeep: st.dockLook.ornamentKeep, hangBranches: st.dockLook.hasHangingBranches, dockBaubles: st.dockKind == .firColor && st.dockLook == .lavish, dockMaxGrow: grow)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, look: st.dockLook, dockMaxGrow: grow)
             case .right:
                 spec = ChainSpec(p0: CGPoint(x: d.edgeLine, y: d.rect.maxY + pad), uDir: CGVector(dx: 0, dy: -1), hang: CGVector(dx: -1, dy: 0),
-                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, garlandFit: fit, ornamentKeep: st.dockLook.ornamentKeep, hangBranches: st.dockLook.hasHangingBranches, dockBaubles: st.dockKind == .firColor && st.dockLook == .lavish, dockMaxGrow: grow)
+                                 length: Double(d.rect.height) + 2 * pad, bulbH: h, sag: dockSagValue, liftSign: 1, isMenuBar: false, liftMax: 110, spacing: sp, garlandDepth: depth, dockTile: tile, look: st.dockLook, dockMaxGrow: grow)
             }
             dock.configure(spec: spec, style: style(st.dockKind, warm: st.dockWarm, pattern: st.dockPattern, tempo: st.dockTempo), scale: scale)
             dock.setVisible(true, layer: st.dockLayer, intro: nil)

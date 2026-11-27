@@ -1,35 +1,55 @@
 import Foundation
 
-/// "Auftritt" einer Kette (ab 1.3): bestimmt zusammen Tiefe, Schmuckmenge und Größe. Je Kette ein eigener Wert.
+/// "Auftritt" einer Kette (ab 1.3), je Kette ein eigener Wert. Grundsatz (SPEC Anhang A): Auftritt verkleinert nie. Zurückgenommen wird durch straffer spannen,
+/// Behang nur nahe den Aufhängepunkten, kürzere Fäden, Teile abnehmen, bei warmgold flacher anbinden. Einzige kleinere Sorte: C7 bei klassisch Dezent.
 enum Look: Int, CaseIterable {
     case subtle = 0, festive = 1, lavish = 2
+}
 
-    /// Tiefengrenze unter der Menüleiste in pt, nil: keine zusätzliche Grenze.
-    var menuDepth: Double? { [16, 30, nil][rawValue] }
-    /// Tiefengrenze am Dock als Bruchteil der Symbolhöhe, nil: keine zusätzliche Grenze.
-    var dockDepthFraction: Double? { [1.0 / 6, 1.0 / 4, nil][rawValue] }
-    /// Anteil des Schmucks (Kugeln, Zapfen, Schleifen), der bleibt.
-    var ornamentKeep: Double { [0, 0.5, 1][rawValue] }
-    /// Größe der Kette gegenüber Volle Pracht.
-    var sizeFactor: Double { [0.75, 0.9, 1][rawValue] }
-    /// Hängende Zweige gibt es nur ab Festlich.
-    var hasHangingBranches: Bool { self != .subtle }
+enum HangMode: Equatable { case none, edges, regular }
+enum ConeMode: Equatable { case none, perArc(Int), hookEveryOtherArc, scattered }
+enum BaubleMode: Equatable { case none, edgeHalf, full, dockSmall }
 
-    /// Gleichmäßig ausdünnen: behält etwa den Anteil `keep` der Elemente, verteilt über die ganze Länge.
-    static func thin<T>(_ items: [T], keep: Double) -> [T] {
-        if keep >= 1 { return items }
-        if keep <= 0 { return [] }
-        return items.enumerated().filter { Int(Double($0.offset + 1) * keep) > Int(Double($0.offset) * keep) }.map(\.element)
+/// Alle Werte einer Kette je Stil, Auftritt und Ort (Anhang A, Abschnitt 3). "Volle Pracht" ist der Stand von 1.2.2.
+struct LookProfile: Equatable {
+    var sag = 0.45                 // Durchhang in Birnenhöhen (Mittelstellung des Reglers)
+    var spacingK = 1.0             // Birnenabstand gegenüber Volle Pracht (klassisch Dezent 1,5, Tanne bunt am Dock Dezent 2)
+    var bulbScale = 1.0            // nur klassisch Dezent: kleinere Birnensorte C7
+    var flatten = 0.0              // Grad, um die die Zweige der hinteren, mittleren und vorderen Schicht zum Kabel gedreht werden (warmgold)
+    var hang = HangMode.regular
+    var cones = ConeMode.scattered
+    var bows = true
+    var baubles = BaubleMode.none
+    var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Tanne bunt, Dezent, Menüleiste)
+
+    static func make(_ kind: ChainStyleKind, _ look: Look, dock: Bool) -> LookProfile {
+        let i = look.rawValue
+        var p = LookProfile()
+        switch kind {
+        case .firColor:
+            p.bows = false; p.hang = .none
+            if dock {
+                p.sag = [0, 0.3, 0.3][i]; p.spacingK = [2, 1, 1][i]
+                p.cones = [ConeMode.none, .none, .perArc(2)][i]
+                p.baubles = [BaubleMode.none, .none, .dockSmall][i]
+            } else {
+                p.sag = [0.12, 0.4, 0.6][i]
+                p.cones = [ConeMode.perArc(1), .perArc(2), .perArc(2)][i]
+                p.baubles = [BaubleMode.none, .edgeHalf, .full][i]
+                p.strandLift = [6, 0, 0][i]
+            }
+        case .firGold:
+            p.sag = [0.12, 0.3, 0.45][i]; p.flatten = [30, 15, 0][i]
+            p.hang = [HangMode.none, .edges, .regular][i]
+            p.cones = [ConeMode.none, .hookEveryOtherArc, .scattered][i]
+            p.bows = i > 0
+        case .classic:
+            p.sag = dock ? [0.1, 0.3, 0.45][i] : [0.1, 0.3, 1.0][i]
+            p.spacingK = [1.5, 1, 1][i]; p.bulbScale = [0.7, 1, 1][i]
+            p.bows = false; p.hang = .none; p.cones = .none
+        }
+        return p
     }
-
-    /// Verkleinerung (0,3 bis 1) von Girlande, Fäden und hängenden Zweigen, damit sie `limit` nicht überschreiten.
-    static func garlandFit(natural: Double, limit: Double?) -> Double {
-        guard let limit, natural > 0 else { return 1 }
-        return min(1, max(0.3, limit / natural))
-    }
-
-    /// Flacherer Durchhang unter einer Tiefengrenze: höchstens die Hälfte der Grenze.
-    static func sagCap(_ sag: Double, limit: Double?) -> Double { limit.map { min(sag, 0.5 * $0) } ?? sag }
 }
 
 /// "Nur in Pausen": Schnee beginnt erst nach zwei Minuten ohne Eingabe.

@@ -129,7 +129,7 @@ enum Snapshot {
             let r = ChainRenderer()
             r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
             r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
-            r.update(time: 20, dt: 0.016, pointer: nil)
+            for i in 0..<240 { _ = r.update(time: 20 + Double(i) * 0.016, dt: 0.016, pointer: nil) }   // Federn einschwingen lassen (Zweige drehen sich in ihre Lage)
             let fr = r.window.frame
             write(r.window.rootLayer, size: fr.size, background: CGColor(gray: 0, alpha: 0), to: "\(dir)/control-\(name).png")
             try? "\(fr.minX) \(fr.minY) \(fr.width) \(fr.height)".write(toFile: "\(dir)/control-\(name).txt", atomically: true, encoding: .utf8)
@@ -145,26 +145,21 @@ enum Snapshot {
         }
 
         // Auftritt: je Stil und Auftritt Menüleiste (Leistenhöhe 33) und Dock unten (Symbolgröße 58), wie ScreenOverlay sie baut
-        for k in [ChainStyleKind.firColor, .firGold] {
+        for k in [ChainStyleKind.firColor, .firGold, .classic] {
             for look in Look.allCases {
-                let fir = k.isFir
-                let mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2, look: look)
-                let mdepth = Garland.depthPer24(k) * mh / 24, mfit = Look.garlandFit(natural: mdepth, limit: look.menuDepth)
-                let mspec = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh,
-                                      sag: Look.sagCap(mh * Garland.sag(k), limit: look.menuDepth), liftSign: -1, isMenuBar: true, liftMax: 0,
-                                      spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (k == .firColor ? Garland.tbSpacingFactor : 1), garlandDepth: mdepth * mfit,
-                                      garlandFit: mfit, ornamentKeep: look.ornamentKeep, hangBranches: look.hasHangingBranches)
+                let mp = LookProfile.make(k, look, dock: false)
+                let mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2)
+                let mspec = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh, sag: mh * mp.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
+                                      spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (k == .firColor ? Garland.tbSpacingFactor : 1) * mp.spacingK,
+                                      garlandDepth: k.isFir ? Garland.depthPer24(k) * mh / 24 : 0, look: look)
                 control("look-\(k.rawValue)-\(look.rawValue)-menubar", mspec, k, light: true)
                 let tile = 58.0
-                let dh = Garland.dockBulbHeight(tile: tile, bulbLevel: 2, barHeight: 37, kind: k, look: look)
-                let mid = Garland.dockMidSag(k, bulbH: dh)
-                let sag0 = (fir && k != .firColor) ? mid : Garland.dockExactSag(requested: mid, midSag: mid, bulbH: dh, tile: tile, level: 2)
-                let limit = (k == .firColor && look == .festive) ? nil : look.dockDepthFraction.map { $0 * tile }
-                let depth0 = k == .firColor ? Garland.dockDepth * dh / Garland.dockRefBulbH : Garland.depthPer24(k) * dh / 24
-                let fit = Look.garlandFit(natural: depth0, limit: limit)
-                let dspec = ChainSpec(p0: CGPoint(x: 41.5, y: 81), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1643.5, bulbH: dh, sag: Look.sagCap(sag0, limit: limit),
-                                      liftSign: -1, isMenuBar: false, liftMax: 110, spacing: ChainLayout.spacing(bulbHeight: dh, level: 2), garlandDepth: depth0 * fit, dockTile: tile,
-                                      garlandFit: fit, ornamentKeep: look.ornamentKeep, hangBranches: look.hasHangingBranches, dockBaubles: k == .firColor && look == .lavish, dockMaxGrow: 1)
+                let dh = Garland.dockBulbHeight(tile: tile, bulbLevel: 2, barHeight: 37, kind: k)
+                let mid = Garland.dockMidSag(k, bulbH: dh, look: look)
+                let sag = (k.isFir && k != .firColor) ? mid : Garland.dockExactSag(requested: mid, midSag: mid, bulbH: dh, tile: tile, level: 2)
+                let depth = k == .firColor ? Garland.dockDepth * dh / Garland.dockRefBulbH : (k.isFir ? Garland.depthPer24(k) * dh / 24 : 0)
+                let dspec = ChainSpec(p0: CGPoint(x: 41.5, y: 81), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1643.5, bulbH: dh, sag: sag, liftSign: -1, isMenuBar: false, liftMax: 110,
+                                      spacing: ChainLayout.spacing(bulbHeight: dh, level: 2) * LookProfile.make(k, look, dock: true).spacingK, garlandDepth: depth, dockTile: tile, look: look, dockMaxGrow: 1)
                 control("look-\(k.rawValue)-\(look.rawValue)-dock", dspec, k, light: false)
             }
         }

@@ -1405,7 +1405,7 @@ final class DockSizeTests: XCTestCase {
         let gold = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firGold, dock: true)
         XCTAssertFalse(gold.cones.isEmpty); XCTAssertFalse(gold.bows.isEmpty); XCTAssertTrue(gold.branches.contains { $0.layer == .hang })
         XCTAssertEqual(Garland.dockMidSag(.firGold, bulbH: 16), 16 * Garland.sag)
-        let bunt = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firColor, dock: true)
+        let bunt = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firColor, dock: true, profile: LookProfile.make(.firColor, .festive, dock: true))
         XCTAssertTrue(bunt.baubles.isEmpty && bunt.cones.isEmpty && bunt.branches.allSatisfy { $0.layer == .cluster }, "Tanne bunt am Dock: nur kleine Büschel wie in 1.2.1")
         XCTAssertEqual(Garland.dockMidSag(.firColor, bulbH: 16), 16 * Garland.dockSag)
         XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: 37, kind: .firColor), 16, accuracy: 1e-9, "Tanne bunt: ein Viertel der Symbolgröße wie in 1.2.1")
@@ -1839,48 +1839,66 @@ final class OnboardingSwitchesTests: XCTestCase {
 
 
 final class LookTests: XCTestCase {
-    func testThinningKeepsTheRequestedShareEvenly() {
-        let items = Array(0..<40)
-        XCTAssertEqual(Look.thin(items, keep: 1), items)
-        XCTAssertTrue(Look.thin(items, keep: 0).isEmpty)
-        let half = Look.thin(items, keep: 0.5)
-        XCTAssertEqual(half.count, 20)
-        XCTAssertEqual(half, Look.thin(items, keep: 0.5), "deterministisch")
-        let gaps = zip(half.dropFirst(), half).map { $0 - $1 }
-        XCTAssertLessThanOrEqual(gaps.max()! - gaps.min()!, 0, "gleichmäßig ausgedünnt")
-    }
-
-    func testDepthLimitsAndSizeByLook() {
-        XCTAssertEqual(Look.subtle.menuDepth, 16); XCTAssertEqual(Look.festive.menuDepth, 30); XCTAssertNil(Look.lavish.menuDepth)
-        XCTAssertEqual(Look.subtle.dockDepthFraction!, 1.0 / 6, accuracy: 1e-12); XCTAssertEqual(Look.festive.dockDepthFraction!, 0.25, accuracy: 1e-12); XCTAssertNil(Look.lavish.dockDepthFraction)
-        XCTAssertEqual(Look.garlandFit(natural: 60, limit: 30), 0.5, accuracy: 1e-12)
-        XCTAssertEqual(Look.garlandFit(natural: 20, limit: 30), 1, "unter der Grenze nichts kürzen")
-        XCTAssertEqual(Look.garlandFit(natural: 60, limit: nil), 1)
-        XCTAssertGreaterThanOrEqual(Look.garlandFit(natural: 600, limit: 16), 0.3)
-        XCTAssertEqual(Look.sagCap(20, limit: 16), 8); XCTAssertEqual(Look.sagCap(5, limit: 16), 5); XCTAssertEqual(Look.sagCap(20, limit: nil), 20)
-        XCTAssertLessThan(Look.subtle.sizeFactor, Look.festive.sizeFactor); XCTAssertEqual(Look.lavish.sizeFactor, 1)
-        XCTAssertEqual(Garland.menuBarBulbHeight(.firGold, barHeight: 33, level: 2, look: .lavish), ChainLayout.bulbHeight(menuBarHeight: 33, level: 2), "Volle Pracht ist der Stand von 1.2.2")
-    }
-
-    func testOrnamentsThinnedByLookAndHangingBranchesDropped() {
-        func plan(_ keep: Double, hang: Bool = true, style: ChainStyleKind = .firGold) -> GarlandPlan {
-            Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: style, dock: false, ornamentKeep: keep, hangBranches: hang)
+    func testLavishIsThe122StateAndNothingIsEverScaledDown() {
+        for k in [ChainStyleKind.firColor, .firGold, .classic] {
+            for dock in [false, true] {
+                let p = LookProfile.make(k, .lavish, dock: dock)
+                XCTAssertEqual(p.bulbScale, 1); XCTAssertEqual(p.spacingK, 1); XCTAssertEqual(p.flatten, 0); XCTAssertEqual(p.strandLift, 0)
+            }
         }
-        let full = plan(1), half = plan(0.5), none = plan(0)
-        XCTAssertEqual(Double(half.cones.count), Double(full.cones.count) / 2, accuracy: 1)
-        XCTAssertEqual(Double(half.bows.count), Double(full.bows.count) / 2, accuracy: 1)
-        XCTAssertTrue(none.cones.isEmpty && none.bows.isEmpty)
-        XCTAssertTrue(full.branches.contains { $0.layer == .hang })
-        XCTAssertFalse(plan(1, hang: false).branches.contains { $0.layer == .hang })
-        let bunt = plan(1, style: .firColor), buntHalf = plan(0.5, style: .firColor)
-        XCTAssertFalse(bunt.baubles.isEmpty); XCTAssertEqual(Double(buntHalf.baubles.count), Double(bunt.baubles.count) / 2, accuracy: 1)
-        XCTAssertTrue(plan(0, style: .firColor).baubles.isEmpty)
+        XCTAssertEqual(LookProfile.make(.firColor, .lavish, dock: false).sag, 0.6); XCTAssertEqual(LookProfile.make(.firGold, .lavish, dock: false).sag, 0.45)
+        XCTAssertEqual(LookProfile.make(.classic, .lavish, dock: false).sag, 1.0); XCTAssertEqual(LookProfile.make(.classic, .lavish, dock: true).sag, 0.45)
+        XCTAssertEqual(LookProfile.make(.firColor, .lavish, dock: true).sag, 0.3)
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firGold, barHeight: 33, level: 2), ChainLayout.bulbHeight(menuBarHeight: 33, level: 2))
     }
 
-    func testBuntDockHasBaublesOnlyInLavish() {
-        func plan(_ baubles: Bool) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 0.8, style: .firColor, dock: true, dockBaubles: baubles) }
-        XCTAssertTrue(plan(false).baubles.isEmpty, "Festlich: wie 1.2.1, ohne Kugeln")
-        XCTAssertFalse(plan(true).baubles.isEmpty)
+    func testSagByLookFollowsAppendixA() {
+        XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.firColor, $0, dock: false).sag }, [0.12, 0.4, 0.6])
+        XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.firGold, $0, dock: false).sag }, [0.12, 0.3, 0.45])
+        XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.classic, $0, dock: false).sag }, [0.1, 0.3, 1.0])
+        XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.firColor, $0, dock: true).sag }, [0, 0.3, 0.3])
+        XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: false).strandLift, 6, "Tanne bunt Dezent liegt auf der Kante")
+    }
+
+    func testOnlyClassicSubtleHasASmallerBulbAndFewerBulbs() {
+        let c = LookProfile.make(.classic, .subtle, dock: false)
+        XCTAssertEqual(c.bulbScale, 0.7); XCTAssertEqual(c.spacingK, 1.5)
+        XCTAssertEqual(LookProfile.make(.classic, .festive, dock: false).bulbScale, 1)
+        XCTAssertEqual(LookProfile.make(.firGold, .subtle, dock: false).bulbScale, 1)
+        XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: true).spacingK, 2, "Tanne bunt am Dock Dezent: jede zweite Birne")
+    }
+
+    func testWarmGoldBranchesAreRotatedNotScaledAndHangingBranchesFollowTheLook() {
+        func plan(_ look: Look) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: .firGold, dock: false, profile: LookProfile.make(.firGold, look, dock: false)) }
+        let lavish = plan(.lavish), festive = plan(.festive), subtle = plan(.subtle)
+        XCTAssertEqual(lavish.branches.filter { $0.layer != .hang }.count, subtle.branches.filter { $0.layer != .hang }.count, "alle Zweige bleiben")
+        XCTAssertTrue(subtle.branches.allSatisfy { $0.layer != .hang }, "Dezent: keine hängenden Zweige")
+        let hangF = festive.branches.filter { $0.layer == .hang }
+        XCTAssertFalse(hangF.isEmpty)
+        XCTAssertTrue(hangF.allSatisfy { Garland.arcT($0.u, 160) < 0.2 || Garland.arcT($0.u, 160) > 0.8 }, "Festlich: Behang nur an den Aufhängepunkten")
+        XCTAssertTrue(lavish.branches.contains { $0.layer == .hang })
+        let a = lavish.branches.first { $0.layer == .back }!, b = subtle.branches.first { $0.layer == .back }!
+        XCTAssertEqual(abs(b.rotation - a.rotation), 30, accuracy: 1e-9, "Dezent: 30 Grad flacher angebunden")
+        XCTAssertTrue(subtle.cones.isEmpty && subtle.bows.isEmpty)
+        XCTAssertTrue(festive.cones.allSatisfy { let t = Garland.arcT($0, 160); return t >= 0.12 && t <= 0.20 }, "Zapfen bei t 0,12 bis 0,20")
+        XCTAssertEqual(festive.cones.count, 5, "jeder zweite Bogen")
+        XCTAssertEqual(festive.bows.count, lavish.bows.count)
+    }
+
+    func testBuntBaublesFollowTheLook() {
+        func plan(_ look: Look, dock: Bool = false, scale: Double = 1) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: scale, style: .firColor, dock: dock, profile: LookProfile.make(.firColor, look, dock: dock)) }
+        let lavish = plan(.lavish), festive = plan(.festive), subtle = plan(.subtle)
+        XCTAssertTrue(subtle.baubles.isEmpty); XCTAssertEqual(subtle.cones.count, 10, "Dezent: ein Zapfen je Bogen"); XCTAssertEqual(lavish.cones.count, 20)
+        XCTAssertFalse(festive.baubles.isEmpty)
+        XCTAssertLessThan(Double(festive.baubles.count), Double(lavish.baubles.count) * 0.65, "Festlich: etwa halb so viele Kugeln")
+        XCTAssertTrue(festive.baubles.allSatisfy { let t = Garland.arcT($0.u, 160); return t < 0.3 || t > 0.7 }, "Festlich: keine Kugel in der Bogenmitte")
+        XCTAssertTrue(festive.baubles.allSatisfy { $0.thread >= 15 && $0.thread <= 25 }, "Festlich: kurze Fäden")
+        XCTAssertTrue(lavish.baubles.allSatisfy { $0.thread >= 45 && $0.thread <= 65 })
+        let dockFestive = plan(.festive, dock: true, scale: 0.8), dockLavish = plan(.lavish, dock: true, scale: 0.8)
+        XCTAssertTrue(dockFestive.baubles.isEmpty && dockFestive.cones.isEmpty, "Dock Festlich: wie 1.2.1, nur Büschel")
+        XCTAssertFalse(dockLavish.baubles.isEmpty)
+        XCTAssertTrue(dockLavish.baubles.allSatisfy { [0, 2, 4].contains($0.pattern) }, "kleine Kugel nur mit den Mustern ohne Schleifchen")
+        XCTAssertTrue(dockLavish.baubles.allSatisfy { let t = Garland.arcT($0.u, 160); return t < 0.35 || t > 0.65 })
     }
 
     func testMigrationNewUsersFestiveExistingUsersLavishAndOnlyOnce() {

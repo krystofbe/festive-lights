@@ -77,8 +77,8 @@ enum Garland {
 
     /// Dock-Kette: Bei Symbolgröße 64 pt und Mittelstellung ist jedes Element halb so groß wie bei der Menüleisten-Kette desselben Bildschirms (`barHeight`).
     /// Die Kette skaliert linear mit der Symbolgröße, der Regler wirkt relativ dazu, nie unter 6 pt.
-    static func dockBulbHeight(tile: Double, bulbLevel: Int, barHeight: Double = 24, kind: ChainStyleKind = .firGold, look: Look = .lavish) -> Double {
-        if kind == .firColor { return max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel) * (look == .subtle ? look.sizeFactor : 1)) }   // Tanne bunt: Maße von 1.2.1
+    static func dockBulbHeight(tile: Double, bulbLevel: Int, barHeight: Double = 24, kind: ChainStyleKind = .firGold) -> Double {
+        if kind == .firColor { return max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel)) }   // Tanne bunt: Maße von 1.2.1
         return max(6, 0.5 * max(barHeight, 22) * tile / 64 * Levels.value(Levels.bulbSize, bulbLevel))
     }
     /// Birnenhöhe, auf die die Dock-Büschel und -Zweige bezogen sind (Symbolgröße 73 pt bei Mittelstellung).
@@ -104,12 +104,12 @@ enum Garland {
     }
 
     /// Durchhang-Mittelstellung am Dock: Tanne wie an der Menüleiste (gleiche Stildefinition), klassisch wie bisher.
-    static func dockMidSag(_ k: ChainStyleKind, bulbH: Double) -> Double { k == .firColor ? bulbH * dockSag : (k.isFir ? bulbH * sag(k) : bulbH * dockClassicSag) }
+    static func dockMidSag(_ k: ChainStyleKind, bulbH: Double, look: Look = .lavish) -> Double { bulbH * LookProfile.make(k, look, dock: true).sag }
 
     /// "Tanne bunt" an der Menüleiste: eine Größenstufe kleiner als der Regler (Mittelstellung = Stufe 2 mit Faktor 0,85), damit Tabs und Titel lesbar bleiben.
     static let tbSizeFactor = 0.85
-    static func menuBarBulbHeight(_ k: ChainStyleKind, barHeight: Double, level: Int, look: Look = .lavish) -> Double {
-        ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1) * look.sizeFactor
+    static func menuBarBulbHeight(_ k: ChainStyleKind, barHeight: Double, level: Int) -> Double {
+        ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1)
     }
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
@@ -127,47 +127,57 @@ enum Garland {
 
     static func anchorSpacing(scale s: Double) -> Double { 22 * s / max(density, 0.1) }
 
+    /// Lage im Bogen: 0 und 1 sind die Aufhängepunkte, 0,5 die tiefste Stelle.
+    static func arcT(_ u: Double, _ arcLength: Double) -> Double { let t = (u / max(arcLength, 1)).truncatingRemainder(dividingBy: 1); return t < 0 ? t + 1 : t }
+
     /// Stabile Platzierung: gleiche Eingaben ergeben immer denselben Plan.
     static func plan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double] = [],
-                     ornamentKeep keep: Double = 1, hangBranches: Bool = true, dockBaubles: Bool = false) -> GarlandPlan {
-        var p = rawPlan(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, style: style, dock: dock, bulbPositions: bulbPositions, dockBaubles: dockBaubles)
-        p.cones = Look.thin(p.cones, keep: keep); p.bows = Look.thin(p.bows, keep: keep); p.baubles = Look.thin(p.baubles, keep: keep)
-        if !hangBranches { p.branches.removeAll { $0.layer == .hang } }
-        return p
-    }
-
-    private static func rawPlan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double], dockBaubles: Bool) -> GarlandPlan {
+                     profile: LookProfile? = nil, dockTile: Double = 58) -> GarlandPlan {
         guard style.isFir, length > 0 else { return GarlandPlan() }
-        if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions, dockBaubles: dockBaubles) }
+        let prof = profile ?? LookProfile.make(style, .lavish, dock: dock)
+        if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions, prof: prof, dockTile: dockTile) }
         var plan = GarlandPlan()
         let n = max(1, Int(length / anchorSpacing(scale: s)))
         let step = length / Double(n)
         func pick(_ layer: BranchLayer, _ k: Int, _ salt: Int) -> Int { 1 + Int(stableRandom(k, salt, 11) * Double(spriteCounts[layer]!)) % spriteCounts[layer]! }
         func rot(_ k: Int, _ salt: Int, _ range: Double) -> Double { (stableRandom(k, salt, 12) * 2 - 1) * range }
+        let flat = prof.flatten   // Zweige zum Kabel hin drehen (gespiegelte in Gegenrichtung), Länge und Nadeln bleiben
         for k in 0..<n {
             let u = (Double(k) + 0.5) * step
-            plan.branches.append(GarlandBranch(layer: .back, sprite: pick(.back, k, 1), u: u, mirrored: k % 2 == 1, rotation: rot(k, 1, 12)))
+            let m1 = k % 2 == 1, m2 = k % 2 == 0, m4 = stableRandom(k, 4, 16) < 0.5
+            plan.branches.append(GarlandBranch(layer: .back, sprite: pick(.back, k, 1), u: u, mirrored: m1, rotation: rot(k, 1, 12) + (m1 ? -flat : flat)))
             if stableRandom(k, 2, 13) < 0.75 {
-                plan.branches.append(GarlandBranch(layer: .mid, sprite: pick(.mid, k, 2), u: u + step * 0.3, mirrored: k % 2 == 0, rotation: rot(k, 2, 12)))
+                plan.branches.append(GarlandBranch(layer: .mid, sprite: pick(.mid, k, 2), u: u + step * 0.3, mirrored: m2, rotation: rot(k, 2, 12) + (m2 ? -flat : flat)))
             }
-            if (k + 2) % 5 == 0 {
+            let t = arcT(u, arcLength)
+            let hangHere: Bool
+            switch prof.hang {
+            case .none: hangHere = false
+            case .edges: hangHere = (t < 0.2 || t > 0.8) && stableRandom(k, 3, 18) < 0.5
+            case .regular: hangHere = (k + 2) % 5 == 0
+            }
+            if hangHere {
                 plan.branches.append(GarlandBranch(layer: .hang, sprite: pick(.hang, k, 3), u: u, mirrored: stableRandom(k, 3, 14) < 0.5, rotation: rot(k, 3, 8)))
             }
             if stableRandom(k, 4, 15) < 0.22 {
-                plan.branches.append(GarlandBranch(layer: .front, sprite: pick(.front, k, 4), u: u - step * 0.2, mirrored: stableRandom(k, 4, 16) < 0.5, rotation: rot(k, 4, 10)))
+                plan.branches.append(GarlandBranch(layer: .front, sprite: pick(.front, k, 4), u: u - step * 0.2, mirrored: m4, rotation: rot(k, 4, 10) + (m4 ? -flat : flat)))
             }
         }
         if style == .firGold {
             for a in 0..<max(arcCount, 1) {
-                plan.cones.append((Double(a) + 0.2 + 0.6 * stableRandom(a, 5, 17)) * arcLength)
+                switch prof.cones {
+                case .none, .perArc: break
+                case .hookEveryOtherArc: if a % 2 == 0 { plan.cones.append((Double(a) + 0.12 + 0.08 * stableRandom(a, 5, 17)) * arcLength) }
+                case .scattered: plan.cones.append((Double(a) + 0.2 + 0.6 * stableRandom(a, 5, 17)) * arcLength)
+                }
             }
-            for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) }
+            if prof.bows { for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) } }
         }
         return plan
     }
 
     /// "Tanne bunt": Büschel dicht entlang des Strangs, Kugeln an Goldfäden aus den Büscheln, zwei Zapfen je Bogen. Am Dock nur kleine Büschel.
-    private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double], dockBaubles: Bool) -> GarlandPlan {
+    private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double], prof: LookProfile, dockTile: Double) -> GarlandPlan {
         var plan = GarlandPlan()
         let unit = tbUnit * s
         let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale * s : unit))))
@@ -176,28 +186,37 @@ enum Garland {
             plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,
                                                rotation: (stableRandom(k, 2, 22) * 2 - 1) * tbRotation, scale: 1.1 + 0.15 * stableRandom(k, 3, 23)))
         }
-        if dock && !dockBaubles { return plan }   // Tanne bunt am Dock: nur kleine Büschel wie in 1.2.1 (Festlich), mit kleinen Kugeln bei Volle Pracht
-        let every = tbBaubleUnits * unit
-        var u = every * 0.5, i = 0
-        while u < length {
-            let sz = tbBaubleSizes[plan.baubles.count % 5]
-            let half = sz.w * unit / 2 + 2
-            let clear = 6 * unit + 2   // der Faden endet nie an einer Birne
-            let home = min(max(Int(u / step), 0), n - 1)
-            for d in [0, 1, -1, 2, -2] {
-                let c = home + d
-                guard c >= 0, c < n else { continue }
-                let bu = plan.branches[c].u
-                guard bu > half, bu < length - half, bulbPositions.allSatisfy({ abs($0 - bu) > clear }) else { continue }
-                plan.baubles.append(GarlandBauble(branch: c, pattern: plan.baubles.count % 5, thread: i % 2 == 0 ? 45 + 20 * stableRandom(i, 4, 24) : 65 - 20 * stableRandom(i, 4, 24),
-                                                  x: 65, y: 52, u: bu))
-                break
+        if prof.baubles != .none {
+            let small = prof.baubles == .dockSmall
+            let every = small ? 1.5 * dockTile : tbBaubleUnits * unit * (prof.baubles == .edgeHalf ? 2 : 1)
+            var u = every * 0.5, i = 0
+            while u < length {
+                let pattern = small ? [0, 2, 4][plan.baubles.count % 3] : plan.baubles.count % 5   // kleine Kugel nur mit den Mustern ohne Schleifchen
+                let sz = tbBaubleSizes[pattern]
+                let half = sz.w * unit / 2 + 2
+                let clear = 6 * unit + 2   // der Faden endet nie an einer Birne
+                let home = min(max(Int(u / step), 0), n - 1)
+                for d in (prof.baubles == .full ? [0, 1, -1, 2, -2] : [0, 1, -1, 2, -2, 3, -3]) {
+                    let c = home + d
+                    guard c >= 0, c < n else { continue }
+                    let bu = plan.branches[c].u
+                    let t = arcT(bu, arcLength)
+                    if prof.baubles == .edgeHalf, t >= 0.3, t <= 0.7 { continue }   // nie in der Bogenmitte
+                    if small, t >= 0.35, t <= 0.65 { continue }
+                    guard bu > half, bu < length - half, bulbPositions.allSatisfy({ abs($0 - bu) > clear }) else { continue }
+                    let r = stableRandom(i, 4, 24)
+                    let thread = small ? 21 + 13 * r : (prof.baubles == .edgeHalf ? (i % 2 == 0 ? 15 + 10 * r : 25 - 10 * r) : (i % 2 == 0 ? 45 + 20 * r : 65 - 20 * r))
+                    plan.baubles.append(GarlandBauble(branch: c, pattern: pattern, thread: thread, x: 65, y: 52, u: bu))
+                    break
+                }
+                u += every; i += 1
             }
-            u += every; i += 1
         }
-        for a in 0..<max(arcCount, 1) {
-            plan.cones.append((Double(a) + 0.25 + 0.1 * stableRandom(a, 5, 25)) * arcLength)
-            plan.cones.append((Double(a) + 0.65 + 0.1 * stableRandom(a, 6, 26)) * arcLength)
+        if case .perArc(let per) = prof.cones, per > 0 {
+            for a in 0..<max(arcCount, 1) {
+                plan.cones.append((Double(a) + 0.25 + 0.1 * stableRandom(a, 5, 25)) * arcLength)
+                if per > 1 { plan.cones.append((Double(a) + 0.65 + 0.1 * stableRandom(a, 6, 26)) * arcLength) }
+            }
         }
         return plan
     }

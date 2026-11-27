@@ -15,10 +15,7 @@ struct ChainSpec: Equatable {
     var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
     var stripOffset = 0.0    // Abstand des Kabelanfangs vom Anfang einer durchgehenden Girlande über mehrere Bildschirme (F4a 8)
     var stripTotal = 0.0     // Länge der ganzen Girlande, 0: Kette für sich
-    var garlandFit = 1.0      // Verkleinerung von Girlande, Fäden und hängenden Zweigen unter einer Tiefengrenze (Auftritt)
-    var ornamentKeep = 1.0    // Anteil des Schmucks (Kugeln, Zapfen, Schleifen)
-    var hangBranches = true
-    var dockBaubles = false   // Tanne bunt am Dock: kleine Kugeln (Volle Pracht)
+    var look = Look.lavish    // Auftritt (SPEC Anhang A)
     var dockMaxGrow = 1.0    // größtes Wachstum bei der Vergrößerung (largesize durch tilesize), für Fenstergröße und scharfe Sprites
     var isDock: Bool { !isMenuBar }
 
@@ -96,6 +93,7 @@ final class ChainRenderer {
     private var branchChains: [BeadChain] = []
     private var allPieces: [Piece] = []
     private var style = ChainStyle()
+    private var prof = LookProfile()
     private var layout = ChainLayout(length: 10, spacing: 40)
     private var bulbs: [Bulb] = []
     private var beads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
@@ -178,7 +176,8 @@ final class ChainRenderer {
         strand.strokeColor = FirSprites.strandColor
         strand.lineWidth = 8 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH
         cable.zPosition = 2
-        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)|\(new.garlandFit)|\(new.ornamentKeep)|\(new.hangBranches)|\(new.dockBaubles)"
+        prof = LookProfile.make(newStyle.kind, new.look, dock: new.isDock)
+        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)|\(new.look.rawValue)"
         if key != builtKey {
             builtKey = key
             rebuildBulbs(new)
@@ -192,7 +191,7 @@ final class ChainRenderer {
     private func rebuildBulbs(_ sp: ChainSpec) {
         // Bei einer durchgehenden Girlande liegt das Raster über der ganzen Länge, jeder Bildschirm zeigt seinen Abschnitt
         stripOff = sp.stripTotal > 0 ? sp.stripOffset : 0
-        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: bunt && !sp.isDock ? 5 : 6, irregular: style.kind == .firGold)
+        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: Int((Double(bunt && !sp.isDock ? 5 : 6) / prof.spacingK).rounded()), irregular: style.kind == .firGold)
         let all = layout.bulbPositions
         let first = all.firstIndex { $0 >= stripOff } ?? all.count
         localBulbs = all.filter { $0 >= stripOff && $0 < stripOff + sp.length }.map { $0 - stripOff }
@@ -203,8 +202,8 @@ final class ChainRenderer {
         let fs = unitScale(sp)
         // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
         let bs = bunt && sp.isDock ? CGSize(width: sp.bulbH * 12.0 / 22, height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
-        let h = fir ? bs.height : sp.bulbH
-        let w = fir ? bs.width : h * 0.6
+        let h = fir ? bs.height : sp.bulbH * prof.bulbScale   // klassisch Dezent: kleinere Sorte C7 (etwa 70 %, etwas schlanker)
+        let w = fir ? bs.width : h * (prof.bulbScale < 1 ? 0.55 : 0.6)
         // Am Dock werden die Sprites für die größte Vergrößerung gerendert, damit sie beim Mitwachsen scharf bleiben
         let reserve = sp.isDock ? sp.dockMaxGrow : 1
         let px = max(8, Int((h * scale * reserve).rounded()))
@@ -243,16 +242,16 @@ final class ChainRenderer {
         coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
         branchChains = []; allPieces = []
         guard style.kind.isFir else { return }
-        let fs = unitScale(sp) * sp.garlandFit
+        let fs = unitScale(sp)
         let dock = sp.isDock
         let bunt = self.bunt
         if bunt { content.addSublayer(strand) }
         func branchScale(_ br: GarlandBranch) -> Double {
-            if bunt { return dock ? Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * sp.garlandFit * br.scale : Garland.tbUnit * fs * br.scale }
+            if bunt { return dock ? Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * br.scale : Garland.tbUnit * fs * br.scale }
             return (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
         }
         let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: bunt && dock ? sp.bulbH / Garland.dockRefBulbH : fs, style: style.kind, dock: dock, bulbPositions: localBulbs,
-                                ornamentKeep: sp.ornamentKeep, hangBranches: sp.hangBranches, dockBaubles: sp.dockBaubles)
+                                profile: prof, dockTile: sp.dockTile > 0 ? sp.dockTile : 58)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored
@@ -389,7 +388,7 @@ final class ChainRenderer {
         let first = branches.count, second = first + cones.count
         for (idx, piece) in allPieces.enumerated() {
             let u = piece.u
-            let v = cableV(sp, u, wave: false)
+            let v = cableV(sp, u, wave: false) - prof.strandLift   // Tanne bunt Dezent: Strang und Büschel liegen auf der Kante
             let g = sp.point(u: u, v: v)
             piece.container.position = CGPoint(x: g.x - origin.x, y: g.y - origin.y)
             let v2 = cableV(sp, u + 3, wave: false), v1 = cableV(sp, u - 3, wave: false)
@@ -524,7 +523,7 @@ final class ChainRenderer {
                 let sp2 = CGMutablePath()
                 for i in 0...n {
                     let u = min(Double(i) * du, sp.length)
-                    let pt = local(sp.point(u: u, v: cableV(sp, u, wave: false)))
+                    let pt = local(sp.point(u: u, v: cableV(sp, u, wave: false) - prof.strandLift))
                     if i == 0 { sp2.move(to: pt) } else { sp2.addLine(to: pt) }
                 }
                 strand.path = sp2
