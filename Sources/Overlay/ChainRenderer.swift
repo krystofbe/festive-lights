@@ -191,7 +191,7 @@ final class ChainRenderer {
     private func rebuildBulbs(_ sp: ChainSpec) {
         // Bei einer durchgehenden Girlande liegt das Raster über der ganzen Länge, jeder Bildschirm zeigt seinen Abschnitt
         stripOff = sp.stripTotal > 0 ? sp.stripOffset : 0
-        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: Int((Double(bunt && !sp.isDock ? 5 : 6) / prof.spacingK).rounded()), irregular: style.kind == .firGold)
+        layout = ChainLayout(length: sp.stripTotal > 0 ? sp.stripTotal : sp.length, spacing: sp.spacing, bulbsPerArc: prof.perArc ?? Int((Double(bunt && !sp.isDock ? 5 : 6) / prof.spacingK).rounded()), irregular: style.kind == .firGold)
         let all = layout.bulbPositions
         let first = all.firstIndex { $0 >= stripOff } ?? all.count
         localBulbs = all.filter { $0 >= stripOff && $0 < stripOff + sp.length }.map { $0 - stripOff }
@@ -202,8 +202,9 @@ final class ChainRenderer {
         let fs = unitScale(sp)
         // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
         let bs = bunt && sp.isDock ? CGSize(width: sp.bulbH * 12.0 / 22, height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
-        let h = fir ? bs.height : sp.bulbH * prof.bulbScale   // klassisch Dezent: kleinere Sorte C7 (etwa 70 %, etwas schlanker)
-        let w = fir ? bs.width : h * (prof.bulbScale < 1 ? 0.55 : 0.6)
+        let mini = prof.miniBulb   // feste zweite Sorte "Mini" (Dezent an der Menüleiste, warmgold und klassisch)
+        let h = mini ?? (fir ? bs.height : sp.bulbH * prof.bulbScale)   // am Dock klassisch Dezent: kleinere Sorte C7 (etwa 70 %, etwas schlanker)
+        let w = mini != nil ? h * (fir ? bs.width / bs.height : 0.5) : (fir ? bs.width : h * (prof.bulbScale < 1 ? 0.55 : 0.6))
         // Am Dock werden die Sprites für die größte Vergrößerung gerendert, damit sie beim Mitwachsen scharf bleiben
         let reserve = sp.isDock ? sp.dockMaxGrow : 1
         let px = max(8, Int((h * scale * reserve).rounded()))

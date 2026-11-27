@@ -112,6 +112,14 @@ enum Garland {
         ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1)
     }
 
+    /// Birnenabstand an der Menüleiste: klassisch Dezent hängt mit Mini-Birnen im Abstand von Tanne bunt, sonst je Stil.
+    static func menuBarSpacing(_ k: ChainStyleKind, look: Look, barHeight: Double, level: Int = 2) -> Double {
+        let p = LookProfile.make(k, look, dock: false)
+        let ref: ChainStyleKind = p.miniBulb != nil && k == .classic ? .firColor : k
+        let h = menuBarBulbHeight(ref, barHeight: barHeight, level: level)
+        return ChainLayout.spacing(bulbHeight: h, level: level) * (ref == .firColor ? tbSpacingFactor : 1) * p.spacingK
+    }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
@@ -173,6 +181,7 @@ enum Garland {
             }
             if prof.bows { for a in 0...max(arcCount, 1) { plan.bows.append(Double(a) * arcLength) } }
         }
+        if prof.noGreen { plan.branches = [] }
         return plan
     }
 

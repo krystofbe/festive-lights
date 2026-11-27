@@ -20,7 +20,12 @@ struct LookProfile: Equatable {
     var cones = ConeMode.scattered
     var bows = true
     var baubles = BaubleMode.none
+    var miniBulb: Double? = nil    // Höhe (pt) der festen zweiten Birnensorte "Mini" (Dezent an der Menüleiste bei warmgold und klassisch)
+    var perArc: Int? = nil         // Birnen je Bogen, wenn abweichend
+    var noGreen = false            // warmgold Dezent an der Menüleiste: nur Kabel und Mini-Birnen
     var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Dezent: 3) (Tanne bunt, Dezent, Menüleiste)
+
+    static let miniHeight = 6.5   // etwa so groß wie die Birnen von Tanne bunt
 
     static func make(_ kind: ChainStyleKind, _ look: Look, dock: Bool) -> LookProfile {
         let i = look.rawValue
@@ -43,10 +48,12 @@ struct LookProfile: Equatable {
             p.hang = [HangMode.none, .edges, .regular][i]
             p.cones = [ConeMode.none, .hookEveryOtherArc, .scattered][i]
             p.bows = i > 0
+            if !dock && i == 0 { p.miniBulb = LookProfile.miniHeight; p.noGreen = true; p.strandLift = 3 }
         case .classic:
             p.sag = dock ? [0.1, 0.3, 0.45][i] : [0.1, 0.3, 1.0][i]
-            p.spacingK = [1.5, 1, 1][i]; p.bulbScale = [0.7, 1, 1][i]
             p.bows = false; p.hang = .none; p.cones = .none
+            if dock { p.spacingK = [1.5, 1, 1][i]; p.bulbScale = [0.7, 1, 1][i] }   // am Dock Dezent: C7
+            else if i == 0 { p.miniBulb = LookProfile.miniHeight; p.perArc = 5 }     // an der Menüleiste Mini-Birnen, Abstand wie bei Tanne bunt
         }
         return p
     }

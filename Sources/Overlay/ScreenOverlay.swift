@@ -174,7 +174,7 @@ final class ScreenOverlay {
             let prof = LookProfile.make(st.kind, st.look, dock: false)
             let spec = ChainSpec(p0: CGPoint(x: screen.frame.minX, y: bar.bottomY), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1),
                                  length: Double(screen.frame.width), bulbH: h, sag: h * prof.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
-                                 spacing: ChainLayout.spacing(bulbHeight: h, level: 2) * (st.kind == .firColor ? Garland.tbSpacingFactor : 1) * prof.spacingK,
+                                 spacing: Garland.menuBarSpacing(st.kind, look: st.look, barHeight: bar.height),
                                  garlandDepth: fir ? Garland.depthPer24(st.kind) * (h / 24) : 0,
                                  stripOffset: strip?.offset ?? 0, stripTotal: strip?.total ?? 0, look: st.look)
             menubar.configure(spec: spec, style: style(st.kind, warm: st.warm, pattern: st.pattern, tempo: st.tempo), scale: scale)

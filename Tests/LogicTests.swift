@@ -1868,17 +1868,30 @@ final class LookTests: XCTestCase {
         XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: false).strandLift, 3, "Tanne bunt Dezent liegt auf der Kante")
     }
 
-    func testOnlyClassicSubtleHasASmallerBulbAndFewerBulbs() {
-        let c = LookProfile.make(.classic, .subtle, dock: false)
-        XCTAssertEqual(c.bulbScale, 0.7); XCTAssertEqual(c.spacingK, 1.5)
-        XCTAssertEqual(LookProfile.make(.classic, .festive, dock: false).bulbScale, 1)
-        XCTAssertEqual(LookProfile.make(.firGold, .subtle, dock: false).bulbScale, 1)
+    func testSubtleMenuBarUsesMiniBulbsForWarmGoldAndClassicAndTheDockKeepsItsLook() {
+        let g = LookProfile.make(.firGold, .subtle, dock: false), c = LookProfile.make(.classic, .subtle, dock: false)
+        XCTAssertEqual(g.miniBulb, 6.5); XCTAssertTrue(g.noGreen, "warmgold Dezent: nur Kabel und Mini-Birnen"); XCTAssertEqual(g.strandLift, 3)
+        XCTAssertEqual(c.miniBulb, 6.5); XCTAssertEqual(c.perArc, 5); XCTAssertEqual(c.bulbScale, 1, "C7 entfällt an der Menüleiste")
+        XCTAssertNil(LookProfile.make(.firColor, .subtle, dock: false).miniBulb)
+        for look in [Look.festive, .lavish] { for k in [ChainStyleKind.firGold, .classic] { XCTAssertNil(LookProfile.make(k, look, dock: false).miniBulb) } }
+        // Dock unverändert
+        let cd = LookProfile.make(.classic, .subtle, dock: true), gd = LookProfile.make(.firGold, .subtle, dock: true)
+        XCTAssertEqual(cd.bulbScale, 0.7); XCTAssertEqual(cd.spacingK, 1.5); XCTAssertNil(cd.miniBulb)
+        XCTAssertNil(gd.miniBulb); XCTAssertFalse(gd.noGreen); XCTAssertEqual(gd.flatten, 30)
         XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: true).spacingK, 2, "Tanne bunt am Dock Dezent: jede zweite Birne")
         XCTAssertEqual([Look.festive, .lavish].map { LookProfile.make(.firColor, $0, dock: true).spacingK }, [1.5, 1.5], "Festlich und Volle Pracht: ein Drittel weniger Birnen")
     }
 
+    func testClassicSubtleMenuBarSpacingMatchesBuntSubtleAndGoldHasNoGreen() {
+        let bunt = Garland.menuBarSpacing(.firColor, look: .subtle, barHeight: 33)
+        XCTAssertEqual(Garland.menuBarSpacing(.classic, look: .subtle, barHeight: 33), bunt, accuracy: 1e-9, "etwa gleich viele Birnen je Breite wie bei Tanne bunt")
+        XCTAssertEqual(Garland.menuBarSpacing(.classic, look: .lavish, barHeight: 33), ChainLayout.spacing(bulbHeight: 33, level: 2), "Volle Pracht unverändert")
+        let plan = Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: .firGold, dock: false, profile: LookProfile.make(.firGold, .subtle, dock: false))
+        XCTAssertTrue(plan.branches.isEmpty && plan.cones.isEmpty && plan.bows.isEmpty)
+    }
+
     func testWarmGoldBranchesAreRotatedNotScaledAndHangingBranchesFollowTheLook() {
-        func plan(_ look: Look) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: .firGold, dock: false, profile: LookProfile.make(.firGold, look, dock: false)) }
+        func plan(_ look: Look) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: .firGold, dock: true, profile: LookProfile.make(.firGold, look, dock: true)) }
         let lavish = plan(.lavish), festive = plan(.festive), subtle = plan(.subtle)
         XCTAssertEqual(lavish.branches.filter { $0.layer != .hang }.count, subtle.branches.filter { $0.layer != .hang }.count, "alle Zweige bleiben")
         XCTAssertTrue(subtle.branches.allSatisfy { $0.layer != .hang }, "Dezent: keine hängenden Zweige")

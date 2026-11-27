@@ -150,7 +150,7 @@ enum Snapshot {
                 let mp = LookProfile.make(k, look, dock: false)
                 let mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2)
                 let mspec = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh, sag: mh * mp.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
-                                      spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (k == .firColor ? Garland.tbSpacingFactor : 1) * mp.spacingK,
+                                      spacing: Garland.menuBarSpacing(k, look: look, barHeight: 33),
                                       garlandDepth: k.isFir ? Garland.depthPer24(k) * mh / 24 : 0, look: look)
                 control("look-\(k.rawValue)-\(look.rawValue)-menubar", mspec, k, light: true)
                 let tile = 58.0
