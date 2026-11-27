@@ -72,3 +72,9 @@ enum FrontWindow {
         return windows.first { $0.pid == frontPID }?.id
     }
 }
+
+/// Nachglimmen: Eine gedimmte oder ausgeschaltete Birne behält etwa 20 % ihres Farbscheins, der Übergang an/aus bleibt weich.
+enum Ember {
+    static let glowFloor = 0.2
+    static func glowOpacity(bright: Double, base: Double) -> Double { base * (bright + glowFloor * (1 - bright)) }
+}

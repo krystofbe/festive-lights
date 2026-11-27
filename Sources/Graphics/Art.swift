@@ -55,6 +55,26 @@ func cgColor(_ c: RGB, alpha: CGFloat = 1, mix: RGB? = nil, amount: CGFloat = 0)
 }
 
 /// Birnen aus den vier PDF-Ebenen, eingefärbt, gedimmt oder leuchtend.
+extension Art {
+    /// Nachglimmen: Glühfaden einer gedimmten oder ausgeschalteten Birne, warm orange (kleine Zickzacklinie, bei sehr kleinen Birnen ein warmer Punkt).
+    static func drawFilament(_ ctx: CGContext, w: Int, h: Int, centerY: CGFloat = 0.42) {
+        let warm = CGColor(srgbRed: 1.0, green: 0.62, blue: 0.2, alpha: 1)
+        let cx = CGFloat(w) / 2, cy = CGFloat(h) * centerY
+        ctx.saveGState()
+        ctx.setShadow(offset: .zero, blur: max(1.5, CGFloat(h) * 0.09), color: CGColor(srgbRed: 1, green: 0.55, blue: 0.1, alpha: 0.85))
+        if h >= 18 {
+            let a = CGFloat(w) * 0.11, hh = CGFloat(h) * 0.12
+            ctx.setStrokeColor(warm); ctx.setLineWidth(max(0.8, CGFloat(h) * 0.035)); ctx.setLineJoin(.round); ctx.setLineCap(.round)
+            ctx.move(to: CGPoint(x: cx, y: cy + hh)); ctx.addLine(to: CGPoint(x: cx + a, y: cy + hh / 2)); ctx.addLine(to: CGPoint(x: cx - a, y: cy))
+            ctx.addLine(to: CGPoint(x: cx + a, y: cy - hh / 2)); ctx.addLine(to: CGPoint(x: cx, y: cy - hh)); ctx.strokePath()
+        } else {
+            let r = max(0.9, CGFloat(h) * 0.06)
+            ctx.setFillColor(warm); ctx.fillEllipse(in: CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r))
+        }
+        ctx.restoreGState()
+    }
+}
+
 enum BulbSprites {
     struct Key: Hashable { var color: Int; var lit: Bool; var dark: Bool; var px: Int }
     private static var cache: [Key: CGImage] = [:]
@@ -70,8 +90,8 @@ enum BulbSprites {
         let ctx = Art.context(w, h)
         let full = CGRect(x: 0, y: 0, width: w, height: h)
         let deep: RGB = (0.12, 0.12, 0.14)
-        let bodyColor = lit ? cgColor(rgb) : cgColor(rgb, mix: deep, amount: 0.78)
-        let lineColor = lit ? cgColor(rgb, amount: 0.45) : cgColor(rgb, mix: deep, amount: 0.9)
+        let bodyColor = lit ? cgColor(rgb) : cgColor(rgb, mix: deep, amount: 0.5)   // Nachglimmen: dunkel in der eigenen Farbe
+        let lineColor = lit ? cgColor(rgb, amount: 0.45) : cgColor(rgb, mix: deep, amount: 0.65)
         func layer(_ name: String, _ color: CGColor) {
             if let img = Art.tinted(name, color: color, width: w, height: h) { ctx.draw(img, in: full) }
         }
@@ -80,10 +100,11 @@ enum BulbSprites {
             Art.draw("bulb-highlight", in: ctx, width: CGFloat(w), height: CGFloat(h))
         } else {
             ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-            ctx.setAlpha(0.3)
+            ctx.setAlpha(0.45)
             Art.draw("bulb-highlight", in: ctx, width: CGFloat(w), height: CGFloat(h))
             ctx.endTransparencyLayer()
         }
+        if !lit { Art.drawFilament(ctx, w: w, h: h) }
         layer("bulb-outline", lineColor)
         if dark, let edge = Art.tinted("bulb-socket", color: CGColor(gray: 0.82, alpha: 0.75), width: w, height: h) {
             let r = max(0.6, CGFloat(h) / 60)

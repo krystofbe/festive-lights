@@ -125,9 +125,9 @@ enum Snapshot {
         }
 
         // Kontrollbilder für Vergleiche auf echten Bildschirmfotos: Menüleiste (Tanne bunt, Leistenhöhe 33) und Dock unten (Symbolgröße 58), mit Fensterrahmen
-        func control(_ name: String, _ sp: ChainSpec, _ kind: ChainStyleKind, light: Bool) {
+        func control(_ name: String, _ sp: ChainSpec, _ kind: ChainStyleKind, light: Bool, pattern: LightPattern = .steady) {
             let r = ChainRenderer()
-            r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
+            r.configure(spec: sp, style: ChainStyle(warm: false, pattern: pattern, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
             r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
             for i in 0..<240 { _ = r.update(time: 20 + Double(i) * 0.016, dt: 0.016, pointer: nil) }   // Federn einschwingen lassen (Zweige drehen sich in ihre Lage)
             let fr = r.window.frame
@@ -162,6 +162,14 @@ enum Snapshot {
                                       spacing: ChainLayout.spacing(bulbHeight: dh, level: 2) * LookProfile.make(k, look, dock: true).spacingK, garlandDepth: depth, dockTile: tile, look: look, dockMaxGrow: 1)
                 control("look-\(k.rawValue)-\(look.rawValue)-dock", dspec, k, light: false)
             }
+        }
+
+        // Nachglimmen: gedimmte Birnen bei Lauflicht und Funkeln an der Menüleiste (Leistenhöhe 33)
+        for (name, k, look, pattern) in [("1-classic-chase", ChainStyleKind.classic, Look.lavish, LightPattern.chase), ("2-bunt-twinkle", .firColor, .festive, .twinkle), ("3-gold-chase", .firGold, .subtle, .chase)] {
+            let mp = LookProfile.make(k, look, dock: false), mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2)
+            let sp = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh, sag: mh * mp.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
+                               spacing: Garland.menuBarSpacing(k, look: look, barHeight: 33), garlandDepth: k.isFir ? Garland.depthPer24(k) * mh / 24 : 0, look: look)
+            control("ember-\(name)", sp, k, light: true, pattern: pattern)
         }
 
         // Dock unten, Tanne warmgold

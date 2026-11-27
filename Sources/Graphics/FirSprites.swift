@@ -74,16 +74,18 @@ enum FirSprites {
         }
         if kind == .firColor {
             // flacher Stil: Glas in der Birnenfarbe (gedimmt abgedunkelt), Fassung darüber
-            if let img = Art.tinted("tb-bulb-glass", color: lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.78), width: w, height: h) { ctx.draw(img, in: full) }
+            if let img = Art.tinted("tb-bulb-glass", color: lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.5), width: w, height: h) { ctx.draw(img, in: full) }
+            if !lit { Art.drawFilament(ctx, w: w, h: h, centerY: 0.38) }
             Art.draw("tb-bulb-socket", in: ctx, width: CGFloat(w), height: CGFloat(h))
             let img = ctx.makeImage()!
             bulbCache[key] = img
             return img
         }
-        layer("minibulb-glass", lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.78))
-        layer("minibulb-outline", lit ? cgColor(c, amount: 0.45) : cgColor(c, mix: deep, amount: 0.9))
+        layer("minibulb-glass", lit ? cgColor(c) : cgColor(c, mix: deep, amount: 0.5))   // Nachglimmen: dunkel in der eigenen Farbe
+        if !lit { Art.drawFilament(ctx, w: w, h: h) }
+        layer("minibulb-outline", lit ? cgColor(c, amount: 0.45) : cgColor(c, mix: deep, amount: 0.65))
         ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-        ctx.setAlpha(lit ? 0.5 : 0.12)
+        ctx.setAlpha(lit ? 0.5 : 0.3)
         Art.draw("minibulb-shine", in: ctx, width: CGFloat(w), height: CGFloat(h))
         ctx.endTransparencyLayer()
         Art.draw("minibulb-socket", in: ctx, width: CGFloat(w), height: CGFloat(h))

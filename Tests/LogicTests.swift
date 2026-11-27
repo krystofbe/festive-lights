@@ -1950,6 +1950,13 @@ final class LookTests: XCTestCase {
         XCTAssertEqual(s.look, .festive); XCTAssertEqual(s.dockLook, .festive); XCTAssertFalse(s.snowOnlyBreaks)
     }
 
+    func testDimmedBulbsKeepAnEmberGlowOfAboutTwentyPercent() {
+        XCTAssertEqual(Ember.glowOpacity(bright: 0, base: 0.9), 0.18, accuracy: 1e-12, "aus: etwa 20 % des normalen Scheins")
+        XCTAssertEqual(Ember.glowOpacity(bright: 1, base: 0.9), 0.9, accuracy: 1e-12, "an: wie bisher")
+        var last = -1.0
+        for i in 0...10 { let v = Ember.glowOpacity(bright: Double(i) / 10, base: 1); XCTAssertGreaterThan(v, last); last = v }
+    }
+
     func testSnowBreakLogicAndFrontWindow() {
         XCTAssertTrue(SnowBreak.allowsNewFlakes(onlyBreaks: false, idleSeconds: 0))
         XCTAssertFalse(SnowBreak.allowsNewFlakes(onlyBreaks: true, idleSeconds: 119))

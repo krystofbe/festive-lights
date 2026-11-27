@@ -467,7 +467,7 @@ final class ChainRenderer {
                 let bright = PatternSchedule.brightness(index: bulbBase + i, count: bulbTotal, time: patternClock, pattern: style.pattern, tempo: 1)
                 let gain = b.gain
                 b.lit.opacity = Float(min(1, bright * gain))
-                b.glow.opacity = Float(bright * gain * glowAlpha)
+                b.glow.opacity = Float(Ember.glowOpacity(bright: bright, base: gain * glowAlpha))
             }
             CATransaction.commit()
             return 1
@@ -561,7 +561,7 @@ final class ChainRenderer {
             }
             let gain = b.gain
             b.lit.opacity = Float(min(1, bright * gain))
-            b.glow.opacity = Float(bright * gain * glowAlpha)
+            b.glow.opacity = Float(Ember.glowOpacity(bright: bright, base: gain * glowAlpha))
         }
         if moving || swayActive || cableDirtyForGarland || garlandSwaying {
             garlandSwaying = updateGarland(sp, dt: dt, reduce: reduce, origin: origin)
