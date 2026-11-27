@@ -99,6 +99,18 @@ enum Garland {
         return min(requested, max(midSag, quarterBudget))
     }
 
+    /// Durchhang-Mittelstellung am Dock: Tanne wie an der Menüleiste (gleiche Stildefinition), klassisch wie bisher.
+    static func dockMidSag(_ k: ChainStyleKind, bulbH: Double) -> Double { k.isFir ? bulbH * sag(k) : bulbH * dockClassicSag }
+
+    /// Verkleinerung (0,5 bis 1) von Zweigen, Zapfen, Kugeln und Schleifen am Dock, damit Kabeltiefe plus Girlande höchstens das obere Viertel der Symbole
+    /// (Stufen 4 und 5: das obere Drittel) einnehmen. Birnen und Abstände bleiben wie im Stil.
+    static func dockGarlandFit(_ k: ChainStyleKind, bulbH: Double, tile: Double, sag: Double, level: Int) -> Double {
+        let depth = depthPer24(k) * bulbH / 24
+        guard k.isFir, depth > 0 else { return 1 }
+        let budget = tile * (level >= 3 ? 1.0 / 3 : 0.25) - sag
+        return min(1, max(0.5, budget / depth))
+    }
+
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }
     /// Ausdehnung der Zweig-Sprites links und rechts vom Ansatzpunkt in pt der Leinwand (aus den Bildern gemessen), ungespiegelt.
@@ -112,14 +124,14 @@ enum Garland {
 
     static let spriteCounts: [BranchLayer: Int] = [.back: 4, .mid: 4, .hang: 3, .front: 3, .cluster: 1]
 
-    static func anchorSpacing(scale s: Double, dock: Bool = false) -> Double { dock ? 16 : 22 * s / max(density, 0.1) }
+    static func anchorSpacing(scale s: Double) -> Double { 22 * s / max(density, 0.1) }
 
     /// Stabile Platzierung: gleiche Eingaben ergeben immer denselben Plan.
     static func plan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double] = []) -> GarlandPlan {
         guard style.isFir, length > 0 else { return GarlandPlan() }
         if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions) }
         var plan = GarlandPlan()
-        let n = max(1, Int(length / anchorSpacing(scale: s, dock: dock)))
+        let n = max(1, Int(length / anchorSpacing(scale: s)))
         let step = length / Double(n)
         func pick(_ layer: BranchLayer, _ k: Int, _ salt: Int) -> Int { 1 + Int(stableRandom(k, salt, 11) * Double(spriteCounts[layer]!)) % spriteCounts[layer]! }
         func rot(_ k: Int, _ salt: Int, _ range: Double) -> Double { (stableRandom(k, salt, 12) * 2 - 1) * range }
@@ -129,14 +141,14 @@ enum Garland {
             if stableRandom(k, 2, 13) < 0.75 {
                 plan.branches.append(GarlandBranch(layer: .mid, sprite: pick(.mid, k, 2), u: u + step * 0.3, mirrored: k % 2 == 0, rotation: rot(k, 2, 12)))
             }
-            if !dock && (k + 2) % 5 == 0 {
+            if (k + 2) % 5 == 0 {
                 plan.branches.append(GarlandBranch(layer: .hang, sprite: pick(.hang, k, 3), u: u, mirrored: stableRandom(k, 3, 14) < 0.5, rotation: rot(k, 3, 8)))
             }
             if stableRandom(k, 4, 15) < 0.22 {
                 plan.branches.append(GarlandBranch(layer: .front, sprite: pick(.front, k, 4), u: u - step * 0.2, mirrored: stableRandom(k, 4, 16) < 0.5, rotation: rot(k, 4, 10)))
             }
         }
-        if !dock && style == .firGold {
+        if style == .firGold {
             for a in 0..<max(arcCount, 1) {
                 plan.cones.append((Double(a) + 0.2 + 0.6 * stableRandom(a, 5, 17)) * arcLength)
             }
@@ -149,13 +161,12 @@ enum Garland {
     private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double]) -> GarlandPlan {
         var plan = GarlandPlan()
         let unit = tbUnit * s
-        let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale * s : unit))))
+        let n = max(1, Int(length / (tbAnchorUnits * unit)))
         let step = length / Double(n)
         for k in 0..<n {
             plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,
                                                rotation: (stableRandom(k, 2, 22) * 2 - 1) * tbRotation, scale: 1.1 + 0.15 * stableRandom(k, 3, 23)))
         }
-        if dock { return plan }
         let every = tbBaubleUnits * unit
         var u = every * 0.5, i = 0
         while u < length {

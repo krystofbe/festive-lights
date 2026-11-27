@@ -614,15 +614,6 @@ final class GarlandTests: XCTestCase {
         XCTAssertEqual(bows.first, 0); XCTAssertEqual(bows.last!, 7 * 274, accuracy: 1e-9)
     }
 
-    func testDockHasNoHangingBranchesNoConesNoBows() {
-        for s in [ChainStyleKind.firColor, .firGold] {
-            let p = plan(s, dock: true)
-            XCTAssertFalse(p.branches.isEmpty)
-            XCTAssertTrue(p.branches.allSatisfy { $0.layer != .hang })
-            XCTAssertTrue(p.cones.isEmpty); XCTAssertTrue(p.bows.isEmpty)
-        }
-    }
-
     func testDensityScalesBranchCount() {
         XCTAssertGreaterThan(Garland.plan(length: 1000, arcLength: 250, arcCount: 4, scale: 0.5, style: .firColor, dock: false).branches.count,
                              Garland.plan(length: 1000, arcLength: 250, arcCount: 4, scale: 1.0, style: .firColor, dock: false).branches.count)
@@ -841,9 +832,7 @@ final class BaubleTests: XCTestCase {
         XCTAssertTrue(p.baubles.allSatisfy { $0.u > 0 && $0.u < 1920 })
     }
 
-    func testNoBaublesAtDockOrOtherStyles() {
-        XCTAssertTrue(plan(.firColor, dock: true).baubles.isEmpty)
-        XCTAssertTrue(plan(.firColor, dock: true).cones.isEmpty)
+    func testNoBaublesInOtherStyles() {
         XCTAssertTrue(plan(.firGold).baubles.isEmpty)
         XCTAssertTrue(plan(.classic).baubles.isEmpty)
     }
@@ -1409,6 +1398,26 @@ final class DockSizeTests: XCTestCase {
         XCTAssertEqual(Garland.dockMaxGrow(large: 96, tile: 64), 1.5, accuracy: 1e-9)
         XCTAssertEqual(Garland.dockMaxGrow(large: 128, tile: 16), 2.5, "kleine Symbole mit großer Vergrößerung werden geklemmt")
         XCTAssertEqual(Garland.dockMaxGrow(large: 50, tile: 64), 1, "nie unter 1")
+    }
+
+    func testDockUsesTheSameStyleDefinitionAsTheMenuBar() {
+        let bunt = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firColor, dock: true)
+        XCTAssertFalse(bunt.baubles.isEmpty); XCTAssertFalse(bunt.cones.isEmpty)
+        let gold = Garland.plan(length: 800, arcLength: 160, arcCount: 5, scale: 0.6, style: .firGold, dock: true)
+        XCTAssertFalse(gold.cones.isEmpty); XCTAssertFalse(gold.bows.isEmpty); XCTAssertTrue(gold.branches.contains { $0.layer == .hang })
+        XCTAssertEqual(Garland.dockMidSag(.firColor, bulbH: 16), 16 * Garland.tbSag)
+        XCTAssertEqual(Garland.dockMidSag(.firGold, bulbH: 16), 16 * Garland.sag)
+    }
+
+    func testDockGarlandFitKeepsTheTopQuarterOfTheIcons() {
+        for kind in [ChainStyleKind.firColor, .firGold] {
+            let f = Garland.dockGarlandFit(kind, bulbH: 16, tile: 64, sag: 5, level: 2)
+            XCTAssertGreaterThanOrEqual(f, 0.5); XCTAssertLessThanOrEqual(f, 1)
+            XCTAssertLessThan(f, 1, "bei 64 pt Symbolgröße muss das Grün gekürzt werden")
+            XCTAssertEqual(Garland.dockGarlandFit(kind, bulbH: 16, tile: 400, sag: 5, level: 2), 1, "großes Dock: nichts zu kürzen")
+            XCTAssertGreaterThanOrEqual(Garland.dockGarlandFit(kind, bulbH: 16, tile: 64, sag: 5, level: 4), f, "Stufen 4 und 5 dürfen bis zum oberen Drittel")
+        }
+        XCTAssertEqual(Garland.dockGarlandFit(.classic, bulbH: 16, tile: 64, sag: 5, level: 2), 1)
     }
 
     func testBuntDockClustersFollowTheBulbSize() {
