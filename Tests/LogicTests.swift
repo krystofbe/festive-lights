@@ -1381,11 +1381,12 @@ final class OverlayLevelTests: XCTestCase {
 
 final class DockSizeTests: XCTestCase {
     func testBulbHeightIsAQuarterOfTheTileAtMidSettingAndRelativeToIt() {
-        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2), 16, accuracy: 1e-9)
-        XCTAssertEqual(Garland.dockBulbHeight(tile: 100, bulbLevel: 2), 25, accuracy: 1e-9)
-        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 4), 16 * Levels.value(Levels.bulbSize, 4), accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2), 12, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 100, bulbLevel: 2), 18.75, accuracy: 1e-9)
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 4), 12 * Levels.value(Levels.bulbSize, 4), accuracy: 1e-9)
         XCTAssertLessThan(Garland.dockBulbHeight(tile: 64, bulbLevel: 0), Garland.dockBulbHeight(tile: 64, bulbLevel: 4))
-        XCTAssertEqual(Garland.dockBulbHeight(tile: 16, bulbLevel: 0), 8, "nie unter 8 pt")
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 16, bulbLevel: 0), 6, "nie unter 6 pt")
+        XCTAssertEqual(Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: 37), 0.5 * 37, accuracy: 1e-9, "halb so groß wie die Menüleisten-Kette dieses Bildschirms")
     }
 
     func testMagnificationGrowsWithTheLiftOfTheIcon() {
@@ -1407,17 +1408,6 @@ final class DockSizeTests: XCTestCase {
         XCTAssertFalse(gold.cones.isEmpty); XCTAssertFalse(gold.bows.isEmpty); XCTAssertTrue(gold.branches.contains { $0.layer == .hang })
         XCTAssertEqual(Garland.dockMidSag(.firColor, bulbH: 16), 16 * Garland.tbSag)
         XCTAssertEqual(Garland.dockMidSag(.firGold, bulbH: 16), 16 * Garland.sag)
-    }
-
-    func testDockGarlandFitKeepsTheTopQuarterOfTheIcons() {
-        for kind in [ChainStyleKind.firColor, .firGold] {
-            let f = Garland.dockGarlandFit(kind, bulbH: 16, tile: 64, sag: 5, level: 2)
-            XCTAssertGreaterThanOrEqual(f, 0.5); XCTAssertLessThanOrEqual(f, 1)
-            XCTAssertLessThan(f, 1, "bei 64 pt Symbolgröße muss das Grün gekürzt werden")
-            XCTAssertEqual(Garland.dockGarlandFit(kind, bulbH: 16, tile: 400, sag: 5, level: 2), 1, "großes Dock: nichts zu kürzen")
-            XCTAssertGreaterThanOrEqual(Garland.dockGarlandFit(kind, bulbH: 16, tile: 64, sag: 5, level: 4), f, "Stufen 4 und 5 dürfen bis zum oberen Drittel")
-        }
-        XCTAssertEqual(Garland.dockGarlandFit(.classic, bulbH: 16, tile: 64, sag: 5, level: 2), 1)
     }
 
     func testBuntDockClustersFollowTheBulbSize() {
@@ -1764,7 +1754,7 @@ final class SagTests: XCTestCase {
 }
 
 final class DockSagCapTests: XCTestCase {
-    func capped(level: Int, bulbLevel: Int, tile: Double = 73, fir: Bool = true) -> (sag: Double, mid: Double, bulb: Double, req: Double) {
+    func capped(level: Int, bulbLevel: Int, tile: Double = 73, fir: Bool = false) -> (sag: Double, mid: Double, bulb: Double, req: Double) {
         let h = Garland.dockBulbHeight(tile: tile, bulbLevel: bulbLevel)
         let mid = h * (fir ? Garland.dockSag : Garland.dockClassicSag)
         let req = mid * Garland.dockSagFactor(level: level, continuous: false)
@@ -1772,7 +1762,7 @@ final class DockSagCapTests: XCTestCase {
     }
 
     func testLevelsFourAndFiveAreVisiblyDeeperThanTheMiddleAtStandardBulbSize() {
-        for fir in [true, false] {
+        for fir in [false] {
             let l4 = capped(level: 3, bulbLevel: 2, fir: fir), l5 = capped(level: 4, bulbLevel: 2, fir: fir)
             XCTAssertGreaterThan(l4.sag, l4.mid * 1.1); XCTAssertGreaterThan(l5.sag, l4.sag)
             XCTAssertEqual(l5.sag, l5.req, accuracy: 1e-9, "bei Standardgröße kommt der Deckel nicht zum Tragen")

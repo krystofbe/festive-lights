@@ -13,7 +13,6 @@ struct ChainSpec: Equatable {
     var spacing: Double
     var garlandDepth = 0.0   // Tiefe der Girlande unter dem Kabel, für die Fenstergröße
     var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
-    var garlandFit = 1.0     // Verkleinerung der Girlande am Dock (oberes Viertel der Symbole)
     var stripOffset = 0.0    // Abstand des Kabelanfangs vom Anfang einer durchgehenden Girlande über mehrere Bildschirme (F4a 8)
     var stripTotal = 0.0     // Länge der ganzen Girlande, 0: Kette für sich
     var dockMaxGrow = 1.0    // größtes Wachstum bei der Vergrößerung (largesize durch tilesize), für Fenstergröße und scharfe Sprites
@@ -175,7 +174,7 @@ final class ChainRenderer {
         strand.strokeColor = FirSprites.strandColor
         strand.lineWidth = 8 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH
         cable.zPosition = 2
-        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)|\(new.garlandFit)"
+        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)"
         if key != builtKey {
             builtKey = key
             rebuildBulbs(new)
@@ -240,7 +239,7 @@ final class ChainRenderer {
         coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
         branchChains = []; allPieces = []
         guard style.kind.isFir else { return }
-        let fs = unitScale(sp) * sp.garlandFit
+        let fs = unitScale(sp)
         let dock = sp.isDock
         let bunt = self.bunt
         if bunt { content.addSublayer(strand) }

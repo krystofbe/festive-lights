@@ -75,8 +75,9 @@ enum Garland {
     static let tbRotation = 22.0
     static let tbBaubleSizes: [(w: Double, h: Double, hangX: Double, hangY: Double)] = [(80, 89, 40, 0), (88, 111, 44, 14), (76, 85, 38, 0), (88, 111, 44, 14), (80, 89, 40, 0)]
 
-    /// Dock-Kette: Birnenhöhe bei Mittelstellung ein Viertel der Symbolhöhe (`tile`), der Regler wirkt relativ dazu, nie unter 8 pt.
-    static func dockBulbHeight(tile: Double, bulbLevel: Int) -> Double { max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel)) }
+    /// Dock-Kette: Bei Symbolgröße 64 pt und Mittelstellung ist jedes Element halb so groß wie bei der Menüleisten-Kette desselben Bildschirms (`barHeight`).
+    /// Die Kette skaliert linear mit der Symbolgröße, der Regler wirkt relativ dazu, nie unter 6 pt.
+    static func dockBulbHeight(tile: Double, bulbLevel: Int, barHeight: Double = 24) -> Double { max(6, 0.5 * max(barHeight, 22) * tile / 64 * Levels.value(Levels.bulbSize, bulbLevel)) }
     /// Birnenhöhe, auf die die Dock-Büschel und -Zweige bezogen sind (Symbolgröße 73 pt bei Mittelstellung).
     static let dockRefBulbH = 73.0 * 0.25
     /// Wachstum der Birnen und des Grüns über einem vergrößerten Symbol: Symbolgröße mit Vergrößerung geteilt durch Ruhegröße (`lift` ist die Anhebung der Oberkante).
@@ -101,15 +102,6 @@ enum Garland {
 
     /// Durchhang-Mittelstellung am Dock: Tanne wie an der Menüleiste (gleiche Stildefinition), klassisch wie bisher.
     static func dockMidSag(_ k: ChainStyleKind, bulbH: Double) -> Double { k.isFir ? bulbH * sag(k) : bulbH * dockClassicSag }
-
-    /// Verkleinerung (0,5 bis 1) von Zweigen, Zapfen, Kugeln und Schleifen am Dock, damit Kabeltiefe plus Girlande höchstens das obere Viertel der Symbole
-    /// (Stufen 4 und 5: das obere Drittel) einnehmen. Birnen und Abstände bleiben wie im Stil.
-    static func dockGarlandFit(_ k: ChainStyleKind, bulbH: Double, tile: Double, sag: Double, level: Int) -> Double {
-        let depth = depthPer24(k) * bulbH / 24
-        guard k.isFir, depth > 0 else { return 1 }
-        let budget = tile * (level >= 3 ? 1.0 / 3 : 0.25) - sag
-        return min(1, max(0.5, budget / depth))
-    }
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
     static func depthPer24(_ k: ChainStyleKind) -> Double { k == .firColor ? tbDepthPer24 : depthPer24 * hangLength }

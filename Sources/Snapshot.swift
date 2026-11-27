@@ -15,6 +15,8 @@ enum Snapshot {
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
     }
 
+    private static var compareHolder: [ChainRenderer] = []
+
     static func run(dir: String) {
         _ = NSApplication.shared
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
@@ -98,25 +100,28 @@ enum Snapshot {
         db.update(time: 20, dt: 0.016, pointer: nil)
         write(db.window.rootLayer, size: db.window.frame.size, background: light, to: "\(dir)/chain-dock-bottom-warm.png")
 
-        // Vergleich je Stil: Menüleiste und Dock (unten, Symbolgröße 64), dunkel, gleiche Länge
+        // Vergleich je Stil im echten Größenverhältnis: Menüleiste dieses Macs und Dock unten (Symbolgröße 64) nebeneinander, gleicher Maßstab, dunkel
         for kind in [ChainStyleKind.firColor, .firGold, .classic] {
-            let mh = ChainLayout.bulbHeight(menuBarHeight: 24, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2)
-            let dsag = Garland.dockMidSag(kind, bulbH: dh)
-            let fit = Garland.dockGarlandFit(kind, bulbH: dh, tile: 64, sag: dsag, level: 2)
-            let msag = kind.isFir ? mh * Garland.sag(kind) : mh
-            let specs: [(String, ChainSpec)] = [
-                ("menubar", ChainSpec(p0: CGPoint(x: 40, y: 120), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 700, bulbH: mh, sag: msag, liftSign: -1, isMenuBar: true, liftMax: 0,
-                                      spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (kind == .firColor ? Garland.tbSpacingFactor : 1), garlandDepth: kind.isFir ? Garland.depthPer24(kind) * mh / 24 : 0)),
-                ("dock", ChainSpec(p0: CGPoint(x: 40, y: 120), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 700, bulbH: dh, sag: dsag, liftSign: -1, isMenuBar: false, liftMax: 110,
-                                   spacing: ChainLayout.spacing(bulbHeight: dh, level: 2) * (kind == .firColor ? Garland.tbSpacingFactor : 1),
-                                   garlandDepth: kind.isFir ? Garland.depthPer24(kind) * dh / 24 * fit : 0, dockTile: 64, garlandFit: fit, dockMaxGrow: 1))]
-            for (name, sp) in specs {
+            let mh = ChainLayout.bulbHeight(menuBarHeight: bar.height, level: 2), dh = Garland.dockBulbHeight(tile: 64, bulbLevel: 2, barHeight: bar.height)
+            func render(_ sp: ChainSpec) -> CALayer {
                 let r = ChainRenderer()
                 r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false, kind: kind), scale: 2)
                 r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
                 r.update(time: 20, dt: 0.016, pointer: nil)
-                write(r.window.rootLayer, size: r.window.frame.size, background: dark, to: "\(dir)/compare-\(kind.rawValue)-\(name).png")
+                compareHolder.append(r)
+                return r.window.rootLayer
             }
+            let mspec = ChainSpec(p0: CGPoint(x: 40, y: 120), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 700, bulbH: mh, sag: kind.isFir ? mh * Garland.sag(kind) : mh, liftSign: -1, isMenuBar: true, liftMax: 0,
+                                  spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (kind == .firColor ? Garland.tbSpacingFactor : 1), garlandDepth: kind.isFir ? Garland.depthPer24(kind) * mh / 24 : 0)
+            let dspec = ChainSpec(p0: CGPoint(x: 40, y: 120), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 700, bulbH: dh, sag: Garland.dockMidSag(kind, bulbH: dh), liftSign: -1, isMenuBar: false, liftMax: 110,
+                                  spacing: ChainLayout.spacing(bulbHeight: dh, level: 2) * (kind == .firColor ? Garland.tbSpacingFactor : 1),
+                                  garlandDepth: kind.isFir ? Garland.depthPer24(kind) * dh / 24 : 0, dockTile: 64, dockMaxGrow: 1)
+            let ml = render(mspec), dl = render(dspec)
+            let size = CGSize(width: ml.bounds.width + dl.bounds.width + 20, height: max(ml.bounds.height, dl.bounds.height))
+            let sheet = CALayer(); sheet.bounds = CGRect(origin: .zero, size: size)
+            ml.frame.origin = CGPoint(x: 0, y: size.height - ml.bounds.height); dl.frame.origin = CGPoint(x: ml.bounds.width + 20, y: size.height - dl.bounds.height)
+            sheet.addSublayer(dl); sheet.addSublayer(ml)
+            write(sheet, size: size, background: dark, to: "\(dir)/compare-\(kind.rawValue).png")
         }
 
         // Dock unten, Tanne warmgold
