@@ -463,6 +463,9 @@ enum OnboardingSnapshot {
         st.chainStyle = .firGold; st.dockStyle = .firGold; st.look = .subtle; st.dockLook = .subtle
         shot(0, "-gold-dezent")
         (st.lightsEnabled, st.dockLights, st.snowEnabled, st.chainStyle, st.dockStyle, st.look, st.dockLook) = old
+        // Die Vorschauen dürfen kein sichtbares Fenster hinterlassen
+        let visible = NSApp.windows.filter { $0.isVisible }
+        if !visible.isEmpty { FileHandle.standardError.write("FEHLER: \(visible.count) sichtbare Fenster nach dem Rendern der Vorschauen\n".data(using: .utf8)!); exit(3) }
     }
 }
 #endif

@@ -52,7 +52,8 @@ enum ChainPreview {
         let r = ChainRenderer()
         let sp = spec(kind: kind, look: look, dock: dock, length: Double(size.width) + 200)
         r.configure(spec: sp, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: dock, reduceMotion: false, kind: kind), scale: CGFloat(scale))
-        r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
+        r.prepareOffscreen()   // nie ein Fenster auf den Bildschirm bringen
+        defer { r.discardWindow() }
         for i in 0..<120 { _ = r.update(time: 20 + Double(i) * 0.016, dt: 0.016, pointer: nil) }   // Federn einschwingen lassen
         let fr = r.window.frame
         ctx.saveGState()

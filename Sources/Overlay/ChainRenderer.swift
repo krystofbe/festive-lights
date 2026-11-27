@@ -156,6 +156,16 @@ final class ChainRenderer {
         CATransaction.commit()
     }
 
+    /// Nur zum Zeichnen in ein Bild (Einführungsvorschau): die Kette ist "sichtbar", das Fenster wird aber nie auf den Bildschirm gebracht.
+    func prepareOffscreen() {
+        sagShown = nil
+        wantVisible = true
+        window.rootLayer.opacity = 1
+    }
+
+    /// Fenster sicher vom Bildschirm nehmen und freigeben.
+    func discardWindow() { window.orderOut(nil); window.close() }
+
     func configure(spec new: ChainSpec, style newStyle: ChainStyle, scale s: CGFloat) {
         let geometryChanged = spec != new
         let needsRebuild = geometryChanged || style != newStyle || scale != s
