@@ -427,6 +427,14 @@ Auf einem Bildschirmfoto mit drei Stufen untereinander, je Stil, Menüleiste üb
 8. **Dock:** "Tanne bunt" in "Festlich" ist bildgleich mit 1.2.1. In "Dezent" und "Festlich" ist kein Symbolkörper verdeckt, Badges sind lesbar. In "Volle Pracht" ist höchstens das obere Zehntel betroffen.
 9. **Bestandsnutzer:** "Volle Pracht" ist bildgleich mit 1.2.2.
 
+### 4a. Nachtrag Dezent einheitlich (Krystof, 27.11., geht den Tabellen oben vor)
+
+Dezent an der Menüleiste soll in allen Stilen gleich groß und gleich zurückhaltend wirken wie "Tanne bunt" Dezent. Dafür gibt es eine feste zweite Birnensorte "Mini" (etwa 6,5 pt hoch, so groß wie die Birnen von "Tanne bunt").
+- "Tanne warmgold" Dezent an der Menüleiste: nur Kabel und Mini-Birnen in Warmgold (Farbe, Schein und unregelmäßige Abstände wie bisher), kein Grün, keine Zapfen, keine Schleifen, Kabel straff (Variante 4 des Vergleichsblatts).
+- "klassisch" Dezent an der Menüleiste: Mini-Birnen in den bunten Farben statt C7, Abstand wie bei "Tanne bunt" Dezent (etwa gleich viele Birnen je Breite), Kabel straff (Variante 6). C7 entfällt.
+- Abgelehnt: Mini-Birnen unter dem großen warmgold-Grün (Variante 3).
+- Am Dock bleibt Dezent wie in den Tabellen oben.
+
 ### 5. Entscheidungen von Krystof (vormals offene Fragen)
 
 Alle drei Empfehlungen angenommen: (1) Dezent bei Tanne bunt an der Menüleiste: Strang 3 pt angehoben (nachträglich von 6 auf 3 pt), liegt auf der Kante. (2) klassisch in Dezent mit kleinerer Birnensorte C7 (etwa 70 %), an Menüleiste und Dock. (3) Tanne warmgold: Zweige in Dezent 30 Grad, in Festlich 15 Grad flacher angebunden.
