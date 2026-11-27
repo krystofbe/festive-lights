@@ -173,6 +173,10 @@ final class AppController: NSObject {
             #endif
             reconcileScreens(); scheduleApply()
         }
+        if settings.snowOnlyBreaks || !lastBreakAllowed {
+            let ok = SnowBreak.allowsNewFlakes(onlyBreaks: settings.snowOnlyBreaks, idleSeconds: idleSeconds())
+            if ok != lastBreakAllowed { lastBreakAllowed = ok; scheduleApply() }
+        }
         refreshFullScreen()
         let before = runtimeState
         refreshSystem()
@@ -339,6 +343,12 @@ final class AppController: NSObject {
         DispatchQueue.main.async { [self] in applyScheduled = false; apply() }
     }
 
+    /// Sekunden seit der letzten Tastatur- oder Mauseingabe, ohne Berechtigung.
+    private func idleSeconds() -> Double {
+        CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+    }
+    private var lastBreakAllowed = true
+
     func apply() {
         let s = settings
         energySaving = computeEnergySaving()
@@ -347,8 +357,9 @@ final class AppController: NSObject {
         if reduceMotion, Engine.shared.storm != nil { Engine.shared.storm = nil }
         let live = !s.paused && !suspended
         let lightsOn = s.lightsEnabled && live
-        let snowOn = ((s.snowEnabled && snowStarted) || stormOn) && live
-        let settle = snowOn && s.settleSnow && AppVariant.settleAllowed(accessibilityGranted: permission) && s.snowLayer == .above
+        let snowOn = ((s.snowEnabled && snowStarted && SnowBreak.allowsNewFlakes(onlyBreaks: s.snowOnlyBreaks, idleSeconds: idleSeconds())) || stormOn) && live
+        let snowAllowed = ((s.snowEnabled && snowStarted) || stormOn) && live   // Schneeschichten bleiben auch in Eingabephasen liegen
+        let settle = snowAllowed && s.settleSnow && AppVariant.settleAllowed(accessibilityGranted: permission) && s.snowLayer == .above
         updateDockTracking()
         var st = AppState()
         st.lightsOn = lightsOn
@@ -395,6 +406,7 @@ final class AppController: NSObject {
         st.snowRampStart = snowRampStart
         st.mainOnly = s.displays == .mainOnly
         st.sagLevel = s.sag; st.dockSagLevel = s.dockSag
+        st.look = s.look; st.dockLook = s.dockLook
         st.fullScreenIDs = fullScreenIDs
         st.showInFullScreen = s.showInFullScreen
         Engine.shared.settleActive = settle
@@ -526,7 +538,7 @@ final class AppController: NSObject {
             }
             settingsWindow = w
         }
-        if settingsWindow?.isVisible != true { settingsNav.tab = .general }
+        if settingsWindow?.isVisible != true { settingsNav.tab = .general; settingsNav.moreBar = false; settingsNav.moreDock = false; settingsNav.moreSnow = false }
         #if DIRECT
         permissionModel.refresh()
         #endif

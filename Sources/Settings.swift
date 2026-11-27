@@ -41,6 +41,8 @@ final class Settings: ObservableObject {
     @Published var dockBulbSize = 2 { didSet { write("dockBulbSize", dockBulbSize) } }
     @Published var dockSpacing = 2 { didSet { write("dockSpacing", dockSpacing) } }
     @Published var dockLayer = DisplayLayer.above { didSet { write("dockLayer", dockLayer.rawValue) } }
+    @Published var look = Look.festive { didSet { write("look", look.rawValue) } }
+    @Published var dockLook = Look.festive { didSet { write("dockLook", dockLook.rawValue) } }
     @Published var dockShape = DockShape.exact { didSet { write("dockShape", dockShape.rawValue) } }
 
     @Published var snowEnabled = true { didSet { write("snowEnabled", snowEnabled) } }
@@ -50,6 +52,7 @@ final class Settings: ObservableObject {
     @Published var wind = Wind.off { didSet { write("wind", wind.rawValue) } }
     @Published var snowAvoid = 2 { didSet { write("snowAvoid", snowAvoid) } }
     @Published var snowLayer = DisplayLayer.above { didSet { write("snowLayer", snowLayer.rawValue) } }
+    @Published var snowOnlyBreaks = false { didSet { write("snowOnlyBreaks", snowOnlyBreaks) } }
     @Published var settleSnow = true { didSet { write("settleSnow", settleSnow) } }
 
     @Published var showInFullScreen = false { didSet { write("showInFullScreen", showInFullScreen) } }
@@ -76,7 +79,7 @@ final class Settings: ObservableObject {
     }
 
     private var observer: DefaultsObserver?
-    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "sag", "dockSag", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape",
+    static let keys = ["lightsEnabled", "chainStyle", "colorMode", "pattern", "lightsTempo", "bulbSize", "spacing", "sag", "dockSag", "lightsLayer", "dockLights", "dockStyle", "dockColorMode", "dockPattern", "dockTempo", "dockBulbSize", "dockSpacing", "dockLayer", "dockShape", "look", "dockLook", "snowOnlyBreaks",
                        "snowEnabled", "snowAmount", "flakeSize", "snowSpeed", "wind", "snowAvoid", "snowLayer", "settleSnow",
                        "powerMode", "displays", "showInFullScreen", "paused", "welcomeShown"]
 
@@ -96,6 +99,14 @@ final class Settings: ObservableObject {
         if d.object(forKey: "powerMode") == nil, let old = d.object(forKey: "alwaysSaveEnergy") as? Bool {
             d.set(old ? PowerMode.always.rawValue : PowerMode.automatic.rawValue, forKey: "powerMode")
             d.removeObject(forKey: "alwaysSaveEnergy")
+        }
+        // 1.3: Auftritt. Bestehende Nutzer bekommen "Volle Pracht" (Aussehen bleibt), neue "Festlich".
+        if d.object(forKey: "lookMigrated") == nil {
+            let existing = Settings.keys.contains { d.object(forKey: $0) != nil } || d.object(forKey: "dockMigrated") != nil
+            let v = existing ? Look.lavish.rawValue : Look.festive.rawValue
+            if d.object(forKey: "look") == nil { d.set(v, forKey: "look") }
+            if d.object(forKey: "dockLook") == nil { d.set(v, forKey: "dockLook") }
+            d.set(true, forKey: "lookMigrated")
         }
         guard d.object(forKey: "dockMigrated") == nil else { return }
         for (bar, dock) in [("colorMode", "dockColorMode"), ("pattern", "dockPattern"), ("lightsTempo", "dockTempo"), ("bulbSize", "dockBulbSize"),
@@ -135,6 +146,9 @@ final class Settings: ObservableObject {
         set(\.dockSpacing, level("dockSpacing", 2))
         set(\.dockLayer, raw("dockLayer", .above))
         set(\.dockShape, raw("dockShape", .exact))
+        set(\.look, Look(rawValue: level("look", 1)) ?? .festive)
+        set(\.dockLook, Look(rawValue: level("dockLook", 1)) ?? .festive)
+        set(\.snowOnlyBreaks, bool("snowOnlyBreaks", false))
         set(\.snowEnabled, bool("snowEnabled", true))
         set(\.snowAmount, level("snowAmount", 2))
         set(\.flakeSize, level("flakeSize", 2))
@@ -156,8 +170,8 @@ final class Settings: ObservableObject {
         lightsEnabled = true; chainStyle = .firColor; colorMode = .multicolor; pattern = .twinkle
         lightsTempo = 2; bulbSize = 2; spacing = 2; sag = 2; dockSag = 2; lightsLayer = .above
         dockLights = true; dockStyle = .firColor; dockColorMode = .multicolor; dockPattern = .twinkle
-        dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact
-        snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true
+        dockTempo = 2; dockBulbSize = 2; dockSpacing = 2; dockLayer = .above; dockShape = .exact; look = .festive; dockLook = .festive
+        snowEnabled = true; snowAmount = 2; flakeSize = 2; snowSpeed = 2; wind = .off; snowAvoid = 2; snowLayer = .above; settleSnow = true; snowOnlyBreaks = false
         powerMode = .automatic; displays = .all; showInFullScreen = false
     }
 

@@ -15,6 +15,10 @@ struct ChainSpec: Equatable {
     var dockTile = 0.0       // Symbolgröße des Docks (nur Dock-Kette), für das Mitwachsen bei der Vergrößerung
     var stripOffset = 0.0    // Abstand des Kabelanfangs vom Anfang einer durchgehenden Girlande über mehrere Bildschirme (F4a 8)
     var stripTotal = 0.0     // Länge der ganzen Girlande, 0: Kette für sich
+    var garlandFit = 1.0      // Verkleinerung von Girlande, Fäden und hängenden Zweigen unter einer Tiefengrenze (Auftritt)
+    var ornamentKeep = 1.0    // Anteil des Schmucks (Kugeln, Zapfen, Schleifen)
+    var hangBranches = true
+    var dockBaubles = false   // Tanne bunt am Dock: kleine Kugeln (Volle Pracht)
     var dockMaxGrow = 1.0    // größtes Wachstum bei der Vergrößerung (largesize durch tilesize), für Fenstergröße und scharfe Sprites
     var isDock: Bool { !isMenuBar }
 
@@ -174,7 +178,7 @@ final class ChainRenderer {
         strand.strokeColor = FirSprites.strandColor
         strand.lineWidth = 8 * Garland.tbUnit * new.bulbH / Garland.tbRefBulbH
         cable.zPosition = 2
-        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)"
+        let key = "\(new.length)|\(new.spacing)|\(new.bulbH)|\(newStyle.warm)|\(newStyle.dark)|\(s)|\(newStyle.kind.rawValue)|\(new.isDock)|\(new.stripOffset)|\(new.stripTotal)|\(new.garlandFit)|\(new.ornamentKeep)|\(new.hangBranches)|\(new.dockBaubles)"
         if key != builtKey {
             builtKey = key
             rebuildBulbs(new)
@@ -239,15 +243,16 @@ final class ChainRenderer {
         coneBeads = BeadChain(rest: [0], length: 1, minGap: 1, halfGap: 1)
         branchChains = []; allPieces = []
         guard style.kind.isFir else { return }
-        let fs = unitScale(sp)
+        let fs = unitScale(sp) * sp.garlandFit
         let dock = sp.isDock
         let bunt = self.bunt
         if bunt { content.addSublayer(strand) }
         func branchScale(_ br: GarlandBranch) -> Double {
-            if bunt { return dock ? Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * br.scale : Garland.tbUnit * fs * br.scale }
+            if bunt { return dock ? Garland.tbDockScale * sp.bulbH / Garland.dockRefBulbH * sp.garlandFit * br.scale : Garland.tbUnit * fs * br.scale }
             return (br.layer == .hang ? Garland.hangScale * Garland.hangLength : Garland.branchScale) * fs
         }
-        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: bunt && dock ? sp.bulbH / Garland.dockRefBulbH : fs, style: style.kind, dock: dock, bulbPositions: localBulbs)
+        let plan = Garland.plan(length: sp.length, arcLength: layout.arcLength, arcCount: layout.arcCount, scale: bunt && dock ? sp.bulbH / Garland.dockRefBulbH : fs, style: style.kind, dock: dock, bulbPositions: localBulbs,
+                                ornamentKeep: sp.ornamentKeep, hangBranches: sp.hangBranches, dockBaubles: sp.dockBaubles)
         func piece(_ img: CGImage?, size: CGSize, anchor: CGPoint, z: CGFloat, u: Double, rotationDeg: Double, mirrored: Bool, scale k: Double) -> Piece {
             let p = Piece()
             p.u = u; p.rotation = rotationDeg * .pi / 180; p.mirrored = mirrored

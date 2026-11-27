@@ -4,6 +4,7 @@ struct TrackedWindow {
     var id: Int
     var frame: CGRect       // globale Koordinaten, y nach unten
     var above: [CGRect]
+    var front = false       // vorderstes Fenster der aktiven App: dort bleibt kein Schnee liegen
 }
 
 /// Liest die Fensterliste (nur Geometrie, keine Berechtigung nötig).
@@ -19,6 +20,8 @@ enum WindowTracker {
         }
         var occluders: [CGRect] = []
         var out: [TrackedWindow] = []
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        var candidates: [(id: Int, pid: Int32)] = []
         for w in info {
             guard let layer = w[kCGWindowLayer as String] as? Int, layer >= 0, layer < 24,
                   let pid = w[kCGWindowOwnerPID as String] as? Int32,
@@ -34,10 +37,11 @@ enum WindowTracker {
             if layer == 0, let id = w[kCGWindowNumber as String] as? Int, r.width >= 140, r.height >= 80 {
                 let fullscreen = screens.contains { r.width >= $0.rect.width - 2 && r.height >= $0.rect.height - 2 }
                 let home = screens.first { $0.rect.contains(CGPoint(x: r.midX, y: r.midY)) } ?? screens.first
-                if !fullscreen, r.minY > (home?.barBottom ?? 26) + 3 { out.append(TrackedWindow(id: id, frame: r, above: occluders)) }
+                if !fullscreen, r.minY > (home?.barBottom ?? 26) + 3 { out.append(TrackedWindow(id: id, frame: r, above: occluders)); candidates.append((id, pid)) }
             }
             occluders.append(r)
         }
+        if let f = FrontWindow.pick(windows: candidates, frontPID: frontPID), let i = out.firstIndex(where: { $0.id == f }) { out[i].front = true }
         return out
     }
 }
@@ -56,6 +60,7 @@ final class PileStore {
         var version = 0
         var moving = false
         var nextSlide = 0.0
+        var front = false
     }
 
     private(set) var entries: [Int: Entry] = [:]
@@ -101,6 +106,13 @@ final class PileStore {
             var e = entries[w.id] ?? Entry(pile: SnowPile(width: Double(w.frame.width)), frame: w.frame, above: w.above, segments: [], nextSlide: time + Double.random(in: 12...35))
             e.missing = 0
             e.moving = false
+            e.front = w.front
+            // Auf dem vordersten Fenster der aktiven App bleibt kein Schnee: vorhandene Schicht rutscht innerhalb etwa einer Sekunde ab
+            if w.front, active, e.pile.fill > 0.005 {
+                let removed = e.pile.remove(fraction: 0.3)
+                fall(e, scatter: min(40, Int(removed / 3) + 4))
+                e.version += 1
+            }
             let moved = hypot(w.frame.minX - e.frame.minX, w.frame.minY - e.frame.minY)
             if abs(w.frame.width - e.frame.width) > 0.5 { e.pile.resize(width: Double(w.frame.width)); e.version += 1 }
             if moved > 0.5 || w.frame != e.frame {
@@ -214,7 +226,7 @@ final class PileStore {
     }
 
     func deposit(id: Int, x: Double, amount: Float) {
-        guard entries[id] != nil else { return }
+        guard let e = entries[id], !e.front else { return }
         entries[id]!.pile.deposit(at: x, amount: amount)
         entries[id]!.version += 1
     }

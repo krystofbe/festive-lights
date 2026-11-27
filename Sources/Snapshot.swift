@@ -144,6 +144,31 @@ enum Snapshot {
                                            spacing: ChainLayout.spacing(bulbHeight: dh, level: 2), garlandDepth: Garland.dockDepth * dh / Garland.dockRefBulbH, dockTile: 58, dockMaxGrow: 1), k, light: false)
         }
 
+        // Auftritt: je Stil und Auftritt Menüleiste (Leistenhöhe 33) und Dock unten (Symbolgröße 58), wie ScreenOverlay sie baut
+        for k in [ChainStyleKind.firColor, .firGold] {
+            for look in Look.allCases {
+                let fir = k.isFir
+                let mh = Garland.menuBarBulbHeight(k, barHeight: 33, level: 2, look: look)
+                let mdepth = Garland.depthPer24(k) * mh / 24, mfit = Look.garlandFit(natural: mdepth, limit: look.menuDepth)
+                let mspec = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh,
+                                      sag: Look.sagCap(mh * Garland.sag(k), limit: look.menuDepth), liftSign: -1, isMenuBar: true, liftMax: 0,
+                                      spacing: ChainLayout.spacing(bulbHeight: mh, level: 2) * (k == .firColor ? Garland.tbSpacingFactor : 1), garlandDepth: mdepth * mfit,
+                                      garlandFit: mfit, ornamentKeep: look.ornamentKeep, hangBranches: look.hasHangingBranches)
+                control("look-\(k.rawValue)-\(look.rawValue)-menubar", mspec, k, light: true)
+                let tile = 58.0
+                let dh = Garland.dockBulbHeight(tile: tile, bulbLevel: 2, barHeight: 37, kind: k, look: look)
+                let mid = Garland.dockMidSag(k, bulbH: dh)
+                let sag0 = (fir && k != .firColor) ? mid : Garland.dockExactSag(requested: mid, midSag: mid, bulbH: dh, tile: tile, level: 2)
+                let limit = (k == .firColor && look == .festive) ? nil : look.dockDepthFraction.map { $0 * tile }
+                let depth0 = k == .firColor ? Garland.dockDepth * dh / Garland.dockRefBulbH : Garland.depthPer24(k) * dh / 24
+                let fit = Look.garlandFit(natural: depth0, limit: limit)
+                let dspec = ChainSpec(p0: CGPoint(x: 41.5, y: 81), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1643.5, bulbH: dh, sag: Look.sagCap(sag0, limit: limit),
+                                      liftSign: -1, isMenuBar: false, liftMax: 110, spacing: ChainLayout.spacing(bulbHeight: dh, level: 2), garlandDepth: depth0 * fit, dockTile: tile,
+                                      garlandFit: fit, ornamentKeep: look.ornamentKeep, hangBranches: look.hasHangingBranches, dockBaubles: k == .firColor && look == .lavish, dockMaxGrow: 1)
+                control("look-\(k.rawValue)-\(look.rawValue)-dock", dspec, k, light: false)
+            }
+        }
+
         // Dock unten, Tanne warmgold
         let dg = ChainRenderer()
         dg.configure(spec: bspec, style: ChainStyle(warm: false, pattern: .steady, tempo: 1, dark: true, reduceMotion: false, kind: .firGold), scale: 2)

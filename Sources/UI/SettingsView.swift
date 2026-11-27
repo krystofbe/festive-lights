@@ -15,6 +15,9 @@ enum SettingsTab: Hashable { case general, menuBar, dock, snow }
 /// Gewählter Tab: Beim Öffnen des Fensters wird er auf "Allgemein" zurückgesetzt.
 final class SettingsNav: ObservableObject {
     @Published var tab = SettingsTab.general
+    @Published var moreBar = false
+    @Published var moreDock = false
+    @Published var moreSnow = false   // "Weitere Optionen" sind beim Öffnen zugeklappt
 }
 
 final class LoginModel: ObservableObject {
@@ -53,15 +56,20 @@ struct LevelSlider: View {
 }
 
 /// Gemeinsamer Aufbau der Bereiche Menüleiste, Dock und Schnee: Schalter zuoberst in eigener Gruppe, darunter die Einstellungen (ausgegraut, wenn aus).
-struct SettingsPane<Content: View>: View {
+struct SettingsPane<Content: View, More: View>: View {
     let title: LocalizedStringKey
     @Binding var isOn: Bool
+    @Binding var moreOpen: Bool
     @ViewBuilder let content: Content
+    @ViewBuilder let more: More
 
     var body: some View {
         Form {
             Section { Toggle(title, isOn: $isOn) }
-            Section { content }.disabled(!isOn)
+            Section {
+                content
+                DisclosureGroup("More Options", isExpanded: $moreOpen) { more }
+            }.disabled(!isOn)
         }
         .formStyle(.grouped)
     }
@@ -116,14 +124,21 @@ struct SettingsView: View {
     }
 
     private var menuBar: some View {
-        SettingsPane(title: "Lights on the menu bar", isOn: $s.lightsEnabled) {
-            chainControls(style: $s.chainStyle, colors: $s.colorMode, pattern: $s.pattern, tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, sag: $s.sag, layer: $s.lightsLayer)
+        SettingsPane(title: "Lights on the menu bar", isOn: $s.lightsEnabled, moreOpen: $nav.moreBar) {
+            styleRows(style: $s.chainStyle, colors: $s.colorMode)
+            lookPicker($s.look)
+            patternPicker($s.pattern)
+        } more: {
+            moreRows(tempo: $s.lightsTempo, size: $s.bulbSize, spacing: $s.spacing, sag: $s.sag, layer: $s.lightsLayer)
         }
     }
 
     private var dock: some View {
-        SettingsPane(title: "Lights on the Dock", isOn: $s.dockLights) {
-            chainControls(style: $s.dockStyle, colors: $s.dockColorMode, pattern: $s.dockPattern, tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, sag: $s.dockSag, layer: $s.dockLayer)
+        SettingsPane(title: "Lights on the Dock", isOn: $s.dockLights, moreOpen: $nav.moreDock) {
+            styleRows(style: $s.dockStyle, colors: $s.dockColorMode)
+            lookPicker($s.dockLook)
+        } more: {
+            moreRows(tempo: $s.dockTempo, size: $s.dockBulbSize, spacing: $s.dockSpacing, sag: $s.dockSag, layer: $s.dockLayer)
             let side = dockOnSide
             Picker("Length", selection: $s.dockShape) {
                 Text(LocalizedStringKey(side ? "Dock height" : "Dock width")).tag(DockShape.exact)
@@ -132,10 +147,8 @@ struct SettingsView: View {
         }
     }
 
-    /// Gleicher Aufbau für Menüleiste und Dock, jede Kette mit eigenen Werten.
     @ViewBuilder
-    private func chainControls(style: Binding<ChainStyleKind>, colors: Binding<ColorMode>, pattern: Binding<LightPattern>, tempo: Binding<Int>,
-                               size: Binding<Int>, spacing: Binding<Int>, sag: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
+    private func styleRows(style: Binding<ChainStyleKind>, colors: Binding<ColorMode>) -> some View {
         Picker("Style", selection: style) {
             Text("Fir, colorful").tag(ChainStyleKind.firColor)
             Text("Fir, warm gold").tag(ChainStyleKind.firGold)
@@ -147,11 +160,27 @@ struct SettingsView: View {
                 Text("Warm white").tag(ColorMode.warm)
             }.pickerStyle(.segmented)
         }
+    }
+
+    private func lookPicker(_ look: Binding<Look>) -> some View {
+        Picker("Look", selection: look) {
+            Text("Subtle").tag(Look.subtle)
+            Text("Festive").tag(Look.festive)
+            Text("Lavish").tag(Look.lavish)
+        }.pickerStyle(.segmented)
+    }
+
+    private func patternPicker(_ pattern: Binding<LightPattern>) -> some View {
         Picker("Pattern", selection: pattern) {
             Text("Steady").tag(LightPattern.steady)
             Text("Twinkle").tag(LightPattern.twinkle)
             Text("Chase").tag(LightPattern.chase)
         }.pickerStyle(.segmented)
+    }
+
+    /// Weitere Optionen von Menüleiste und Dock, jede Kette mit eigenen Werten.
+    @ViewBuilder
+    private func moreRows(tempo: Binding<Int>, size: Binding<Int>, spacing: Binding<Int>, sag: Binding<Int>, layer: Binding<DisplayLayer>) -> some View {
         LevelSlider(title: "Speed", value: tempo, low: "Slow", high: "Fast")
         LevelSlider(title: "Size", value: size, low: "Small", high: "Large")
         LevelSlider(title: "Spacing", value: spacing, low: "Tight", high: "Wide")
@@ -169,8 +198,16 @@ struct SettingsView: View {
     }
 
     private var snow: some View {
-        SettingsPane(title: "Snow", isOn: $s.snowEnabled) {
+        SettingsPane(title: "Snow", isOn: $s.snowEnabled, moreOpen: $nav.moreSnow) {
             LevelSlider(title: "Amount", value: $s.snowAmount, low: "Light", high: "Heavy")
+            Toggle("Settles on windows", isOn: $s.settleSnow)
+                #if DIRECT
+                .disabled(!perm.granted)
+                .accessibilityHint(Text(perm.granted ? "" : "settle.hint"))
+                #endif
+            Toggle("Only during breaks", isOn: $s.snowOnlyBreaks)
+                .accessibilityHint(Text("breaks.hint"))
+        } more: {
             LevelSlider(title: "Flake size", value: $s.flakeSize, low: "Small", high: "Large")
             LevelSlider(title: "Speed", value: $s.snowSpeed, low: "Slow", high: "Fast")
             LabeledContent("Wind") {
@@ -182,11 +219,6 @@ struct SettingsView: View {
             }
             LevelSlider(title: "Avoid pointer", value: $s.snowAvoid, low: "Little", high: "Much")
             layerPicker($s.snowLayer)
-            Toggle("Snow stays on windows", isOn: $s.settleSnow)
-                #if DIRECT
-                .disabled(!perm.granted)
-                .accessibilityHint(Text(perm.granted ? "" : "settle.hint"))
-                #endif
         }
     }
 
@@ -226,3 +258,34 @@ struct SettingsView: View {
         .formStyle(.grouped)
     }
 }
+
+#if DEBUG
+/// Entwicklungswerkzeug: rendert die Bereiche Menüleiste, Dock und Schnee (zugeklappt) in PNG-Dateien (`--render-settings <Ordner>`).
+enum SettingsSnapshot {
+    static func run(dir: String) {
+        _ = NSApplication.shared
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let lang = Locale.preferredLanguages.first?.prefix(2) ?? "en"
+        let nav = SettingsNav()
+        #if DIRECT
+        let view = SettingsView(s: Settings.shared, perm: PermissionModel(), updates: UpdateController(), login: LoginModel(), nav: nav)
+        #else
+        let view = SettingsView(s: Settings.shared, login: LoginModel(), nav: nav)
+        #endif
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(x: 0, y: 0, width: 470, height: 480)
+        let w = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        w.appearance = NSAppearance(named: .aqua)
+        w.contentView = host
+        w.orderFrontRegardless()
+        for (tab, name) in [(SettingsTab.menuBar, "menubar"), (.dock, "dock"), (.snow, "snow")] {
+            nav.tab = tab
+            RunLoop.current.run(until: Date().addingTimeInterval(0.6))
+            host.layoutSubtreeIfNeeded()
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(dir)/settings-\(lang)-\(name).png"))
+        }
+    }
+}
+#endif

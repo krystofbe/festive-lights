@@ -1496,7 +1496,8 @@ final class OnboardingTests: XCTestCase {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/Resources")
         let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
                     "onb.welcome.title", "onb.welcome.body", "onb.menubar.title", "onb.menubar.body", "onb.dock.title", "onb.dock.body", "onb.snow.title", "onb.snow.body",
-                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled"]
+                    "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled",
+                    "Look", "Subtle", "Festive", "Lavish", "More Options", "Settles on windows", "Only during breaks", "breaks.hint", "onb.on"]
         for lang in ["de", "en"] {
             let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)
             for k in keys { XCTAssertTrue(text.contains("\"\(k)\" ="), "\(k) fehlt in \(lang)") }
@@ -1833,5 +1834,82 @@ final class OnboardingSwitchesTests: XCTestCase {
         XCTAssertEqual(changes, 3, "jede Änderung erreicht die Beobachter (Fenster, Menü, Anwendung)")
         XCTAssertEqual(lights.wrappedValue, s.lightsEnabled)
         c.cancel()
+    }
+}
+
+
+final class LookTests: XCTestCase {
+    func testThinningKeepsTheRequestedShareEvenly() {
+        let items = Array(0..<40)
+        XCTAssertEqual(Look.thin(items, keep: 1), items)
+        XCTAssertTrue(Look.thin(items, keep: 0).isEmpty)
+        let half = Look.thin(items, keep: 0.5)
+        XCTAssertEqual(half.count, 20)
+        XCTAssertEqual(half, Look.thin(items, keep: 0.5), "deterministisch")
+        let gaps = zip(half.dropFirst(), half).map { $0 - $1 }
+        XCTAssertLessThanOrEqual(gaps.max()! - gaps.min()!, 0, "gleichmäßig ausgedünnt")
+    }
+
+    func testDepthLimitsAndSizeByLook() {
+        XCTAssertEqual(Look.subtle.menuDepth, 16); XCTAssertEqual(Look.festive.menuDepth, 30); XCTAssertNil(Look.lavish.menuDepth)
+        XCTAssertEqual(Look.subtle.dockDepthFraction!, 1.0 / 6, accuracy: 1e-12); XCTAssertEqual(Look.festive.dockDepthFraction!, 0.25, accuracy: 1e-12); XCTAssertNil(Look.lavish.dockDepthFraction)
+        XCTAssertEqual(Look.garlandFit(natural: 60, limit: 30), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(Look.garlandFit(natural: 20, limit: 30), 1, "unter der Grenze nichts kürzen")
+        XCTAssertEqual(Look.garlandFit(natural: 60, limit: nil), 1)
+        XCTAssertGreaterThanOrEqual(Look.garlandFit(natural: 600, limit: 16), 0.3)
+        XCTAssertEqual(Look.sagCap(20, limit: 16), 8); XCTAssertEqual(Look.sagCap(5, limit: 16), 5); XCTAssertEqual(Look.sagCap(20, limit: nil), 20)
+        XCTAssertLessThan(Look.subtle.sizeFactor, Look.festive.sizeFactor); XCTAssertEqual(Look.lavish.sizeFactor, 1)
+        XCTAssertEqual(Garland.menuBarBulbHeight(.firGold, barHeight: 33, level: 2, look: .lavish), ChainLayout.bulbHeight(menuBarHeight: 33, level: 2), "Volle Pracht ist der Stand von 1.2.2")
+    }
+
+    func testOrnamentsThinnedByLookAndHangingBranchesDropped() {
+        func plan(_ keep: Double, hang: Bool = true, style: ChainStyleKind = .firGold) -> GarlandPlan {
+            Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: style, dock: false, ornamentKeep: keep, hangBranches: hang)
+        }
+        let full = plan(1), half = plan(0.5), none = plan(0)
+        XCTAssertEqual(Double(half.cones.count), Double(full.cones.count) / 2, accuracy: 1)
+        XCTAssertEqual(Double(half.bows.count), Double(full.bows.count) / 2, accuracy: 1)
+        XCTAssertTrue(none.cones.isEmpty && none.bows.isEmpty)
+        XCTAssertTrue(full.branches.contains { $0.layer == .hang })
+        XCTAssertFalse(plan(1, hang: false).branches.contains { $0.layer == .hang })
+        let bunt = plan(1, style: .firColor), buntHalf = plan(0.5, style: .firColor)
+        XCTAssertFalse(bunt.baubles.isEmpty); XCTAssertEqual(Double(buntHalf.baubles.count), Double(bunt.baubles.count) / 2, accuracy: 1)
+        XCTAssertTrue(plan(0, style: .firColor).baubles.isEmpty)
+    }
+
+    func testBuntDockHasBaublesOnlyInLavish() {
+        func plan(_ baubles: Bool) -> GarlandPlan { Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 0.8, style: .firColor, dock: true, dockBaubles: baubles) }
+        XCTAssertTrue(plan(false).baubles.isEmpty, "Festlich: wie 1.2.1, ohne Kugeln")
+        XCTAssertFalse(plan(true).baubles.isEmpty)
+    }
+
+    func testMigrationNewUsersFestiveExistingUsersLavishAndOnlyOnce() {
+        let fresh = UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")!
+        Settings.migrate(fresh)
+        XCTAssertEqual(fresh.integer(forKey: "look"), Look.festive.rawValue); XCTAssertEqual(fresh.integer(forKey: "dockLook"), Look.festive.rawValue)
+        Settings.migrate(fresh)   // zweiter Start: bleibt Festlich
+        XCTAssertEqual(fresh.integer(forKey: "look"), Look.festive.rawValue)
+        let old = UserDefaults(suiteName: "festivelights.test.\(UUID().uuidString)")!
+        old.set(true, forKey: "welcomeShown"); old.set("firGold", forKey: "chainStyle")
+        Settings.migrate(old)
+        XCTAssertEqual(old.integer(forKey: "look"), Look.lavish.rawValue); XCTAssertEqual(old.integer(forKey: "dockLook"), Look.lavish.rawValue)
+        old.set(1, forKey: "look"); Settings.migrate(old)
+        XCTAssertEqual(old.integer(forKey: "look"), 1, "eine spätere Wahl bleibt")
+    }
+
+    func testResetRestoresLookAndBreaksSetting() {
+        let s = Settings.shared
+        s.look = .subtle; s.dockLook = .lavish; s.snowOnlyBreaks = true
+        s.resetToDefaults()
+        XCTAssertEqual(s.look, .festive); XCTAssertEqual(s.dockLook, .festive); XCTAssertFalse(s.snowOnlyBreaks)
+    }
+
+    func testSnowBreakLogicAndFrontWindow() {
+        XCTAssertTrue(SnowBreak.allowsNewFlakes(onlyBreaks: false, idleSeconds: 0))
+        XCTAssertFalse(SnowBreak.allowsNewFlakes(onlyBreaks: true, idleSeconds: 119))
+        XCTAssertTrue(SnowBreak.allowsNewFlakes(onlyBreaks: true, idleSeconds: 120))
+        XCTAssertEqual(FrontWindow.pick(windows: [(id: 9, pid: 5), (id: 3, pid: 7), (id: 4, pid: 7)], frontPID: 7), 3, "das erste Fenster der aktiven App")
+        XCTAssertNil(FrontWindow.pick(windows: [(id: 9, pid: 5)], frontPID: 7))
+        XCTAssertNil(FrontWindow.pick(windows: [(id: 9, pid: 5)], frontPID: nil))
     }
 }

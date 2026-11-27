@@ -107,3 +107,11 @@
 "onb.on" = "An";
 "onb.dock.body" = "Auch dein Dock bekommt Lichter. Sie wandern mit, wenn es sich verändert.";
 "onb.menubar.body" = "Die Lichter hängen unter deiner Menüleiste und machen Platz, wenn du näher kommst.";
+"Look" = "Auftritt";
+"Subtle" = "Dezent";
+"Festive" = "Festlich";
+"Lavish" = "Volle Pracht";
+"More Options" = "Weitere Optionen";
+"Settles on windows" = "Liegt auf Fenstern";
+"Only during breaks" = "Nur in Pausen";
+"breaks.hint" = "Der Schnee beginnt erst, wenn zwei Minuten lang nichts getippt und die Maus nicht bewegt wurde.";

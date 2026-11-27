@@ -107,3 +107,11 @@
 "onb.on" = "On";
 "onb.dock.body" = "Your Dock gets lights too. They follow along when it changes.";
 "onb.menubar.body" = "The lights hang under your menu bar and make room when the pointer comes near.";
+"Look" = "Look";
+"Subtle" = "Subtle";
+"Festive" = "Festive";
+"Lavish" = "Lavish";
+"More Options" = "More Options";
+"Settles on windows" = "Settles on windows";
+"Only during breaks" = "Only during breaks";
+"breaks.hint" = "Snow only starts after two minutes without typing or moving the mouse.";

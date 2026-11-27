@@ -77,8 +77,8 @@ enum Garland {
 
     /// Dock-Kette: Bei Symbolgröße 64 pt und Mittelstellung ist jedes Element halb so groß wie bei der Menüleisten-Kette desselben Bildschirms (`barHeight`).
     /// Die Kette skaliert linear mit der Symbolgröße, der Regler wirkt relativ dazu, nie unter 6 pt.
-    static func dockBulbHeight(tile: Double, bulbLevel: Int, barHeight: Double = 24, kind: ChainStyleKind = .firGold) -> Double {
-        if kind == .firColor { return max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel)) }   // Tanne bunt: Maße von 1.2.1
+    static func dockBulbHeight(tile: Double, bulbLevel: Int, barHeight: Double = 24, kind: ChainStyleKind = .firGold, look: Look = .lavish) -> Double {
+        if kind == .firColor { return max(8, tile * 0.25 * Levels.value(Levels.bulbSize, bulbLevel) * (look == .subtle ? look.sizeFactor : 1)) }   // Tanne bunt: Maße von 1.2.1
         return max(6, 0.5 * max(barHeight, 22) * tile / 64 * Levels.value(Levels.bulbSize, bulbLevel))
     }
     /// Birnenhöhe, auf die die Dock-Büschel und -Zweige bezogen sind (Symbolgröße 73 pt bei Mittelstellung).
@@ -108,8 +108,8 @@ enum Garland {
 
     /// "Tanne bunt" an der Menüleiste: eine Größenstufe kleiner als der Regler (Mittelstellung = Stufe 2 mit Faktor 0,85), damit Tabs und Titel lesbar bleiben.
     static let tbSizeFactor = 0.85
-    static func menuBarBulbHeight(_ k: ChainStyleKind, barHeight: Double, level: Int) -> Double {
-        ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1)
+    static func menuBarBulbHeight(_ k: ChainStyleKind, barHeight: Double, level: Int, look: Look = .lavish) -> Double {
+        ChainLayout.bulbHeight(menuBarHeight: barHeight, level: level) * (k == .firColor ? tbSizeFactor : 1) * look.sizeFactor
     }
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
@@ -128,9 +128,17 @@ enum Garland {
     static func anchorSpacing(scale s: Double) -> Double { 22 * s / max(density, 0.1) }
 
     /// Stabile Platzierung: gleiche Eingaben ergeben immer denselben Plan.
-    static func plan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double] = []) -> GarlandPlan {
+    static func plan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double] = [],
+                     ornamentKeep keep: Double = 1, hangBranches: Bool = true, dockBaubles: Bool = false) -> GarlandPlan {
+        var p = rawPlan(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, style: style, dock: dock, bulbPositions: bulbPositions, dockBaubles: dockBaubles)
+        p.cones = Look.thin(p.cones, keep: keep); p.bows = Look.thin(p.bows, keep: keep); p.baubles = Look.thin(p.baubles, keep: keep)
+        if !hangBranches { p.branches.removeAll { $0.layer == .hang } }
+        return p
+    }
+
+    private static func rawPlan(length: Double, arcLength: Double, arcCount: Int, scale s: Double, style: ChainStyleKind, dock: Bool, bulbPositions: [Double], dockBaubles: Bool) -> GarlandPlan {
         guard style.isFir, length > 0 else { return GarlandPlan() }
-        if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions) }
+        if style == .firColor { return planBunt(length: length, arcLength: arcLength, arcCount: arcCount, scale: s, dock: dock, bulbPositions: bulbPositions, dockBaubles: dockBaubles) }
         var plan = GarlandPlan()
         let n = max(1, Int(length / anchorSpacing(scale: s)))
         let step = length / Double(n)
@@ -159,7 +167,7 @@ enum Garland {
     }
 
     /// "Tanne bunt": Büschel dicht entlang des Strangs, Kugeln an Goldfäden aus den Büscheln, zwei Zapfen je Bogen. Am Dock nur kleine Büschel.
-    private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double]) -> GarlandPlan {
+    private static func planBunt(length: Double, arcLength: Double, arcCount: Int, scale s: Double, dock: Bool, bulbPositions: [Double], dockBaubles: Bool) -> GarlandPlan {
         var plan = GarlandPlan()
         let unit = tbUnit * s
         let n = max(1, Int(length / (tbAnchorUnits * (dock ? tbDockScale * s : unit))))
@@ -168,7 +176,7 @@ enum Garland {
             plan.branches.append(GarlandBranch(layer: .cluster, sprite: 1, u: (Double(k) + 0.5) * step, mirrored: stableRandom(k, 1, 21) < 0.5,
                                                rotation: (stableRandom(k, 2, 22) * 2 - 1) * tbRotation, scale: 1.1 + 0.15 * stableRandom(k, 3, 23)))
         }
-        if dock { return plan }   // Tanne bunt am Dock: nur kleine Büschel wie in 1.2.1
+        if dock && !dockBaubles { return plan }   // Tanne bunt am Dock: nur kleine Büschel wie in 1.2.1 (Festlich), mit kleinen Kugeln bei Volle Pracht
         let every = tbBaubleUnits * unit
         var u = every * 0.5, i = 0
         while u < length {
