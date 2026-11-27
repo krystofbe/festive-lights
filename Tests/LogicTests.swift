@@ -1876,7 +1876,7 @@ final class LookTests: XCTestCase {
         for look in [Look.festive, .lavish] { for k in [ChainStyleKind.firGold, .classic] { XCTAssertNil(LookProfile.make(k, look, dock: false).miniBulb) } }
         // Dock unverändert
         let cd = LookProfile.make(.classic, .subtle, dock: true), gd = LookProfile.make(.firGold, .subtle, dock: true)
-        XCTAssertEqual(cd.bulbScale, 0.7); XCTAssertEqual(cd.spacingK, 1.5); XCTAssertNil(cd.miniBulb)
+        XCTAssertEqual(cd.miniBulb, 14); XCTAssertEqual(cd.perArc, 3); XCTAssertEqual(cd.bulbScale, 1, "Dock Dezent: Mini-Birnen in Dock-Größe statt C7")
         XCTAssertNil(gd.miniBulb); XCTAssertFalse(gd.noGreen); XCTAssertEqual(gd.flatten, 30)
         XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: true).spacingK, 2, "Tanne bunt am Dock Dezent: jede zweite Birne")
         XCTAssertEqual([Look.festive, .lavish].map { LookProfile.make(.firColor, $0, dock: true).spacingK }, [1.5, 1.5], "Festlich und Volle Pracht: ein Drittel weniger Birnen")

@@ -202,7 +202,7 @@ final class ChainRenderer {
         let fs = unitScale(sp)
         // Am Dock sind die Birnen in jedem Stil mindestens so groß wie die klassischen (Höhe = Birnenhöhe)
         let bs = bunt && sp.isDock ? CGSize(width: sp.bulbH * 12.0 / 22, height: sp.bulbH) : FirSprites.bulbSizePt(style.kind, fs: fs)
-        let mini = prof.miniBulb   // feste zweite Sorte "Mini" (Dezent an der Menüleiste, warmgold und klassisch)
+        let mini = prof.miniBulb.map { sp.isDock && sp.dockTile > 0 ? $0 * sp.dockTile / 58 : $0 }   // feste zweite Sorte "Mini" (Dezent an der Menüleiste, warmgold und klassisch)
         let h = mini ?? (fir ? bs.height : sp.bulbH * prof.bulbScale)   // am Dock klassisch Dezent: kleinere Sorte C7 (etwa 70 %, etwas schlanker)
         let w = mini != nil ? h * (fir ? bs.width / bs.height : 0.5) : (fir ? bs.width : h * (prof.bulbScale < 1 ? 0.55 : 0.6))
         // Am Dock werden die Sprites für die größte Vergrößerung gerendert, damit sie beim Mitwachsen scharf bleiben

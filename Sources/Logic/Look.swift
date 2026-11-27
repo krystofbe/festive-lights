@@ -25,6 +25,7 @@ struct LookProfile: Equatable {
     var noGreen = false            // warmgold Dezent an der Menüleiste: nur Kabel und Mini-Birnen
     var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Dezent: 3) (Tanne bunt, Dezent, Menüleiste)
 
+    static let miniDockHeight = 14.0   // Mini-Birne am Dock bei Symbolgröße 58, wächst linear mit der Symbolgröße, so gut sichtbar wie die Birnen von Tanne bunt am Dock
     static let miniHeight = 8.0   // feste zweite Birnensorte, etwas größer als die Birnen von Tanne bunt (6 pt)
 
     static func make(_ kind: ChainStyleKind, _ look: Look, dock: Bool) -> LookProfile {
@@ -52,7 +53,7 @@ struct LookProfile: Equatable {
         case .classic:
             p.sag = dock ? [0.1, 0.3, 0.45][i] : [0.1, 0.3, 1.0][i]
             p.bows = false; p.hang = .none; p.cones = .none
-            if dock { p.spacingK = [1.5, 1, 1][i]; p.bulbScale = [0.7, 1, 1][i] }   // am Dock Dezent: C7
+            if dock { if i == 0 { p.miniBulb = LookProfile.miniDockHeight; p.perArc = 3; p.spacingK = 1.7 } }   // Dock Dezent: Mini-Birnen in Dock-Größe, so dicht wie Tanne bunt Dezent am Dock
             else if i == 0 { p.miniBulb = LookProfile.miniHeight; p.perArc = 5 }     // an der Menüleiste Mini-Birnen, Abstand wie bei Tanne bunt
         }
         return p

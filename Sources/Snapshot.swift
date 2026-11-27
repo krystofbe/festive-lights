@@ -125,9 +125,9 @@ enum Snapshot {
         }
 
         // Kontrollbilder für Vergleiche auf echten Bildschirmfotos: Menüleiste (Tanne bunt, Leistenhöhe 33) und Dock unten (Symbolgröße 58), mit Fensterrahmen
-        func control(_ name: String, _ sp: ChainSpec, _ kind: ChainStyleKind, light: Bool, pattern: LightPattern = .steady) {
+        func control(_ name: String, _ sp: ChainSpec, _ kind: ChainStyleKind, light: Bool, pattern: LightPattern = .steady, warm: Bool = false) {
             let r = ChainRenderer()
-            r.configure(spec: sp, style: ChainStyle(warm: false, pattern: pattern, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
+            r.configure(spec: sp, style: ChainStyle(warm: warm, pattern: pattern, tempo: 1, dark: !light, reduceMotion: false, kind: kind), scale: 2)
             r.setVisible(true, layer: .above, intro: nil); r.window.rootLayer.opacity = 1
             for i in 0..<240 { _ = r.update(time: 20 + Double(i) * 0.016, dt: 0.016, pointer: nil) }   // Federn einschwingen lassen (Zweige drehen sich in ihre Lage)
             let fr = r.window.frame
@@ -170,6 +170,17 @@ enum Snapshot {
             let sp = ChainSpec(p0: CGPoint(x: 0, y: 77), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1728, bulbH: mh, sag: mh * mp.sag, liftSign: -1, isMenuBar: true, liftMax: 0,
                                spacing: Garland.menuBarSpacing(k, look: look, barHeight: 33), garlandDepth: k.isFir ? Garland.depthPer24(k) * mh / 24 : 0, look: look)
             control("ember-\(name)", sp, k, light: true, pattern: pattern)
+        }
+
+        // Kontrollbild: klassisch Dock Dezent, bunt und warmweiß, Funkeln
+        do {
+            let k = ChainStyleKind.classic, tile = 58.0
+            let dh = Garland.dockBulbHeight(tile: tile, bulbLevel: 2, barHeight: 37, kind: k)
+            let sag = Garland.dockExactSag(requested: Garland.dockMidSag(k, bulbH: dh, look: .subtle), midSag: Garland.dockMidSag(k, bulbH: dh, look: .subtle), bulbH: dh, tile: tile, level: 2)
+            let sp = ChainSpec(p0: CGPoint(x: 41.5, y: 81), uDir: CGVector(dx: 1, dy: 0), hang: CGVector(dx: 0, dy: -1), length: 1643.5, bulbH: dh, sag: sag, liftSign: -1, isMenuBar: false, liftMax: 110,
+                               spacing: ChainLayout.spacing(bulbHeight: dh, level: 2) * LookProfile.make(k, .subtle, dock: true).spacingK, garlandDepth: 0, dockTile: tile, look: .subtle, dockMaxGrow: 1)
+            control("dockdezent-classic-bunt", sp, k, light: false, pattern: .twinkle)
+            control("dockdezent-classic-warm", sp, k, light: false, pattern: .twinkle, warm: true)
         }
 
         // Dock unten, Tanne warmgold
