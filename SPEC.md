@@ -431,6 +431,7 @@ Auf einem Bildschirmfoto mit drei Stufen untereinander, je Stil, Menüleiste üb
 
 Dezent an der Menüleiste soll in allen Stilen gleich groß und gleich zurückhaltend wirken wie "Tanne bunt" Dezent. Dafür gibt es eine feste zweite Birnensorte "Mini" (etwa 6,5 pt hoch, so groß wie die Birnen von "Tanne bunt").
 - "Tanne warmgold" Dezent an der Menüleiste: nur Kabel und Mini-Birnen in Warmgold (Farbe, Schein und unregelmäßige Abstände wie bisher), kein Grün, keine Zapfen, keine Schleifen, Kabel straff (Variante 4 des Vergleichsblatts).
+- Nachbesserung (Krystof: "zu dezent"): Bei "Tanne warmgold" Dezent hängen etwa doppelt so viele Mini-Birnen (so dicht wie bei "Tanne bunt" Dezent, Unregelmäßigkeit bleibt), Schein etwa 1,5-mal so kräftig, Mini-Birne etwa 8 pt statt 6,5 pt (gilt auch für "klassisch" Dezent).
 - "klassisch" Dezent an der Menüleiste: Mini-Birnen in den bunten Farben statt C7, Abstand wie bei "Tanne bunt" Dezent (etwa gleich viele Birnen je Breite), Kabel straff (Variante 6). C7 entfällt.
 - Abgelehnt: Mini-Birnen unter dem großen warmgold-Grün (Variante 3).
 - Am Dock bleibt Dezent wie in den Tabellen oben.
