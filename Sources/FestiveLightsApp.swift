@@ -20,6 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller?.start()
     }
 
+    /// Klick aufs Dock-Symbol (nur sichtbar, solange Einführung oder Einstellungen offen sind): das offene Fenster nach vorn holen.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { controller?.bringWindowsForward() ?? false }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 }
 

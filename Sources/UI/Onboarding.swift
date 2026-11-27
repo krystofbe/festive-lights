@@ -386,20 +386,22 @@ struct SnowDots: View {
 final class OnboardingController: NSObject, NSWindowDelegate {
     /// Beim Schließen die Ansicht freigeben, damit nichts (Zeitgeber, Schneepunkte) im Hintergrund weiterläuft.
     func windowWillClose(_ notification: Notification) {
+        windowChanged(false)
         let w = window
         window = nil
         DispatchQueue.main.async { w?.contentView = nil }
     }
 
 
-    private var window: NSWindow?
+    private(set) var window: NSWindow?
     private let model = OnboardingModel()
     private let settings: Settings
     private let login: LoginModel
     private let pulse: () -> Void
+    private let windowChanged: (Bool) -> Void
     var isShown: Bool { window?.isVisible ?? false }
 
-    init(settings: Settings, login: LoginModel, pulse: @escaping () -> Void) { self.settings = settings; self.login = login; self.pulse = pulse }
+    init(settings: Settings, login: LoginModel, pulse: @escaping () -> Void, windowChanged: @escaping (Bool) -> Void = { _ in }) { self.settings = settings; self.login = login; self.pulse = pulse; self.windowChanged = windowChanged }
 
     func show() {
         if let w = window, w.isVisible {   // schon offen: nur nach vorn holen
@@ -425,6 +427,7 @@ final class OnboardingController: NSObject, NSWindowDelegate {
         }
         model.index = 0
         if let w = window, let v = NSScreen.screens.first?.visibleFrame { w.setFrameOrigin(WindowPlacement.centeredOrigin(size: w.frame.size, visible: v)) }
+        windowChanged(true)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }

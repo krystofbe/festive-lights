@@ -38,7 +38,30 @@ final class AppController: NSObject {
     private var timers: [Timer] = []
     private let loginModel = LoginModel()
     private let settingsNav = SettingsNav()
-    private lazy var onboarding = OnboardingController(settings: settings, login: loginModel, pulse: { [weak self] in self?.status.pulse() })
+    private var policy = WindowPolicyTracker()
+    private lazy var onboarding = OnboardingController(settings: settings, login: loginModel, pulse: { [weak self] in self?.status.pulse() },
+                                                       windowChanged: { [weak self] open in self?.windowChanged("onboarding", open: open) })
+
+    /// Dock-Symbol und Befehl-Tab nur, solange Einführung oder Einstellungen offen sind. Das Fenster springt beim Wechsel nicht nach hinten.
+    func windowChanged(_ id: String, open: Bool, window: NSWindow? = nil) {
+        let changed = open ? policy.opened(id) : policy.closed(id)
+        guard changed else { return }
+        NSApp.setActivationPolicy(policy.wantsRegular ? .regular : .accessory)
+        if open {
+            NSApp.activate(ignoringOtherApps: true)
+            DispatchQueue.main.async { [weak self] in (window ?? self?.visibleAppWindow())?.makeKeyAndOrderFront(nil) }
+        }
+    }
+
+    private func visibleAppWindow() -> NSWindow? { (onboarding.isShown ? onboarding.window : nil) ?? (settingsWindow?.isVisible == true ? settingsWindow : nil) }
+
+    /// Klick aufs Dock-Symbol: das offene Fenster nach vorn holen.
+    func bringWindowsForward() -> Bool {
+        guard let w = visibleAppWindow() else { return false }
+        NSApp.activate(ignoringOtherApps: true)
+        w.makeKeyAndOrderFront(nil)
+        return true
+    }
     func showOnboarding() { onboarding.show() }
     #if DIRECT
     private let updates = UpdateController()
@@ -533,12 +556,14 @@ final class AppController: NSObject {
                 if let w { UserDefaults.standard.set(NSStringFromPoint(w.frame.origin), forKey: key) }
             }
             settingsWindow = w
+            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in self?.windowChanged("settings", open: false) }
         }
         if settingsWindow?.isVisible != true { settingsNav.tab = .general; settingsNav.moreBar = false; settingsNav.moreDock = false; settingsNav.moreSnow = false }
         #if DIRECT
         permissionModel.refresh()
         #endif
         loginModel.refresh()
+        windowChanged("settings", open: true, window: settingsWindow)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }

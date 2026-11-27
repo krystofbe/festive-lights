@@ -1958,3 +1958,19 @@ final class LookTests: XCTestCase {
         XCTAssertNil(FrontWindow.pick(windows: [(id: 9, pid: 5)], frontPID: nil))
     }
 }
+
+
+final class WindowPolicyTests: XCTestCase {
+    func testRegularOnlyWhileOnboardingOrSettingsIsOpen() {
+        var t = WindowPolicyTracker()
+        XCTAssertFalse(t.wantsRegular, "ohne Fenster: nur Menüleiste")
+        XCTAssertTrue(t.opened("onboarding"), "Richtlinie wechselt")
+        XCTAssertTrue(t.wantsRegular)
+        XCTAssertFalse(t.opened("settings"), "zweites Fenster: kein Wechsel")
+        XCTAssertFalse(t.closed("onboarding"), "ein Fenster ist noch offen: bleibt regulär")
+        XCTAssertTrue(t.wantsRegular)
+        XCTAssertTrue(t.closed("settings"), "letztes Fenster zu: zurück zu accessory")
+        XCTAssertFalse(t.wantsRegular)
+        XCTAssertFalse(t.closed("settings"), "doppeltes Schließen ändert nichts")
+    }
+}

@@ -18,3 +18,13 @@ final class OnboardingModel: ObservableObject {
 
 /// Wirkung der Stilwahl: gilt sofort für Menüleiste und Dock.
 func applyOnboardingStyle(_ kind: ChainStyleKind, to s: Settings) { s.chainStyle = kind; s.dockStyle = kind }
+
+/// Solange Einführung oder Einstellungsfenster offen ist, hat die App ein Dock-Symbol und taucht in Befehl-Tab auf (SPEC §6 Punkt 2a), sonst ist sie ein
+/// reines Menüleisten-Programm. Gezählt wird, welche dieser Fenster offen sind.
+struct WindowPolicyTracker {
+    private(set) var open = Set<String>()
+    var wantsRegular: Bool { !open.isEmpty }
+    /// Gibt zurück, ob sich die gewünschte Richtlinie geändert hat.
+    @discardableResult mutating func opened(_ id: String) -> Bool { let was = wantsRegular; open.insert(id); return was != wantsRegular }
+    @discardableResult mutating func closed(_ id: String) -> Bool { let was = wantsRegular; open.remove(id); return was != wantsRegular }
+}
