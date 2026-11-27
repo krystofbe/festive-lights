@@ -299,7 +299,7 @@ Daraus sechs Handgriffe, in dieser Reihenfolge anzuwenden:
 - Zwei feste Kugelgrößen wirken wie Absicht. Stufenlos verkleinerte Kugeln wirken wie ein Darstellungsfehler.
 - Die Silhouette ändert sich in benennbaren Schritten. Man kann bei jedem Stufenwechsel sagen, was abgenommen wurde.
 
-**Zusätzlicher Handgriff nur für "Dezent" bei "Tanne bunt" an der Menüleiste: auf der Kante liegen.** Strang und Büschel hängen 6 pt höher, der Teil oberhalb der Menüleisten-Unterkante bleibt wie heute abgeschnitten (heute schon so an jedem Aufhängepunkt). Kabel und Birnen wandern nicht mit, keine Birne wird angeschnitten. Wirkung: wie eine Girlande, die auf dem Sims liegt und nur halb über die Kante hängt. Siehe offene Frage 1.
+**Zusätzlicher Handgriff nur für "Dezent" bei "Tanne bunt" an der Menüleiste: auf der Kante liegen.** Strang und Büschel hängen 3 pt höher (Krystof 27.11.: "minimal größer", vorher 6 pt), der Teil oberhalb der Menüleisten-Unterkante bleibt wie heute abgeschnitten (heute schon so an jedem Aufhängepunkt). Kabel und Birnen wandern nicht mit, keine Birne wird angeschnitten. Wirkung: wie eine Girlande, die auf dem Sims liegt und nur halb über die Kante hängt. Siehe offene Frage 1.
 
 **Für die Umsetzung:** `Look.sizeFactor` entfällt (immer 1), `Look.garlandFit` entfällt (nichts wird auf eine Grenze skaliert). `tbSizeFactor` 0,85 bleibt, das ist das Grundmaß von 1.2.2 und gilt in allen Stufen. Neu nötig: Durchhang je Auftritt, erlaubter Bereich von `t` je Schmuckart, Fadenlänge je Auftritt, Zusatzdrehung der Zweige (warmgold), Anhebung des Strangs (bunt). Die Tiefen unten sind Ergebnis, keine Grenze, auf die hin etwas angepasst wird. Die Regler unter "Weitere Optionen" multiplizieren wie bisher.
 
@@ -323,7 +323,7 @@ Schreibweise: Anzahl, Größe gegenüber "Volle Pracht", Länge, Lage. "100 %" h
 
 | Element | Dezent | Festlich | Volle Pracht |
 |---|---|---|---|
-| Büschel | alle, 100 %, Strang 6 pt angehoben | alle, 100 % | alle, 100 % |
+| Büschel | alle, 100 %, Strang 3 pt angehoben | alle, 100 % | alle, 100 % |
 | Hängende Zweige | gibt es in diesem Stil nicht | gibt es nicht | gibt es nicht |
 | Birnen | alle (5 je Bogen), 100 %, nicht angehoben | alle, 100 % | alle, 100 % |
 | Kugeln | keine | halb so viele (alle 340 Einheiten, etwa 1,5 je Bogen), alle groß (100 %), nur bei t unter 0,3 oder über 0,7: fällt eine in die Bogenmitte, rückt sie zum nächsten Büschel außerhalb | etwa 3 je Bogen (alle 170 Einheiten), alle groß, überall |
@@ -426,7 +426,7 @@ Auf einem Bildschirmfoto mit drei Stufen untereinander, je Stil, Menüleiste üb
 
 ### 5. Entscheidungen von Krystof (vormals offene Fragen)
 
-Alle drei Empfehlungen angenommen: (1) Dezent bei Tanne bunt an der Menüleiste: Strang 6 pt angehoben, liegt auf der Kante. (2) klassisch in Dezent mit kleinerer Birnensorte C7 (etwa 70 %), an Menüleiste und Dock. (3) Tanne warmgold: Zweige in Dezent 30 Grad, in Festlich 15 Grad flacher angebunden.
+Alle drei Empfehlungen angenommen: (1) Dezent bei Tanne bunt an der Menüleiste: Strang 3 pt angehoben (nachträglich von 6 auf 3 pt), liegt auf der Kante. (2) klassisch in Dezent mit kleinerer Birnensorte C7 (etwa 70 %), an Menüleiste und Dock. (3) Tanne warmgold: Zweige in Dezent 30 Grad, in Festlich 15 Grad flacher angebunden.
 
 Ursprüngliche Fragen:
 
