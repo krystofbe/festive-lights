@@ -137,7 +137,7 @@ final class ChainRenderer {
     private var bunt: Bool { style.kind == .firColor }
     /// Größenfaktor der Tannen-Grafiken (Tanne bunt bezieht sich auf die Menüleiste des Zielbilds, sonst 24 pt Birnenhöhe).
     private func unitScale(_ sp: ChainSpec) -> Double { sp.bulbH / (bunt ? Garland.tbRefBulbH : 24) }
-    private var glowAlpha: Double { bunt ? 0.6 : (style.kind == .firGold ? 0.75 : 0.9) }
+    private var glowAlpha: Double { (bunt ? 0.6 : (style.kind == .firGold ? 0.75 : 0.9)) * (prof.miniBulb != nil ? 1.5 : 1) }   // Mini-Birnen: Schein 1,5-mal so kräftig
 
     func setVisible(_ on: Bool, layer: DisplayLayer, intro now: Double?) {
         window.setLayer(layer)
@@ -209,7 +209,7 @@ final class ChainRenderer {
         let reserve = sp.isDock ? sp.dockMaxGrow : 1
         let px = max(8, Int((h * scale * reserve).rounded()))
         // Schein: klassisch Radius eine Birnenhöhe, Tanne eineinhalb Birnenlängen um die Mitte des Glaskörpers
-        let glowR = bunt ? 1.6 * h : (fir ? 1.5 * h : h)
+        let glowR = bunt ? 1.6 * h : (fir ? 1.5 * h : h) * (mini != nil ? 1.5 : 1)
         let glowPx = max(16, Int((glowR * 2 * scale * reserve).rounded()))
         let glowCenter = bunt ? 1 - 14.0 / 22.0 : (fir ? 1 - 14.0 / 21.0 : 0.45)
         beads = BeadChain(rest: localBulbs, length: sp.length, minGap: max(1.5 * w, 6), halfGap: sp.spacing)

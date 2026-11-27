@@ -1870,8 +1870,8 @@ final class LookTests: XCTestCase {
 
     func testSubtleMenuBarUsesMiniBulbsForWarmGoldAndClassicAndTheDockKeepsItsLook() {
         let g = LookProfile.make(.firGold, .subtle, dock: false), c = LookProfile.make(.classic, .subtle, dock: false)
-        XCTAssertEqual(g.miniBulb, 6.5); XCTAssertTrue(g.noGreen, "warmgold Dezent: nur Kabel und Mini-Birnen"); XCTAssertEqual(g.strandLift, 3)
-        XCTAssertEqual(c.miniBulb, 6.5); XCTAssertEqual(c.perArc, 5); XCTAssertEqual(c.bulbScale, 1, "C7 entfällt an der Menüleiste")
+        XCTAssertEqual(g.miniBulb, 8); XCTAssertEqual(g.perArc, 8); XCTAssertTrue(g.noGreen, "warmgold Dezent: nur Kabel und Mini-Birnen"); XCTAssertEqual(g.strandLift, 3)
+        XCTAssertEqual(c.miniBulb, 8); XCTAssertEqual(c.perArc, 5); XCTAssertEqual(c.bulbScale, 1, "C7 entfällt an der Menüleiste")
         XCTAssertNil(LookProfile.make(.firColor, .subtle, dock: false).miniBulb)
         for look in [Look.festive, .lavish] { for k in [ChainStyleKind.firGold, .classic] { XCTAssertNil(LookProfile.make(k, look, dock: false).miniBulb) } }
         // Dock unverändert
@@ -1886,6 +1886,12 @@ final class LookTests: XCTestCase {
         let bunt = Garland.menuBarSpacing(.firColor, look: .subtle, barHeight: 33)
         XCTAssertEqual(Garland.menuBarSpacing(.classic, look: .subtle, barHeight: 33), bunt, accuracy: 1e-9, "etwa gleich viele Birnen je Breite wie bei Tanne bunt")
         XCTAssertEqual(Garland.menuBarSpacing(.classic, look: .lavish, barHeight: 33), ChainLayout.spacing(bulbHeight: 33, level: 2), "Volle Pracht unverändert")
+        func count(_ k: ChainStyleKind) -> Int {
+            let l = ChainLayout(length: 1728, spacing: Garland.menuBarSpacing(k, look: .subtle, barHeight: 33), bulbsPerArc: LookProfile.make(k, .subtle, dock: false).perArc ?? (k == .firColor ? 5 : 6), irregular: k == .firGold)
+            return l.bulbCount
+        }
+        XCTAssertEqual(Double(count(.firGold)), Double(count(.firColor)), accuracy: 6, "warmgold Dezent so dicht wie Tanne bunt Dezent")
+        XCTAssertEqual(Double(count(.classic)), Double(count(.firColor)), accuracy: 6)
         let plan = Garland.plan(length: 1600, arcLength: 160, arcCount: 10, scale: 1, style: .firGold, dock: false, profile: LookProfile.make(.firGold, .subtle, dock: false))
         XCTAssertTrue(plan.branches.isEmpty && plan.cones.isEmpty && plan.bows.isEmpty)
     }

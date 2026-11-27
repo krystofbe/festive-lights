@@ -25,7 +25,7 @@ struct LookProfile: Equatable {
     var noGreen = false            // warmgold Dezent an der Menüleiste: nur Kabel und Mini-Birnen
     var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Dezent: 3) (Tanne bunt, Dezent, Menüleiste)
 
-    static let miniHeight = 6.5   // etwa so groß wie die Birnen von Tanne bunt
+    static let miniHeight = 8.0   // feste zweite Birnensorte, etwas größer als die Birnen von Tanne bunt (6 pt)
 
     static func make(_ kind: ChainStyleKind, _ look: Look, dock: Bool) -> LookProfile {
         let i = look.rawValue
@@ -48,7 +48,7 @@ struct LookProfile: Equatable {
             p.hang = [HangMode.none, .edges, .regular][i]
             p.cones = [ConeMode.none, .hookEveryOtherArc, .scattered][i]
             p.bows = i > 0
-            if !dock && i == 0 { p.miniBulb = LookProfile.miniHeight; p.noGreen = true; p.strandLift = 3 }
+            if !dock && i == 0 { p.miniBulb = LookProfile.miniHeight; p.noGreen = true; p.strandLift = 3; p.perArc = 8 }   // so dicht wie bei Tanne bunt Dezent (unregelmäßig: 60 % von 8 je Bogen)
         case .classic:
             p.sag = dock ? [0.1, 0.3, 0.45][i] : [0.1, 0.3, 1.0][i]
             p.bows = false; p.hang = .none; p.cones = .none

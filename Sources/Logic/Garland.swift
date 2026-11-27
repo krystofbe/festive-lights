@@ -115,9 +115,10 @@ enum Garland {
     /// Birnenabstand an der Menüleiste: klassisch Dezent hängt mit Mini-Birnen im Abstand von Tanne bunt, sonst je Stil.
     static func menuBarSpacing(_ k: ChainStyleKind, look: Look, barHeight: Double, level: Int = 2) -> Double {
         let p = LookProfile.make(k, look, dock: false)
-        let ref: ChainStyleKind = p.miniBulb != nil && k == .classic ? .firColor : k
+        let ref: ChainStyleKind = p.miniBulb != nil ? .firColor : k
         let h = menuBarBulbHeight(ref, barHeight: barHeight, level: level)
-        return ChainLayout.spacing(bulbHeight: h, level: level) * (ref == .firColor ? tbSpacingFactor : 1) * p.spacingK
+        // warmgold ist unregelmäßig verteilt (60 % der Birnen), der Abstand wird darum kleiner, damit gleich viele hängen wie bei Tanne bunt
+        return ChainLayout.spacing(bulbHeight: h, level: level) * (ref == .firColor ? tbSpacingFactor : 1) * p.spacingK * (k == .firGold && p.miniBulb != nil ? 0.6 : 1)
     }
 
     static func sag(_ k: ChainStyleKind) -> Double { k == .firColor ? tbSag : sag }
