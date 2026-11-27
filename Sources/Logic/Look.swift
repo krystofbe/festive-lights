@@ -29,7 +29,7 @@ struct LookProfile: Equatable {
         case .firColor:
             p.bows = false; p.hang = .none
             if dock {
-                p.sag = [0, 0.3, 0.3][i]; p.spacingK = [2, 1, 1][i]
+                p.sag = [0, 0.3, 0.3][i]; p.spacingK = [2, 1.5, 1.5][i]
                 p.cones = [ConeMode.none, .none, .perArc(2)][i]
                 p.baubles = [BaubleMode.none, .none, .dockSmall][i]
             } else {

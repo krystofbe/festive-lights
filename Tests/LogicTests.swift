@@ -1851,7 +1851,7 @@ final class LookTests: XCTestCase {
         for k in [ChainStyleKind.firColor, .firGold, .classic] {
             for dock in [false, true] {
                 let p = LookProfile.make(k, .lavish, dock: dock)
-                XCTAssertEqual(p.bulbScale, 1); XCTAssertEqual(p.spacingK, 1); XCTAssertEqual(p.flatten, 0); XCTAssertEqual(p.strandLift, 0)
+                XCTAssertEqual(p.bulbScale, 1); XCTAssertEqual(p.spacingK, k == .firColor && dock ? 1.5 : 1); XCTAssertEqual(p.flatten, 0); XCTAssertEqual(p.strandLift, 0)
             }
         }
         XCTAssertEqual(LookProfile.make(.firColor, .lavish, dock: false).sag, 0.6); XCTAssertEqual(LookProfile.make(.firGold, .lavish, dock: false).sag, 0.45)
@@ -1874,6 +1874,7 @@ final class LookTests: XCTestCase {
         XCTAssertEqual(LookProfile.make(.classic, .festive, dock: false).bulbScale, 1)
         XCTAssertEqual(LookProfile.make(.firGold, .subtle, dock: false).bulbScale, 1)
         XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: true).spacingK, 2, "Tanne bunt am Dock Dezent: jede zweite Birne")
+        XCTAssertEqual([Look.festive, .lavish].map { LookProfile.make(.firColor, $0, dock: true).spacingK }, [1.5, 1.5], "Festlich und Volle Pracht: ein Drittel weniger Birnen")
     }
 
     func testWarmGoldBranchesAreRotatedNotScaledAndHangingBranchesFollowTheLook() {
