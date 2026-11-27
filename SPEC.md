@@ -173,6 +173,7 @@ Ein zweiter Start der App öffnet die Einstellungen (wichtig, wenn das Symbol hi
 **"Auftritt"** (Englisch "Look"), Segmentschalter "Dezent", "Festlich", "Volle Pracht" (Englisch "Subtle", "Festive", "Lavish"), je Kette eigener Wert. Er bestimmt zusammen, wie tief die Kette hängt, wie viel Schmuck sie trägt und wie groß sie ist:
 - Menüleiste: Dezent = kein Teil reicht tiefer als etwa 16 pt unter die Menüleiste, kein Schmuck (keine Kugeln, Zapfen, Schleifen), Fenstertitel und Tabs bleiben frei. Festlich = höchstens etwa 30 pt tief, etwa halb so viel Schmuck (gleichmäßig ausgedünnt). Volle Pracht = Aussehen wie bisher (1.2.2), ohne zusätzliche Grenze. Was tiefer reichen würde, wird angehoben: Fäden und hängende Zweige kürzer, Durchhang flacher; reicht das nicht, entfällt das Teil. Birnen bleiben immer sichtbar.
 - Dock: Dezent = verdeckt höchstens etwa ein Sechstel der Symbolhöhe, kein Schmuck. Festlich = höchstens ein Viertel, halb so viel Schmuck (bei "Tanne bunt" wie in 1.2.1, also ohne Kugeln). Volle Pracht = Aussehen wie bisher (1.2.2), bei "Tanne bunt" mit kleinen Kugeln an kurzen Fäden.
+- Die genauen Werte je Stil und Stufe stehen in Anhang A am Ende dieser Datei; sie gehen den Tiefenangaben oben vor (die 16-pt- und 30-pt-Werte und "kein Schmuck" bei Dezent gelten nur, soweit Anhang A nichts anderes sagt).
 - Grundsatz (Krystof, 27.11., gilt vor allen Angaben oben): Auftritt verkleinert nie. Birnen, Zweige, Kugeln, Zapfen und Schleifen haben in allen drei Auftritten dieselbe Größe wie bei "Volle Pracht". Weniger auffällig wird die Kette so, wie man eine echte Girlande zurücknimmt: weniger Teile (Zweige ausdünnen, Schmuck abnehmen, gegebenenfalls weniger Birnen), hängende Zweige kürzer schneiden, Schmuck an kürzeren Fäden höher hängen, die Kette straffer spannen (flachere Bögen). Die Zahlen für die Tiefe oben sind Richtwerte, die sich daraus ergeben, keine Grenze, für die etwas verkleinert wird.
 - Bei "klassisch" wirkt Auftritt nur über Anzahl der Birnen und Durchhang (kein Schmuck vorhanden).
 - Die Regler unter "Weitere Optionen" wirken innerhalb des gewählten Auftritts relativ weiter; die Tiefengrenze des Auftritts gilt immer.
@@ -262,3 +263,174 @@ Version 1.2:
 - "Auch in Vollbild-Apps zeigen" an, Browser-Video im Vollbild (Firefox und Safari): keine Dock-Kette, solange das Dock ausgeblendet ist; fährt der Zeiger an den unteren Rand und das Dock erscheint, erscheint die Kette mit ihm und verschwindet wieder mit ihm.
 - Ein Hilfsprogramm ohne Dock-Symbol legt ein durchsichtiges Fenster über den ganzen Bildschirm: Lichter und Schnee bleiben sichtbar. Eine echte Vollbild-App blendet weiterhin aus.
 - MacBook mit Kerbe, Firefox-Video im Vollbild: Lichter und Schnee verschwinden und bleiben weg, auch nach dem Ende der Übergangsanimation; beim Verlassen kommen sie zurück. Ein maximiertes Fenster (Fenster > Füllen) bei automatisch ausgeblendetem Dock blendet nichts aus.
+
+## Anhang A: Auftritt, Gestaltungskonzept (verbindlich ab 1.3, von Krystof abgenommen am 27.11.)
+
+Stand 27.11., Bezug: Krystofs MacBook mit Notch, Menüleiste 33 pt, Dock-Symbolgröße 58, alle Regler in Mittelstellung. Alle pt-Angaben sind Schätzungen aus Code und Fotos (±2 pt). `h` ist die Bezugs-Birnenhöhe der Kette (Menüleiste: bunt 28 pt, warmgold und klassisch 33 pt; Dock: bunt 14,5 pt, warmgold und klassisch 15 pt). `t` ist die Lage im Bogen, 0 und 1 sind die Aufhängepunkte, 0,5 die tiefste Stelle.
+
+**Gemessene Zonen im Referenzfoto** (unter der Menüleiste, Fenster mit Titelzeile und Tabs):
+
+| Zone | Tiefe unter der Menüleiste |
+|---|---|
+| frei über dem Titel | 0 bis 11 pt |
+| Fenstertitel, Ampelknöpfe | 12 bis 24 pt |
+| frei zwischen Titel und Tabs | 25 bis 45 pt |
+| Tab-Beschriftung | 46 bis 58 pt |
+
+Am Dock liegen zwischen Dock-Oberkante (dort liegt die Kette) und dem sichtbaren Symbolkörper etwa 19 pt frei, der Symbolkörper ist etwa 50 pt hoch, Badges beginnen etwa 13 pt unter der Kante.
+
+### 1. Leitidee
+
+**Wer echte Deko zurücknimmt, nimmt ab, hängt höher und spannt straffer. Er tauscht höchstens eine große Kugel gegen eine kleine. Er verkleinert nie den Zweig, die Birne oder das ganze Bild.**
+
+Daraus sechs Handgriffe, in dieser Reihenfolge anzuwenden:
+
+1. **Straffer spannen.** Flachere Bögen. Das ist der billigste Handgriff und ändert kein einziges Teil.
+2. **Tiefes hängt hoch.** Alles, was lang ist oder am Faden hängt (Kugeln, Zapfen am Kabel, hängende Zweige), sitzt nur noch nahe den Aufhängepunkten, wo die Girlande am höchsten ist. Die Bogenmitte trägt nur Grün und Birnen. So schmückt man auch einen Kaminsims: der Behang sitzt an den Haken, nicht im Durchhang.
+3. **Kürzer anbinden.** Fäden kürzer. Zweige werden nie abgeschnitten oder gestaucht (stumpfes Ende sieht falsch aus), sie werden weggelassen, wo sie zu tief reichen würden.
+4. **Flacher anbinden** (nur "Tanne warmgold"). Die Zweige der hinteren und mittleren Schicht hängen heute etwa 45 Grad schräg nach unten und reichen 32 pt unter das Kabel, sie sind das tiefste Grün, nicht die Schicht "hängend". Bei einer fest gebundenen Girlande liegen die Zweige am Seil an. Also: Zweig um seinen Ansatzpunkt zum Kabel hin drehen (gespiegelte Zweige in Gegenrichtung). Gleiche Länge, gleiche Nadeln, weniger Tiefe.
+5. **Abnehmen.** Weniger Kugeln, Zapfen, Schleifen, bei "klassisch" weniger Birnen. Immer ganze Teile, gleichmäßig verteilt, nie ein Rest.
+6. **Kleinere Sorte.** Nur für Kugeln und nur als letztes Mittel: Es gibt genau zwei Sorten, "große Kugel" (100 %) und "kleine Kugel" (60 %), wie im Karton mit zwei Kugelgrößen. Keine Zwischengrößen. Die kleine Kugel nutzt nur die Muster ohne Schleifchen (1, 3, 5), der Goldfaden bleibt so dick wie bei der großen. An der Menüleiste wird sie nicht gebraucht (der Prototyp zeigt, dass große Kugeln an kurzen Fäden reichen), am Dock gibt es sie schon.
+
+**Nie geändert wird:** Größe von Büscheln, Zweigen, Nadeln, Birnen, Schein, Zapfen und Schleifen, Dichte des Grüns bei "Tanne bunt", Farben, Muster, Strichstärken, Birnenabstand der Tannen-Stile. Auch der Größenregler unter "Weitere Optionen" bleibt die einzige Stelle, an der etwas skaliert wird.
+
+**Warum das erkennbar bleibt:**
+- Der Maßstab bleibt in allen Stufen gleich. Nadel, Birne und Zapfen sind die Bezugsgrößen, an denen das Auge den Rest misst. Ändern sie sich nicht, liest man "dieselbe Girlande, weniger behängt" statt "dasselbe Bild, kleiner".
+- Jedes Teil bleibt über seiner Lesbarkeitsgrenze. Die große Kugel hat 22 pt Durchmesser, die kleine 13 pt, darunter kippt ein Muster in Pixelrauschen (genau das ist bei der Verkleinerung auf 75 % mit allen Teilen gleichzeitig passiert).
+- Zwei feste Kugelgrößen wirken wie Absicht. Stufenlos verkleinerte Kugeln wirken wie ein Darstellungsfehler.
+- Die Silhouette ändert sich in benennbaren Schritten. Man kann bei jedem Stufenwechsel sagen, was abgenommen wurde.
+
+**Zusätzlicher Handgriff nur für "Dezent" bei "Tanne bunt" an der Menüleiste: auf der Kante liegen.** Strang und Büschel hängen 6 pt höher, der Teil oberhalb der Menüleisten-Unterkante bleibt wie heute abgeschnitten (heute schon so an jedem Aufhängepunkt). Kabel und Birnen wandern nicht mit, keine Birne wird angeschnitten. Wirkung: wie eine Girlande, die auf dem Sims liegt und nur halb über die Kante hängt. Siehe offene Frage 1.
+
+**Für die Umsetzung:** `Look.sizeFactor` entfällt (immer 1), `Look.garlandFit` entfällt (nichts wird auf eine Grenze skaliert). `tbSizeFactor` 0,85 bleibt, das ist das Grundmaß von 1.2.2 und gilt in allen Stufen. Neu nötig: Durchhang je Auftritt, erlaubter Bereich von `t` je Schmuckart, Fadenlänge je Auftritt, Zusatzdrehung der Zweige (warmgold), Anhebung des Strangs (bunt). Die Tiefen unten sind Ergebnis, keine Grenze, auf die hin etwas angepasst wird. Die Regler unter "Weitere Optionen" multiplizieren wie bisher.
+
+### 2. Prüfung der Stufen
+
+Drei Stufen sind richtig, weil es genau drei Zustände echter Deko gibt, die man benennen kann:
+
+| Stufe | Bild aus der Wirklichkeit | Versprechen |
+|---|---|---|
+| Dezent | Grün und Lichter, straff, ohne Behang | Tabs und Symbolleiste frei, der Fenstertitel wird höchstens von Nadelspitzen berührt |
+| Festlich | geschmückt, aber aufgeräumt: Behang an den Haken | Tabs frei, Dock-Symbole frei |
+| Volle Pracht | voll behängt, frei durchhängend (1.2.2) | keine Rücksicht |
+
+Eine vierte Stufe wäre nur ein Zwischenwert ohne eigenes Bild, zwei Stufen ließen die wichtigste aus (geschmückt und trotzdem lesbar). Die Namen passen und bleiben. Einzige Änderung: Der Hilfetext sollte das Versprechen nennen, nicht die Technik, zum Beispiel "Festlich: geschmückt, Tabs bleiben frei".
+
+### 3. Werte je Stil und Stufe
+
+Schreibweise: Anzahl, Größe gegenüber "Volle Pracht", Länge, Lage. "100 %" heißt unverändert. "Volle Pracht" ist überall der Stand von 1.2.2.
+
+### Tanne bunt, Menüleiste (Bogen etwa 140 pt, etwa 12 Bögen)
+
+| Element | Dezent | Festlich | Volle Pracht |
+|---|---|---|---|
+| Büschel | alle, 100 %, Strang 6 pt angehoben | alle, 100 % | alle, 100 % |
+| Hängende Zweige | gibt es in diesem Stil nicht | gibt es nicht | gibt es nicht |
+| Birnen | alle (5 je Bogen), 100 %, nicht angehoben | alle, 100 % | alle, 100 % |
+| Kugeln | keine | halb so viele (alle 340 Einheiten, etwa 1,5 je Bogen), alle groß (100 %), nur bei t unter 0,3 oder über 0,7: fällt eine in die Bogenmitte, rückt sie zum nächsten Büschel außerhalb | etwa 3 je Bogen (alle 170 Einheiten), alle groß, überall |
+| Fäden | keine | 15 bis 25 Einheiten (4 bis 7 pt), Fadenstärke 100 % | 45 bis 65 Einheiten (13 bis 18 pt) |
+| Zapfen (im Grün) | 1 je Bogen, 100 % | 2 je Bogen, 100 % | 2 je Bogen, 100 % |
+| Schleifen | gibt es nicht | gibt es nicht | gibt es nicht |
+| Durchhang | 0,12 h (3 pt) | 0,4 h (11 pt) | 0,6 h (17 pt) |
+| **Größte Tiefe** | **etwa 12 pt** (Grün) | **etwa 41 pt** (Kugeln), Grün bis 25 pt | **etwa 60 pt** (Kugeln), Grün bis 30 pt |
+| Trifft | Oberkante Titel | Titel in den Bogenmitten und an den Kugeln, Tabs frei | Titel und Tabs |
+
+### Tanne warmgold, Menüleiste
+
+| Element | Dezent | Festlich | Volle Pracht |
+|---|---|---|---|
+| Grün (hintere, mittlere, vordere Zweige) | alle, 100 %, 30 Grad flacher angebunden (reicht etwa 17 pt unter das Kabel) | alle, 100 %, 15 Grad flacher (etwa 24 pt unter das Kabel) | alle, 100 %, Lage wie bisher (etwa 32 pt unter das Kabel) |
+| Hängende Zweige (Schicht "hängend") | keine | nur Ansatzpunkte bei t unter 0,2 oder über 0,8, 100 % Länge. Reicht einer tiefer als 34 pt, entfällt er | etwa jeder fünfte Ansatzpunkt, 100 % |
+| Birnen | alle, 100 %, unregelmäßige Abstände wie bisher | alle, 100 % | alle, 100 % |
+| Kugeln, Fäden | gibt es in diesem Stil nicht | gibt es nicht | gibt es nicht |
+| Zapfen (am Kabel) | keine | jeder zweite Bogen, 100 %, bei t 0,12 bis 0,20 | 1 je Bogen, irgendwo bei t 0,2 bis 0,8 |
+| Schleifen | keine | alle Aufhängepunkte, 100 % (sie sitzen am höchsten Punkt) | alle Aufhängepunkte |
+| Durchhang | 0,12 h (4 pt) | 0,3 h (10 pt) | 0,45 h (15 pt) |
+| **Größte Tiefe** | **etwa 26 pt** (Birnen), Grün bis 21 pt | **etwa 34 pt** (Grün), Birnen bis 32 pt | **etwa 47 pt** (Grün), Birnen bis 40 pt |
+| Trifft | Titel an jeder Birne | Titel, Tabs frei | Titel, Oberkante der Tabs |
+
+### klassisch, Menüleiste (kein Schmuck, kein Grün)
+
+| Element | Dezent | Festlich | Volle Pracht |
+|---|---|---|---|
+| Birnen | 4 je Bogen (Abstand × 1,5), 100 % | 6 je Bogen, 100 % | 6 je Bogen, 100 % |
+| Durchhang | 0,1 h (3 pt) | 0,3 h (10 pt) | 1,0 h (33 pt) |
+| **Größte Tiefe** | **etwa 36 pt** | **etwa 43 pt** | **etwa 66 pt** |
+| Trifft | Titel an jeder Birne, Tabs frei | Titel, Tabs frei | Titel und Tabs |
+
+Die C9-Birne ist selbst 33 pt hoch. Tiefer als 36 pt kommt "klassisch" ohne kleinere Birnensorte nicht, siehe offene Frage 2.
+
+### Tanne bunt, Dock (Symbolgröße 58)
+
+| Element | Dezent | Festlich (= 1.2.1) | Volle Pracht |
+|---|---|---|---|
+| Büschel (schmale Girlande) | alle, 100 % | alle, 100 % | alle, 100 % |
+| Birnen | jede zweite (Abstand × 2), 100 % | alle, dicht, 100 % | alle, 100 % |
+| Kugeln | keine | keine | nur kleine Dock-Kugeln wie bisher (etwa 9 pt), etwa 1 je 1,5 Symbole, bei t unter 0,35 oder über 0,65 |
+| Fäden | keine | keine | 3 bis 5 pt |
+| Zapfen | keine | keine | 2 je Bogen |
+| Durchhang | 0 (liegt auf der Kante) | 0,3 h (4 pt) | 0,3 h (4 pt) |
+| Tiefe unter der Dock-Kante | etwa 15 pt | etwa 19 pt | etwa 24 pt |
+| **Verdeckter Anteil der Symbole** | **0 %** | **0 bis 2 %** | **etwa 10 %** |
+
+### Tanne warmgold, Dock (alle Teile halb so groß wie an der Menüleiste, das bleibt in jeder Stufe so)
+
+| Element | Dezent | Festlich | Volle Pracht |
+|---|---|---|---|
+| Grün | alle, 100 %, 30 Grad flacher | alle, 100 %, 15 Grad flacher | alle, 100 %, Lage wie bisher |
+| Hängende Zweige (Schicht "hängend") | keine | nur bei t unter 0,2 oder über 0,8, 100 % | wie Menüleiste, 100 % |
+| Birnen | alle, 100 % | alle, 100 % | alle, 100 % |
+| Zapfen | keine | jeder zweite Bogen, bei t 0,12 bis 0,20 | 1 je Bogen |
+| Schleifen | keine | alle Aufhängepunkte | alle Aufhängepunkte |
+| Durchhang | 0,12 h (2 pt) | 0,3 h (4,5 pt) | 0,45 h (7 pt) |
+| Tiefe unter der Dock-Kante | etwa 12 pt | etwa 17 pt | etwa 22 pt |
+| **Verdeckter Anteil der Symbole** | **0 %** | **0 %** | **etwa 5 %**, Badges berührt |
+
+### klassisch, Dock
+
+| Element | Dezent | Festlich | Volle Pracht |
+|---|---|---|---|
+| Birnen | 4 je Bogen (Abstand × 1,5), 100 % | 6 je Bogen, 100 % | 6 je Bogen, 100 % |
+| Durchhang | 0,1 h (1,5 pt) | 0,3 h (4,5 pt) | wie bisher (0,45 h, 7 pt) |
+| Tiefe unter der Dock-Kante | etwa 17 pt | etwa 20 pt | etwa 22 pt |
+| **Verdeckter Anteil der Symbole** | **0 %** | **0 bis 2 %** | **etwa 5 %** |
+
+Am Dock unterscheiden sich die Stufen also kaum in der Verdeckung, sondern im Reichtum. Das ist richtig so: Über den Symbolen liegen 19 pt Luft, die reichen für alles außer dem Behang von "Volle Pracht". Die Anteile gelten für Symbolgröße 58, bei kleineren Symbolen wächst die Kette nicht mit hinein, weil sie mit der Symbolgröße skaliert.
+
+### 3a. Bewertung der Prototypen (auftritt2-bunt.png, auftritt2-warmgold.png)
+
+Der Grundsatz stimmt in allen zehn Zeilen: Jedes Teil ist so groß wie in "Volle Pracht" und sofort erkennbar. Im Einzelnen:
+
+| Prototyp | Tanne bunt | Tanne warmgold |
+|---|---|---|
+| Festlich | **Fast richtig.** Kugeln enden an der Oberkante der Tab-Zeile, alle Tabs lesbar. Zwei Korrekturen: keine Kugel in der Bogenmitte (dort stößt sie an die Tab-Schrift), Fäden noch etwas kürzer | **Reicht nicht.** Die langen dunklen Zweige reichen weiter bis an die Tab-Zeile, weil nur die Schicht "hängend" gekürzt wurde. "Halb so lang" ist außerdem ein gestauchtes Bild und verstößt gegen den Grundsatz. Lösung: flacher anbinden (Handgriff 4). Schleifen nicht halbieren, sie sitzen oben und geben den Takt |
+| Dezent 1 (jeder zweite Büschel weg) | **Nein.** Der kahle braune Strang wird sichtbar, die Girlande wirkt gerupft und verliert ihr Merkmal "dicht". Einziger Vorteil: Der Fenstertitel scheint durch die Lücken | **Nein.** Das Grün ist ohnehin locker, halbiert bleibt alle 150 pt ein einzelner Zweig, und der reicht so tief wie vorher |
+| Dezent 2 (dazu jede zweite Birne) | **Nein.** Die Birnen sind 6 pt klein und verdecken nichts, ohne sie fehlt das Licht | **Nein.** Im Ausschnitt bleibt eine Birne auf 400 pt, das ist keine Lichterkette mehr |
+| Dezent 3 (volles Grün, straff) | **Richtige Basis, aber zu tief.** Das Grün liegt genau auf dem Fenstertitel (etwa 22 pt). Deshalb straffer (0,12 h statt 50 %) und auf die Kante legen, dann etwa 12 pt | **Richtige Basis, aber zu tief.** Zweige reichen bis etwa 36 pt. Mit flacherem Anbinden etwa 21 pt |
+| Dock | Festlich ist richtig (= 1.2.1). Dezent 3 ist von Festlich nicht zu unterscheiden, Dezent 1 zeigt Löcher. Empfehlung: volles Grün, jede zweite Birne (am Dock sind die Birnen das große Teil) | Alle Zeilen lassen die Symbole frei. Dezent 3 als Basis, flacher angebunden, damit die Zweigspitzen nicht mehr an die Badges stoßen |
+
+Kurz: "Festlich" bunt aus dem Prototyp übernehmen, "Dezent 3" ist bei beiden Stilen die Basis, Ausdünnen von Grün und Birnen (Dezent 1 und 2) verwerfen. Was fehlt, sind die zwei Handgriffe "Tiefes hängt hoch" und "flacher anbinden".
+
+### 4. Kriterien für Krystofs Abnahme
+
+Auf einem Bildschirmfoto mit drei Stufen untereinander, je Stil, Menüleiste über einem Fenster mit Titelzeile und Tabs, Dock mit Symbolgröße 58:
+
+1. **Deckungsprobe:** Eine Birne, ein Büschel, ein Zweig, ein Zapfen, eine Schleife, eine Kugel aus "Dezent" oder "Festlich" ausgeschnitten und auf "Volle Pracht" gelegt, ist deckungsgleich (Zweige bei warmgold gedreht, nicht gestaucht).
+2. **Tabs:** Bei "Dezent" und "Festlich" ist an der Menüleiste jede Tab-Beschriftung vollständig lesbar, nichts reicht tiefer als etwa 42 pt. Bei warmgold endet das Grün in "Festlich" sichtbar über der Tab-Zeile.
+3. **Bogenmitte:** Bei "Festlich" hängt in der Mitte keines Bogens eine Kugel, ein Zapfen oder ein langer Zweig. Der Behang sitzt sichtbar an den Aufhängepunkten.
+4. **Dezent:** Ampelknöpfe frei, kein Behang. "Tanne bunt" berührt den Fenstertitel nur mit Nadelspitzen.
+5. **Lesbarkeit ohne Zoom:** In 100 % Ansicht erkennt man bei jeder Stufe, was es ist: Tannengrün, Birnen mit Schein, bei "Festlich" die Kugelmuster (Punkte, Streifen, Rauten), bei warmgold die Schleifen.
+6. **Benennbarer Schritt:** Beim Umschalten kann man in einem Satz sagen, was abgenommen wurde ("Kugeln weg", "Zapfen und lange Zweige nur noch an den Haken"). Wenn man stattdessen "kleiner" sagt, ist es falsch.
+7. **Nichts Halbes:** Kein abgeschnittener Zweig, kein Faden ohne Büschel, keine angeschnittene Birne. Einzige Schnittkante ist die Unterkante der Menüleiste.
+8. **Dock:** "Tanne bunt" in "Festlich" ist bildgleich mit 1.2.1. In "Dezent" und "Festlich" ist kein Symbolkörper verdeckt, Badges sind lesbar. In "Volle Pracht" ist höchstens das obere Zehntel betroffen.
+9. **Bestandsnutzer:** "Volle Pracht" ist bildgleich mit 1.2.2.
+
+### 5. Entscheidungen von Krystof (vormals offene Fragen)
+
+Alle drei Empfehlungen angenommen: (1) Dezent bei Tanne bunt an der Menüleiste: Strang 6 pt angehoben, liegt auf der Kante. (2) klassisch in Dezent mit kleinerer Birnensorte C7 (etwa 70 %), an Menüleiste und Dock. (3) Tanne warmgold: Zweige in Dezent 30 Grad, in Festlich 15 Grad flacher angebunden.
+
+Ursprüngliche Fragen:
+
+1. **Auf der Kante liegen:** Darf bei "Dezent" und "Tanne bunt" die Girlande 6 pt höher hängen, so dass ihr oberer Teil hinter der Menüleisten-Kante verschwindet? Mit Anhebung etwa 12 pt tief (Titel frei), ohne etwa 18 pt (obere Hälfte des Titels im Grün). Empfehlung: ja.
+2. **Kleinere Birnensorte:** Bei "klassisch" und "Tanne warmgold" ist die Birne selbst das tiefste Teil, "Dezent" bleibt deshalb bei 36 pt bzw. 26 pt. Soll "Dezent" dort eine echte kleinere Sorte bekommen (klassisch C7 statt C9, 70 %, dann etwa 26 pt), oder bleibt es bei "weniger Birnen, straff"? Empfehlung: bei der Tanne nein, bei "klassisch" ja.
+3. **Flacher anbinden:** Dürfen bei "Tanne warmgold" die Zweige in "Dezent" und "Festlich" flacher am Kabel anliegen (gedreht um 30 bzw. 15 Grad)? Das ändert den Charakter leicht von "locker hängend" zu "fest gebunden". Die Alternative wäre, tiefe Zweige ganz wegzulassen, dann wird die Kette kahl (siehe Prototyp Dezent 1). Empfehlung: ja.
