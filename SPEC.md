@@ -361,6 +361,8 @@ Die C9-Birne ist selbst 33 pt hoch. Tiefer als 36 pt kommt "klassisch" ohne klei
 
 ### Tanne bunt, Dock (Symbolgröße 58)
 
+Nachtrag Krystof 27.11.: In "Festlich" und "Volle Pracht" etwa ein Drittel weniger Birnen als in der Tabelle (Birnenabstand × 1,5), gleichmäßig verteilt; "Festlich" ist damit nicht mehr bildgleich mit 1.2.1, nur noch in Grün und Aufbau. "Dezent" bleibt bei jeder zweiten Birne. Grün, Größe und Kugeln unverändert.
+
 | Element | Dezent | Festlich (= 1.2.1) | Volle Pracht |
 |---|---|---|---|
 | Büschel (schmale Girlande) | alle, 100 % | alle, 100 % | alle, 100 % |
