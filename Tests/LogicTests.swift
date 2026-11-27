@@ -1865,7 +1865,7 @@ final class LookTests: XCTestCase {
         XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.firGold, $0, dock: false).sag }, [0.12, 0.3, 0.45])
         XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.classic, $0, dock: false).sag }, [0.1, 0.3, 1.0])
         XCTAssertEqual([Look.subtle, .festive, .lavish].map { LookProfile.make(.firColor, $0, dock: true).sag }, [0, 0.3, 0.3])
-        XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: false).strandLift, 6, "Tanne bunt Dezent liegt auf der Kante")
+        XCTAssertEqual(LookProfile.make(.firColor, .subtle, dock: false).strandLift, 3, "Tanne bunt Dezent liegt auf der Kante")
     }
 
     func testOnlyClassicSubtleHasASmallerBulbAndFewerBulbs() {

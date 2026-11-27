@@ -20,7 +20,7 @@ struct LookProfile: Equatable {
     var cones = ConeMode.scattered
     var bows = true
     var baubles = BaubleMode.none
-    var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Tanne bunt, Dezent, Menüleiste)
+    var strandLift = 0.0           // pt, um die Strang und Büschel höher hängen (Dezent: 3) (Tanne bunt, Dezent, Menüleiste)
 
     static func make(_ kind: ChainStyleKind, _ look: Look, dock: Bool) -> LookProfile {
         let i = look.rawValue
@@ -36,7 +36,7 @@ struct LookProfile: Equatable {
                 p.sag = [0.12, 0.4, 0.6][i]
                 p.cones = [ConeMode.perArc(1), .perArc(2), .perArc(2)][i]
                 p.baubles = [BaubleMode.none, .edgeHalf, .full][i]
-                p.strandLift = [6, 0, 0][i]
+                p.strandLift = [3, 0, 0][i]
             }
         case .firGold:
             p.sag = [0.12, 0.3, 0.45][i]; p.flatten = [30, 15, 0][i]
