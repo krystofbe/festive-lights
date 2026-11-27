@@ -510,11 +510,12 @@ final class AppController: NSObject {
     func showSettings() {
         if settingsWindow == nil {
             #if DIRECT
-            let host = NSHostingController(rootView: SettingsView(s: settings, perm: permissionModel, updates: updates, login: loginModel, nav: settingsNav))
+            let host = FirstMouseHostingView(rootView: SettingsView(s: settings, perm: permissionModel, updates: updates, login: loginModel, nav: settingsNav))
             #else
-            let host = NSHostingController(rootView: SettingsView(s: settings, login: loginModel, nav: settingsNav))
+            let host = FirstMouseHostingView(rootView: SettingsView(s: settings, login: loginModel, nav: settingsNav))
             #endif
-            let w = NSWindow(contentViewController: host)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 470, height: 480), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+            w.contentView = host   // erster Klick wirkt auch, wenn das Fenster noch nicht aktiv ist
             w.title = String(localized: "settings.title")
             w.styleMask = [.titled, .closable, .miniaturizable]
             w.isReleasedWhenClosed = false

@@ -55,6 +55,26 @@ struct LevelSlider: View {
     }
 }
 
+/// Zeile "Weitere Optionen": Der DisclosureGroup reagiert in einer gruppierten Form nicht auf Klicks, deshalb ein eigener Button über die ganze Zeile.
+struct MoreOptionsRow: View {
+    @Binding var open: Bool
+
+    var body: some View {
+        Button { withAnimation(.easeInOut(duration: 0.2)) { open.toggle() } } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(open ? 90 : 0)).frame(width: 12)
+                Text("More Options")
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(Text(LocalizedStringKey(open ? "expanded" : "collapsed")))
+    }
+}
+
 /// Gemeinsamer Aufbau der Bereiche Menüleiste, Dock und Schnee: Schalter zuoberst in eigener Gruppe, darunter die Einstellungen (ausgegraut, wenn aus).
 struct SettingsPane<Content: View, More: View>: View {
     let title: LocalizedStringKey
@@ -68,7 +88,8 @@ struct SettingsPane<Content: View, More: View>: View {
             Section { Toggle(title, isOn: $isOn) }
             Section {
                 content
-                DisclosureGroup("More Options", isExpanded: $moreOpen) { more }
+                MoreOptionsRow(open: $moreOpen)
+                if moreOpen { more }
             }.disabled(!isOn)
         }
         .formStyle(.grouped)

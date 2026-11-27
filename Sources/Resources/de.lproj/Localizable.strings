@@ -109,3 +109,5 @@
 "Settles on windows" = "Liegt auf Fenstern";
 "Only during breaks" = "Nur in Pausen";
 "breaks.hint" = "Der Schnee beginnt erst, wenn zwei Minuten lang nichts getippt und die Maus nicht bewegt wurde.";
+"expanded" = "ausgeklappt";
+"collapsed" = "eingeklappt";

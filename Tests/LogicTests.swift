@@ -1495,7 +1495,7 @@ final class OnboardingTests: XCTestCase {
         let keys = ["menu.welcome", "onb.back", "onb.next", "onb.skip", "onb.go", "onb.progress", "onb.window", "onb.storm",
                     "onb.welcome.title", "onb.welcome.body", "onb.menubar.title", "onb.menubar.body", "onb.dock.title", "onb.dock.body", "onb.snow.title", "onb.snow.body",
                     "onb.access.title", "onb.access.body", "onb.done.title", "onb.done.body", "onb.storm.disabled",
-                    "Look", "Subtle", "Festive", "Lavish", "More Options", "Settles on windows", "Only during breaks", "breaks.hint", "onb.on"]
+                    "Look", "Subtle", "Festive", "Lavish", "More Options", "Settles on windows", "Only during breaks", "breaks.hint", "onb.on", "expanded", "collapsed"]
         for lang in ["de", "en"] {
             let text = try String(contentsOf: root.appendingPathComponent("\(lang).lproj/Localizable.strings"), encoding: .utf8)
             for k in keys { XCTAssertTrue(text.contains("\"\(k)\" ="), "\(k) fehlt in \(lang)") }

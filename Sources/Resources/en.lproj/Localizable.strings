@@ -109,3 +109,5 @@
 "Settles on windows" = "Settles on windows";
 "Only during breaks" = "Only during breaks";
 "breaks.hint" = "Snow only starts after two minutes without typing or moving the mouse.";
+"expanded" = "expanded";
+"collapsed" = "collapsed";
